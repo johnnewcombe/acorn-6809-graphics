@@ -5,12 +5,31 @@ Acorn System machines. Assembler callers only; built with lwasm.
 
 ## Building
 
-    make            # library for both targets, plus the demo
+    make            # library for both targets, plus the demos
     make sys3       # standard Acorn System 3  (VDU $0400, CRTC $0800)
     make flex       # FLEX machine            (VDU $E400, CRTC $E800)
+    make demo       # starburst demo only
+    make cube       # rotating cube demo only
+    make SAFE=1     # range-checked build (see below)
+    make test       # build, put the FLEX library and demos on TGL.dsk,
+                    #  and start MAME
+    make clean      # remove the build directory
 
 Output is raw binary: `build/sys3/tgl.bin`, `build/flex/tgl.bin`,
 `build/demo.bin` and `build/cube.bin`, with listings alongside.
+
+### Safe builds
+
+`make SAFE=1` builds the library with range checks in `TGL_PLOT` and
+`TGL_LINE`: an off-screen point is ignored, and a line with either
+endpoint off screen draws nothing, instead of writing outside the buffer.
+Use it while developing; a normal build leaves the checks out entirely
+and is byte-for-byte unaffected. The build message ends with
+"SAFE build" so you can tell which you have.
+
+`make` decides what to rebuild from file dates, so it won't notice that
+SAFE has changed. When switching between normal and safe builds, use
+`make -B` (or `make clean` first).
 
 ## Demos
 
