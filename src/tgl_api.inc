@@ -10,8 +10,8 @@ TGL_INIT        EQU     TGL_BASE+0      ; initialise; buffer = end of library
 TGL_SETBUF      EQU     TGL_BASE+3      ; X = off-screen buffer address
 TGL_CLS         EQU     TGL_BASE+6      ; clear buffer to blank graphics
 TGL_SETMODE     EQU     TGL_BASE+9      ; A = plot mode (TGL_MODE_xxx)
-TGL_PLOT        EQU     TGL_BASE+12     ; A = x (0-79), B = y (0-71)
-TGL_LINE        EQU     TGL_BASE+15     ; (interface to be defined)
+TGL_PLOT        EQU     TGL_BASE+12     ; A = x (0-77), B = y (0-71)
+TGL_LINE        EQU     TGL_BASE+15     ; A,B = x0,y0  X = x1:y1 (hi:lo)
 TGL_BLIT        EQU     TGL_BASE+18     ; copy buffer to screen rows 0-23
 
 TGL_BUFSIZE     EQU     960

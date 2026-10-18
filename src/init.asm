@@ -23,7 +23,7 @@ T_INIT          PSHS    D,X
                 LEAX    TGL_END,PCR
                 STX     <W_BUF
                 LDA     #MODE_SET
-                STA     <W_MODE
+                LBSR    T_SETMODE       ; patches T_PLOT for MODE_SET
                 PULS    D,X,PC
 
 ; ---------------------------------------------------------------------------
