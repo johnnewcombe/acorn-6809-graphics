@@ -2,7 +2,7 @@
 ; Rotating cube demo for the teletext graphics library
 ;   Load tgl.bin at TGL_BASE and cube.bin at its ORG, then run from START.
 ;   Each frame: clear buffer, set the zoom size, rotate and project 8
-;   corners, draw 12 edges, blit. Runs until reset (an exit will come with the FLEX exit work).
+;   corners, draw 12 edges, blit. Press any key to exit.
 ;
 ;   Rotation: corners are (+/-S, +/-S, +/-S), so once per frame the rotation
 ;   matrix is scaled by S (SIZE, which pulses to zoom in and out) into nine terms, and every rotated corner is just
@@ -17,7 +17,7 @@ TGL_BASE        EQU     $1000
 BUFFER          EQU     $3000           ; off-screen buffer (960 bytes)
 STACK_TOP       EQU     $0200
 
-SIZE_MID        EQU     16              ; half edge length pulses 8..23
+SIZE_MID        EQU     21              ; half edge length pulses 5..36
 CX              EQU     39              ; screen centre
 CY              EQU     36
 STEP_A          EQU     2               ; rotation speed about x, per frame
@@ -49,6 +49,7 @@ START           LDS     #STACK_TOP
                 CLRA
                 TFR     A,DP
                 SETDP   $00
+                ANDCC   #$EF            ; IRQs on: the keyboard is interrupt driven
                 JSR     TGL_INIT
                 LDX     #BUFFER
                 JSR     TGL_SETBUF
@@ -72,6 +73,8 @@ FRAME           JSR     TGL_CLS
                 LDA     <ZOOM
                 ADDA    #STEP_Z
                 STA     <ZOOM
+                JSR     TGL_INKEY       ; any key exits
+                LBNE    TGL_EXIT
                 IFDEF   TESTFRAMES
                 INC     <FRAMES
                 LDA     <FRAMES
@@ -82,15 +85,16 @@ FRAME           JSR     TGL_CLS
 DONE            BRA     DONE
 
 ; ---------------------------------------------------------------------------
-; ZOOMSZ - set SIZE from the zoom phase: SIZE_MID + sin(ZOOM)/16, i.e. 8..23
-;   (24 is the largest size that stays on screen at every angle)
+; ZOOMSZ - set SIZE from the zoom phase: SIZE_MID + sin(ZOOM)/8, i.e. 5..36
+;   Above about 26 the cube overhangs the screen and TGL_LINEC clips it.
+;   36 is the limit: depth stays within the tables' -64..63 range and the
+;   projected points within the signed -128..127 that TGL_LINEC accepts.
 ; ---------------------------------------------------------------------------
 ZOOMSZ          LEAX    SINTAB,PCR
                 LDB     <ZOOM
                 ABX
                 LDA     ,X              ; -127..127
-                ASRA                    ; /16 -> -8..7
-                ASRA
+                ASRA                    ; /8 -> -16..15
                 ASRA
                 ASRA
                 ADDA    #SIZE_MID
@@ -282,7 +286,7 @@ PM_1            MUL
                 RTS
 
 ; ---------------------------------------------------------------------------
-; EDGES - draw the 12 edges from the projected corners
+; EDGES - draw the 12 edges from the projected corners (clipped)
 ; ---------------------------------------------------------------------------
 EDGES           LEAY    EDGETAB,PCR
                 LDA     #12
@@ -299,7 +303,7 @@ ED_LOOP         LDX     #PX             ; end point -> U
                 LDA     ,X
                 LDB     8,X
                 TFR     U,X             ; X = x1:y1
-                JSR     TGL_LINE
+                JSR     TGL_LINEC       ; clipped: corners may be off screen
                 LEAY    2,Y
                 DEC     <EC
                 BNE     ED_LOOP

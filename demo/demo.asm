@@ -2,6 +2,7 @@
 ; Demo / smoke test for the teletext graphics library
 ;   Load tgl.bin at TGL_BASE and demo.bin at its ORG, then run from START.
 ;   Draws a border and a starburst with TGL_LINE, then blits.
+;   Press any key to exit.
 ;   Target independent: the library binary carries the VDU address.
 ; ===========================================================================
 TGL_BASE        EQU     $1000           ; where tgl.bin is loaded
@@ -18,6 +19,7 @@ START           LDS     #STACK_TOP
                 CLRA
                 TFR     A,DP
                 SETDP   $00
+                ANDCC   #$EF            ; IRQs on: the keyboard is interrupt driven
 
                 JSR     TGL_INIT        ; resets 6845 start address
                 LDX     #DEMOBUF
@@ -78,5 +80,7 @@ D_LR            CLRA                    ; to (0,n) and (77,n)
 
                 JSR     TGL_BLIT
 
-; Replace with a return to the monitor, or JMP $CD03 (FLEX warm start)
-DONE            BRA     DONE
+; Wait for a key, then restore the display and return to FLEX / the monitor
+DONE            JSR     TGL_INKEY
+                BEQ     DONE
+                JMP     TGL_EXIT

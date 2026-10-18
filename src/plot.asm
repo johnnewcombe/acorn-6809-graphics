@@ -30,11 +30,19 @@ SETM_X          RTS
 ; T_PLOT - plot one sixel pixel in the off-screen buffer
 ;   Entry: A = x (0-77), B = y (0-71), DP = $00
 ;   Exit:  all registers preserved
-;   No range checking - out-of-range coordinates write outside the buffer.
+;   No range checking in a normal build - out-of-range coordinates write
+;   outside the buffer. A TGL_SAFE build ignores off-screen points instead.
 ;
 ;   cell = buffer + (y/3)*40 + 1 + x/2,  mask from (x&1, y%3)
 ; ---------------------------------------------------------------------------
-T_PLOT          PSHS    D,X,Y
+T_PLOT
+                IFDEF   TGL_SAFE
+                CMPA    #XMAX           ; off screen: do nothing
+                BHI     PLOT_RTS
+                CMPB    #YMAX
+                BHI     PLOT_RTS
+                ENDC
+                PSHS    D,X,Y
                 LEAY    PTAB,PCR
                 CLRA                    ; D = y
                 ASLB                    ; D = y*4 (entries are 4 bytes)
@@ -56,3 +64,6 @@ PLOT_PRE        NOP                     ; patched: NOP or COMA
 PLOT_OP         ORA     ,X              ; patched: ORA / ANDA / EORA ,X
                 STA     ,X
                 PULS    D,X,Y,PC
+                IFDEF   TGL_SAFE
+PLOT_RTS        RTS
+                ENDC

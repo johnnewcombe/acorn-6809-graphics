@@ -3,12 +3,19 @@
 #   make            build library for both targets, plus the demos
 #   make sys3       standard Acorn System 3 (VDU at $0400)
 #   make flex       FLEX machine (VDU at $E400)
+#   make SAFE=1     range-checked TGL_PLOT/TGL_LINE (use make -B or clean first
+#                   when switching between normal and safe builds)
 #   make test       build, put the FLEX build and demos on TGL.dsk, run MAME
 #   make clean
 
 LWASM   ?= lwasm
 LWFLAGS  = --format=raw -I src
 SRC      = $(wildcard src/*.asm src/*.inc src/target/*.inc)
+
+ifdef SAFE
+LWFLAGS += -D TGL_SAFE
+BUILDTYPE = , SAFE build
+endif
 MAME 	 = /home/john/Dropbox/Repositories/mame-acorn-flex/mame
 DEMO     = ./build/demo.bin
 CUBE	 = ./build/cube.bin
@@ -37,7 +44,7 @@ build/sys3/tgl.bin: $(SRC)
 	@cmp -s $(@D)/pic_a.bin $(@D)/pic_b.bin || \
 	  { echo "ERROR: sys3 build is not position-independent"; rm -f $@; exit 1; }
 	@rm -f $(@D)/pic_a.bin $(@D)/pic_b.bin
-	@echo "sys3: $$(stat -c %s $@) bytes, position-independent"
+	@echo "sys3: $$(stat -c %s $@) bytes, position-independent$(BUILDTYPE)"
 
 build/flex/tgl.bin: $(SRC)
 	@mkdir -p $(@D)
@@ -47,7 +54,7 @@ build/flex/tgl.bin: $(SRC)
 	@cmp -s $(@D)/pic_a.bin $(@D)/pic_b.bin || \
 	  { echo "ERROR: flex build is not position-independent"; rm -f $@; exit 1; }
 	@rm -f $(@D)/pic_a.bin $(@D)/pic_b.bin
-	@echo "flex: $$(stat -c %s $@) bytes, position-independent"
+	@echo "flex: $$(stat -c %s $@) bytes, position-independent$(BUILDTYPE)"
 
 build/demo.bin: demo/demo.asm src/tgl_api.inc
 	@mkdir -p $(@D)

@@ -9,3 +9,10 @@ CRTC_DATA       EQU     $E801           ; 6845 data register
                 IFNDEF  TGL_ORG
 TGL_ORG         EQU     $1000
                 ENDC
+
+; Monitor RAM vectors and keyboard buffer pointers (monitor RAM at $E300)
+MON_COPADR      EQU     $E365           ; console output routine address
+MON_CINADR      EQU     $E367           ; console input routine address
+MON_HEADST      EQU     $E387           ; keyboard buffer: static head
+MON_TAIL        EQU     $E38B           ; keyboard buffer: tail
+FLEX_WARMS      EQU     $CD03           ; FLEX warm start

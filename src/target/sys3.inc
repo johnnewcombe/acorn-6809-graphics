@@ -11,3 +11,10 @@ CRTC_DATA       EQU     $0801           ; 6845 data register
                 IFNDEF  TGL_ORG
 TGL_ORG         EQU     $1000
                 ENDC
+
+; Monitor RAM vectors and keyboard buffer pointers (monitor RAM at $0300)
+; Checked against the standard ROM listing (monitor source with BASE=$0000).
+MON_COPADR      EQU     $0365           ; console output routine address
+MON_CINADR      EQU     $0367           ; console input routine address
+MON_HEADST      EQU     $0387           ; keyboard buffer: static head
+MON_TAIL        EQU     $038B           ; keyboard buffer: tail

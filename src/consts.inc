@@ -13,3 +13,6 @@ SIXEL_FULL      EQU     $7F             ; graphics cell, all six pixels set
 MODE_SET        EQU     0
 MODE_CLEAR      EQU     1
 MODE_XOR        EQU     2
+
+XMAX            EQU     77              ; largest visible x
+YMAX            EQU     71              ; largest visible y

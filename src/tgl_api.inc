@@ -13,6 +13,11 @@ TGL_SETMODE     EQU     TGL_BASE+9      ; A = plot mode (TGL_MODE_xxx)
 TGL_PLOT        EQU     TGL_BASE+12     ; A = x (0-77), B = y (0-71)
 TGL_LINE        EQU     TGL_BASE+15     ; A,B = x0,y0  X = x1:y1 (hi:lo)
 TGL_BLIT        EQU     TGL_BASE+18     ; copy buffer to screen rows 0-23
+TGL_PLOTC       EQU     TGL_BASE+21     ; clipped plot: A,B = signed x,y
+TGL_LINEC       EQU     TGL_BASE+24     ; clipped line: signed coordinates
+TGL_DONE        EQU     TGL_BASE+27     ; restore text display (clears screen)
+TGL_INKEY       EQU     TGL_BASE+30     ; key waiting? Z set: none; else A = key
+TGL_EXIT        EQU     TGL_BASE+33     ; restore display, back to FLEX/monitor
 
 TGL_BUFSIZE     EQU     960
 TGL_MODE_SET    EQU     0

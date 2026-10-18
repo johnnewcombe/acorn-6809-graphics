@@ -1,7 +1,9 @@
 ; ---------------------------------------------------------------------------
 ; T_LINE - draw a line in the off-screen buffer (Bresenham)
 ;   Entry: A = x0, B = y0, X = x1 (high byte) : y1 (low byte), DP = $00
-;          x 0-77, y 0-71, no range checking. Uses the current plot mode.
+;          x 0-77, y 0-71. Uses the current plot mode.
+;          No range checking in a normal build. A TGL_SAFE build draws
+;          nothing if either endpoint is off screen.
 ;   Exit:  all registers preserved
 ;
 ;   Rather than calling the plot routine per pixel, the loop tracks the
@@ -97,7 +99,26 @@ LN_LOOP         MACRO
                 ENDM
 
 ; ---------------------------------------------------------------------------
-T_LINE          PSHS    D,X,Y,U
+T_LINE
+                IFDEF   TGL_SAFE
+                CMPA    #XMAX           ; start point off screen?
+                BHI     LN_RTS
+                CMPB    #YMAX
+                BHI     LN_RTS
+                PSHS    D,X             ; end point: 2,S = x1, 3,S = y1
+                LDA     2,S
+                CMPA    #XMAX
+                BHI     LN_BAD
+                LDA     3,S
+                CMPA    #YMAX
+                BHI     LN_BAD
+                PULS    D,X
+                BRA     LN_GO
+LN_BAD          PULS    D,X
+LN_RTS          RTS
+LN_GO
+                ENDC
+                PSHS    D,X,Y,U
                 STD     <W_X0           ; W_X0 = x0, W_Y0 = y0
                 STX     <W_X1           ; W_X1 = x1, W_Y1 = y1
                 LDA     <W_X1           ; |dx|

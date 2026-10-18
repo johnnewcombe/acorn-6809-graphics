@@ -36,6 +36,11 @@ J_SETMODE       LBRA    T_SETMODE       ; +9
 J_PLOT          LBRA    T_PLOT          ; +12
 J_LINE          LBRA    T_LINE          ; +15
 J_BLIT          LBRA    T_BLIT          ; +18
+J_PLOTC         LBRA    T_PLOTC         ; +21
+J_LINEC         LBRA    T_LINEC         ; +24
+J_DONE          LBRA    T_DONE          ; +27
+J_INKEY         LBRA    T_INKEY         ; +30
+J_EXIT          LBRA    T_EXIT          ; +33
 
 ; Check the table against the published interface
 TGL_BASE        EQU     TGL_START
@@ -44,6 +49,12 @@ TGL_BASE        EQU     TGL_START
                 ERROR   "Jump table does not match tgl_api.inc"
                 ENDC
                 IFNE    (J_PLOT-TGL_PLOT)|(J_LINE-TGL_LINE)|(J_BLIT-TGL_BLIT)
+                ERROR   "Jump table does not match tgl_api.inc"
+                ENDC
+                IFNE    (J_PLOTC-TGL_PLOTC)|(J_LINEC-TGL_LINEC)
+                ERROR   "Jump table does not match tgl_api.inc"
+                ENDC
+                IFNE    (J_DONE-TGL_DONE)|(J_INKEY-TGL_INKEY)|(J_EXIT-TGL_EXIT)
                 ERROR   "Jump table does not match tgl_api.inc"
                 ENDC
 
@@ -55,6 +66,8 @@ TGL_BASE        EQU     TGL_START
                 INCLUDE "plot.asm"
                 INCLUDE "line.asm"
                 INCLUDE "blit.asm"
+                INCLUDE "clip.asm"
+                INCLUDE "system.asm"
                 INCLUDE "tables.asm"
 
 TGL_END                                 ; default buffer starts here

@@ -52,8 +52,32 @@ the binaries differ, so position independence can't silently break.
 | TGL_PLOT    | +12    | A = x (0-77), B = y (0-71) |
 | TGL_LINE    | +15    | A,B = x0,y0; X = x1:y1 (high:low) |
 | TGL_BLIT    | +18    | Copy buffer to screen rows 0-23 |
+| TGL_PLOTC   | +21    | Clipped plot: A,B = signed x,y (-128..127) |
+| TGL_LINEC   | +24    | Clipped line: signed coordinates, as TGL_LINE |
+| TGL_DONE    | +27    | Restore the text display (clears the screen) |
+| TGL_INKEY   | +30    | Key waiting? Z set: none; Z clear: key in A |
+| TGL_EXIT    | +33    | Restore the display, return to FLEX / the monitor |
 
-Coordinates are not range-checked.
+`TGL_PLOT` and `TGL_LINE` do not range-check, for speed. `TGL_PLOTC` and
+`TGL_LINEC` accept signed coordinates and draw only what is on screen;
+`TGL_LINEC` trims lines to the screen edges (Cohen-Sutherland, rounded to
+the nearest pixel) and then draws with `TGL_LINE`. Trimmed lines stay
+within one pixel of the path the unclipped line would take.
+
+## System routines
+
+`TGL_DONE`, `TGL_INKEY` and `TGL_EXIT` use the monitor's RAM vectors, so
+they work with any monitor version. `TGL_DONE` sends a form feed through
+the console output vector: the monitor's handler re-detects the 6845,
+reloads its registers (cursor and start address included), resets the
+driver's scroll position and clears the screen. `TGL_INKEY` needs IRQs
+enabled, since the monitor reads the keyboard under interrupt. `TGL_EXIT`
+does a FLEX warm start on the FLEX machine and an `SWI` into the monitor
+on a standard System 3.
+
+Both machines run the same monitor source, built with BASE=$0000 for the
+standard System 3 and BASE=$E000 for the FLEX machine, so the vectors and
+buffer pointers sit at the same offsets in each monitor's RAM page.
 
 ## Testing
 
