@@ -1,8 +1,9 @@
 # Acorn System 3 Teletext Graphics Library - build
 #
-#   make            build library for both targets, plus the demo
+#   make            build library for both targets, plus the demos
 #   make sys3       standard Acorn System 3 (VDU at $0400)
 #   make flex       FLEX machine (VDU at $E400)
+#   make test       build, put the FLEX build and demos on TGL.dsk, run MAME
 #   make clean
 
 LWASM   ?= lwasm
@@ -19,7 +20,7 @@ TOOLS	 = ./tools
 PIC_A    = 0x1000
 PIC_B    = 0x2345
 
-.PHONY: all sys3 flex demo clean
+.PHONY: all sys3 flex demo cube test clean
 
 all: sys3 flex demo cube
 
@@ -52,18 +53,19 @@ build/demo.bin: demo/demo.asm src/tgl_api.inc
 	@mkdir -p $(@D)
 	$(LWASM) $(LWFLAGS) --output=$@ --list=build/demo.lst --symbols demo/demo.asm
 
-build/cube.bin: demo/cube.asm src/cube_tables.asm src/tgl_api.inc
+build/cube.bin: demo/cube.asm demo/cube_tables.asm src/tgl_api.inc
 	@mkdir -p $(@D)
 	$(LWASM) $(LWFLAGS) -I demo --output=$@ --list=build/cube.lst --symbols demo/cube.asm
 
 
-test:
+test: flex demo cube
 	# create a FLEX .dsk image
 	# delete any previous file
 	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(DEMO)
+	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(CUBE)
 	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(TGL)
 
-	# add the newly built file, this will be in raw bianry format
+	# add the newly built file, this will be in raw binary format
 	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(DEMO) -l 0x2000 -t 0x2000
 	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(CUBE) -l 0x2000 -t 0x2000
 	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(TGL) -l 0x1000 -t 0x1000
@@ -73,7 +75,7 @@ test:
 
 	# To build the mame command line, use the following URL
 	# https://arcade.vastheman.com/minimaws/machine/acrnsys3_6809
-	# Note hat VIB for use with flex needs to be at EC00 not the default of 0C00
+	# Note that VIB for use with flex needs to be at EC00 not the default of 0C00
 	$(MAME) acrnsys3_flex40 -noreadconfig -rompath ./mame/roms -keymap -verbose -uimodekey CAPSLOCK -window -flop1 ./mame/disks/ACORN_ORIGINAL.FLEX.hfe -flop2 $(DESTDISK) -bus6 vib
 
 clean:

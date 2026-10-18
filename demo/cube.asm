@@ -1,11 +1,11 @@
 ; ===========================================================================
 ; Rotating cube demo for the teletext graphics library
 ;   Load tgl.bin at TGL_BASE and cube.bin at its ORG, then run from START.
-;   Each frame: clear buffer, rotate and project 8 corners, draw 12 edges,
-;   blit. Runs until reset (an exit will come with the FLEX exit work).
+;   Each frame: clear buffer, set the zoom size, rotate and project 8
+;   corners, draw 12 edges, blit. Runs until reset (an exit will come with the FLEX exit work).
 ;
 ;   Rotation: corners are (+/-S, +/-S, +/-S), so once per frame the rotation
-;   matrix is scaled by S into nine terms, and every rotated corner is just
+;   matrix is scaled by S (SIZE, which pulses to zoom in and out) into nine terms, and every rotated corner is just
 ;   a signed sum of three of them. Perspective uses reciprocal tables
 ;   indexed by depth, so projecting a coordinate is a single MUL.
 ;
@@ -17,11 +17,12 @@ TGL_BASE        EQU     $1000
 BUFFER          EQU     $3000           ; off-screen buffer (960 bytes)
 STACK_TOP       EQU     $0200
 
-S               EQU     24              ; half the cube's edge length
+SIZE_MID        EQU     16              ; half edge length pulses 8..23
 CX              EQU     39              ; screen centre
 CY              EQU     36
 STEP_A          EQU     2               ; rotation speed about x, per frame
 STEP_B          EQU     3               ; rotation speed about y, per frame
+STEP_Z          EQU     1               ; zoom speed (256 steps per cycle)
 
 ; Demo variables in page zero, clear of the library workspace ($00-$0C)
 ANG_A           EQU     $80             ; rotation angle about x (0-255)
@@ -38,6 +39,8 @@ VX              EQU     $90             ; rotated x of current corner
 ZI              EQU     $91             ; depth table index of current corner
 EC              EQU     $92             ; edge counter
 FRAMES          EQU     $93             ; frame counter (test builds)
+SIZE            EQU     $94             ; current half edge length
+ZOOM            EQU     $95             ; zoom phase (0-255)
 PX              EQU     $A0             ; projected x of corners 0-7
 PY              EQU     $A8             ; projected y of corners 0-7 (PX+8)
 
@@ -52,9 +55,11 @@ START           LDS     #STACK_TOP
                 CLR     <ANG_A
                 CLR     <ANG_B
                 CLR     <FRAMES
+                CLR     <ZOOM
 
 FRAME           JSR     TGL_CLS
-                BSR     MATRIX
+                BSR     ZOOMSZ
+                LBSR    MATRIX
                 LBSR    CORNERS
                 LBSR    EDGES
                 JSR     TGL_BLIT
@@ -64,6 +69,9 @@ FRAME           JSR     TGL_CLS
                 LDA     <ANG_B
                 ADDA    #STEP_B
                 STA     <ANG_B
+                LDA     <ZOOM
+                ADDA    #STEP_Z
+                STA     <ZOOM
                 IFDEF   TESTFRAMES
                 INC     <FRAMES
                 LDA     <FRAMES
@@ -72,6 +80,22 @@ FRAME           JSR     TGL_CLS
                 ENDC
                 BRA     FRAME
 DONE            BRA     DONE
+
+; ---------------------------------------------------------------------------
+; ZOOMSZ - set SIZE from the zoom phase: SIZE_MID + sin(ZOOM)/16, i.e. 8..23
+;   (24 is the largest size that stays on screen at every angle)
+; ---------------------------------------------------------------------------
+ZOOMSZ          LEAX    SINTAB,PCR
+                LDB     <ZOOM
+                ABX
+                LDA     ,X              ; -127..127
+                ASRA                    ; /16 -> -8..7
+                ASRA
+                ASRA
+                ASRA
+                ADDA    #SIZE_MID
+                STA     <SIZE
+                RTS
 
 ; ---------------------------------------------------------------------------
 ; MATRIX - rotation about y (angle B) then x (angle A), scaled by S
@@ -104,30 +128,30 @@ MATRIX          LEAX    SINTAB,PCR      ; sin/cos of both angles (ABX: the
                 STA     <CB
 
                 LDA     <CB             ; TX = S * [cb, 0, sb]
-                LDB     #S
+                LDB     <SIZE
                 BSR     MULS7
                 STA     <TX
                 CLR     <TX+1
                 LDA     <SB
-                LDB     #S
+                LDB     <SIZE
                 BSR     MULS7
                 STA     <TX+2
 
                 LDA     <SB             ; TY = S * [sb*sa, ca, -cb*sa]
                 LDB     <SA
                 BSR     MULS7
-                LDB     #S
+                LDB     <SIZE
                 BSR     MULS7
                 STA     <TY
                 LDA     <CA
-                LDB     #S
+                LDB     <SIZE
                 BSR     MULS7
                 STA     <TY+1
                 LDA     <CB
                 LDB     <SA
                 BSR     MULS7
                 NEGA
-                LDB     #S
+                LDB     <SIZE
                 BSR     MULS7
                 STA     <TY+2
 
@@ -135,17 +159,17 @@ MATRIX          LEAX    SINTAB,PCR      ; sin/cos of both angles (ABX: the
                 LDB     <CA
                 BSR     MULS7
                 NEGA
-                LDB     #S
+                LDB     <SIZE
                 BSR     MULS7
                 STA     <TZ
                 LDA     <SA
-                LDB     #S
+                LDB     <SIZE
                 BSR     MULS7
                 STA     <TZ+1
                 LDA     <CB
                 LDB     <CA
                 BSR     MULS7
-                LDB     #S
+                LDB     <SIZE
                 BSR     MULS7
                 STA     <TZ+2
                 RTS
