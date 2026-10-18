@@ -10,6 +10,7 @@ LWFLAGS  = --format=raw -I src
 SRC      = $(wildcard src/*.asm src/*.inc src/target/*.inc)
 MAME 	 = /home/john/Dropbox/Repositories/mame-acorn-flex/mame
 DEMO     = ./build/demo.bin
+CUBE	 = ./build/cube.bin
 TGL 	 = ./build/flex/tgl.bin
 DESTDISK = ./mame/disks/TGL.dsk
 TOOLS	 = ./tools
@@ -20,11 +21,12 @@ PIC_B    = 0x2345
 
 .PHONY: all sys3 flex demo clean
 
-all: sys3 flex demo
+all: sys3 flex demo cube
 
 sys3: build/sys3/tgl.bin
 flex: build/flex/tgl.bin
 demo: build/demo.bin
+cube: build/cube.bin
 
 build/sys3/tgl.bin: $(SRC)
 	@mkdir -p $(@D)
@@ -50,6 +52,12 @@ build/demo.bin: demo/demo.asm src/tgl_api.inc
 	@mkdir -p $(@D)
 	$(LWASM) $(LWFLAGS) --output=$@ --list=build/demo.lst --symbols demo/demo.asm
 
+build/cube.bin: demo/cube.asm src/cube_tables.asm src/tgl_api.inc
+	@mkdir -p $(@D)
+	$(LWASM) $(LWFLAGS) -I demo --output=$@ --list=build/cube.lst --symbols demo/cube.asm
+
+
+test:
 	# create a FLEX .dsk image
 	# delete any previous file
 	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(DEMO)
@@ -57,12 +65,12 @@ build/demo.bin: demo/demo.asm src/tgl_api.inc
 
 	# add the newly built file, this will be in raw bianry format
 	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(DEMO) -l 0x2000 -t 0x2000
+	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(CUBE) -l 0x2000 -t 0x2000
 	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(TGL) -l 0x1000 -t 0x1000
 
 	# validate the disk
 	$(TOOLS)/aflex-du validate -d $(DESTDISK)
 
-test:
 	# To build the mame command line, use the following URL
 	# https://arcade.vastheman.com/minimaws/machine/acrnsys3_6809
 	# Note hat VIB for use with flex needs to be at EC00 not the default of 0C00
