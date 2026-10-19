@@ -19,6 +19,7 @@ endif
 MAME 	 = /home/john/Dropbox/Repositories/mame-acorn-flex/mame
 DEMO     = ./build/demo.bin
 CUBE	 = ./build/cube.bin
+SHIP	 = ./build/ship.bin
 TGL 	 = ./build/flex/tgl.bin
 DESTDISK = ./mame/disks/TGL.dsk
 TOOLS	 = ./tools
@@ -27,14 +28,15 @@ TOOLS	 = ./tools
 PIC_A    = 0x1000
 PIC_B    = 0x2345
 
-.PHONY: all sys3 flex demo cube test clean
+.PHONY: all sys3 flex demo cube ship test clean
 
-all: sys3 flex demo cube
+all: sys3 flex demo cube ship
 
 sys3: build/sys3/tgl.bin
 flex: build/flex/tgl.bin
 demo: build/demo.bin
 cube: build/cube.bin
+ship: build/ship.bin
 
 build/sys3/tgl.bin: $(SRC)
 	@mkdir -p $(@D)
@@ -64,17 +66,23 @@ build/cube.bin: demo/cube.asm demo/cube_tables.asm src/tgl_api.inc
 	@mkdir -p $(@D)
 	$(LWASM) $(LWFLAGS) -I demo --output=$@ --list=build/cube.lst --symbols demo/cube.asm
 
+build/ship.bin: demo/ship.asm demo/ship_model.asm demo/cube_tables.asm src/tgl_api.inc
+	@mkdir -p $(@D)
+	$(LWASM) $(LWFLAGS) -I demo --output=$@ --list=build/ship.lst --symbols demo/ship.asm
 
-test: flex demo cube
+
+test: flex demo cube ship
 	# create a FLEX .dsk image
 	# delete any previous file
 	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(DEMO)
 	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(CUBE)
+	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(SHIP)
 	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(TGL)
 
 	# add the newly built file, this will be in raw binary format
 	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(DEMO) -l 0x2000 -t 0x2000
 	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(CUBE) -l 0x2000 -t 0x2000
+	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(SHIP) -l 0x2000 -t 0x2000
 	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(TGL) -l 0x1000 -t 0x1000
 
 	# validate the disk
