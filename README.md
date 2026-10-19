@@ -1,4 +1,4 @@
-# Acorn System 3 Teletext Graphics Library (working name)
+# Acorn System 3 6809 Teletext Graphics Library
 
 Sixel graphics for the Acorn teletext VDU (6845 + SAA5050) on 6809-based
 Acorn System machines. Assembler callers only; built with lwasm.
