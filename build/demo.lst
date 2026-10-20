@@ -1,0 +1,212 @@
+                      (    demo/demo.asm):00001         ; ===========================================================================
+                      (    demo/demo.asm):00002         ; Demo / smoke test for the teletext graphics library
+                      (    demo/demo.asm):00003         ;
+                      (    demo/demo.asm):00004         ;   Draws a border round the screen and a starburst of lines from the centre
+                      (    demo/demo.asm):00005         ;   to points round the edge, shows it, then waits for a key and exits.
+                      (    demo/demo.asm):00006         ;
+                      (    demo/demo.asm):00007         ;   Loading: tgl.bin at $1000 (TGL_BASE below), demo.bin at $2000 (its ORG).
+                      (    demo/demo.asm):00008         ;   Run from START ($2000). Press any key to exit.
+                      (    demo/demo.asm):00009         ;
+                      (    demo/demo.asm):00010         ;   The same demo.bin works on both machines: everything machine-specific
+                      (    demo/demo.asm):00011         ;   (screen address, CRTC, monitor vectors) lives inside the library build.
+                      (    demo/demo.asm):00012         ;
+                      (    demo/demo.asm):00013         ;   How drawing works with this library:
+                      (    demo/demo.asm):00014         ;     1. TGL_INIT / TGL_SETBUF  set things up and choose an off-screen buffer
+                      (    demo/demo.asm):00015         ;     2. TGL_CLS               blank the buffer
+                      (    demo/demo.asm):00016         ;     3. TGL_PLOT / TGL_LINE   draw into the buffer (nothing visible yet)
+                      (    demo/demo.asm):00017         ;     4. TGL_BLIT              copy the finished buffer to the screen at once
+                      (    demo/demo.asm):00018         ;   Because all the drawing happens off-screen, you never see a half-drawn
+                      (    demo/demo.asm):00019         ;   picture.
+                      (    demo/demo.asm):00020         ;
+                      (    demo/demo.asm):00021         ;   Screen coordinates: x 0-77 (left to right), y 0-71 (top to bottom).
+                      (    demo/demo.asm):00022         ;   Each teletext character cell holds a 2 x 3 block of these pixels.
+                      (    demo/demo.asm):00023         ; ===========================================================================
+                      (    demo/demo.asm):00024         
+                      (    demo/demo.asm):00025         ; ---------------------------------------------------------------------------
+                      (    demo/demo.asm):00026         ; Library entry points
+                      (    demo/demo.asm):00027         ;   TGL_BASE is where tgl.bin is loaded. tgl_api.inc turns that into the
+                      (    demo/demo.asm):00028         ;   address of each routine (TGL_INIT = TGL_BASE+0, TGL_LINE = +15, ...),
+                      (    demo/demo.asm):00029         ;   so this program just does JSR TGL_LINE etc.
+                      (    demo/demo.asm):00030         ; ---------------------------------------------------------------------------
+     1000             (    demo/demo.asm):00031         TGL_BASE        EQU     $1000
+                      (    demo/demo.asm):00032                         INCLUDE "tgl_api.inc"
+                      (      tgl_api.inc):00001         ; ---------------------------------------------------------------------------
+                      (      tgl_api.inc):00002         ; Acorn System 3 Teletext Graphics Library - caller interface
+                      (      tgl_api.inc):00003         ;
+                      (      tgl_api.inc):00004         ; Define TGL_BASE as the address the library binary is loaded at, then
+                      (      tgl_api.inc):00005         ; INCLUDE this file. Entry points are fixed offsets from the load address.
+                      (      tgl_api.inc):00006         ;
+                      (      tgl_api.inc):00007         ; All routines: enter with DP = $00. Registers are preserved unless stated.
+                      (      tgl_api.inc):00008         ; ---------------------------------------------------------------------------
+     1000             (      tgl_api.inc):00009         TGL_INIT        EQU     TGL_BASE+0      ; initialise; buffer = end of library
+     1003             (      tgl_api.inc):00010         TGL_SETBUF      EQU     TGL_BASE+3      ; X = off-screen buffer address
+     1006             (      tgl_api.inc):00011         TGL_CLS         EQU     TGL_BASE+6      ; clear buffer to blank graphics
+     1009             (      tgl_api.inc):00012         TGL_SETMODE     EQU     TGL_BASE+9      ; A = plot mode (TGL_MODE_xxx)
+     100C             (      tgl_api.inc):00013         TGL_PLOT        EQU     TGL_BASE+12     ; A = x (0-77), B = y (0-71)
+     100F             (      tgl_api.inc):00014         TGL_LINE        EQU     TGL_BASE+15     ; A,B = x0,y0  X = x1:y1 (hi:lo)
+     1012             (      tgl_api.inc):00015         TGL_BLIT        EQU     TGL_BASE+18     ; copy buffer to screen rows 0-23
+     1015             (      tgl_api.inc):00016         TGL_PLOTC       EQU     TGL_BASE+21     ; clipped plot: A,B = signed x,y
+     1018             (      tgl_api.inc):00017         TGL_LINEC       EQU     TGL_BASE+24     ; clipped line: signed coordinates
+     101B             (      tgl_api.inc):00018         TGL_DONE        EQU     TGL_BASE+27     ; restore text display (clears screen)
+     101E             (      tgl_api.inc):00019         TGL_INKEY       EQU     TGL_BASE+30     ; key waiting? Z set: none; else A = key
+     1021             (      tgl_api.inc):00020         TGL_EXIT        EQU     TGL_BASE+33     ; restore display, back to FLEX/monitor
+                      (      tgl_api.inc):00021         
+     03C0             (      tgl_api.inc):00022         TGL_BUFSIZE     EQU     960
+     0000             (      tgl_api.inc):00023         TGL_MODE_SET    EQU     0
+     0001             (      tgl_api.inc):00024         TGL_MODE_CLEAR  EQU     1
+     0002             (      tgl_api.inc):00025         TGL_MODE_XOR    EQU     2
+                      (    demo/demo.asm):00033         
+                      (    demo/demo.asm):00034         ; ---------------------------------------------------------------------------
+                      (    demo/demo.asm):00035         ; Memory and constants
+                      (    demo/demo.asm):00036         ; ---------------------------------------------------------------------------
+     3000             (    demo/demo.asm):00037         DEMOBUF         EQU     $3000           ; off-screen buffer: 960 bytes
+                      (    demo/demo.asm):00038                                                 ;  (24 rows x 40 characters)
+     0200             (    demo/demo.asm):00039         STACK_TOP       EQU     $0200           ; stack occupies $0100-$01FF; the 6809
+                      (    demo/demo.asm):00040                                                 ;  pre-decrements, so the first push
+                      (    demo/demo.asm):00041                                                 ;  lands at $01FF
+     0080             (    demo/demo.asm):00042         D_N             EQU     $80             ; loop counter, in page zero. The
+                      (    demo/demo.asm):00043                                                 ;  library's own workspace is $00-$17,
+                      (    demo/demo.asm):00044                                                 ;  so $80 upwards is safe for us
+     0026             (    demo/demo.asm):00045         CX              EQU     38              ; centre of the starburst
+     0023             (    demo/demo.asm):00046         CY              EQU     35
+                      (    demo/demo.asm):00047         
+                      (    demo/demo.asm):00048                         ORG     $2000
+                      (    demo/demo.asm):00049         
+                      (    demo/demo.asm):00050         ; ---------------------------------------------------------------------------
+                      (    demo/demo.asm):00051         ; Set up
+                      (    demo/demo.asm):00052         ; ---------------------------------------------------------------------------
+2000 10CE0200         (    demo/demo.asm):00053         START           LDS     #STACK_TOP      ; our own stack
+                      (    demo/demo.asm):00054         
+                      (    demo/demo.asm):00055         ; The library keeps its variables in page zero and uses direct addressing
+                      (    demo/demo.asm):00056         ; ("<name") to reach them quickly, so every library call must be made with
+                      (    demo/demo.asm):00057         ; the direct page register DP = $00.
+2004 4F               (    demo/demo.asm):00058                         CLRA
+2005 1F8B             (    demo/demo.asm):00059                         TFR     A,DP            ; DP = $00 (there is no LDDP, so via A)
+     00               (    demo/demo.asm):00060                         SETDP   $00             ; tell the assembler, so "<D_N" etc.
+                      (    demo/demo.asm):00061                                                 ;  assemble as direct-page addresses
+                      (    demo/demo.asm):00062         
+                      (    demo/demo.asm):00063         ; The monitor reads the keyboard from an interrupt, so IRQs must be enabled
+                      (    demo/demo.asm):00064         ; for TGL_INKEY to see key presses. ANDCC #$EF clears the I (IRQ mask) bit.
+2007 1CEF             (    demo/demo.asm):00065                         ANDCC   #$EF
+                      (    demo/demo.asm):00066         
+2009 BD1000           (    demo/demo.asm):00067                         JSR     TGL_INIT        ; reset the 6845 start address, hide
+                      (    demo/demo.asm):00068                                                 ;  the cursor, select SET plot mode
+200C 8E3000           (    demo/demo.asm):00069                         LDX     #DEMOBUF        ; use our own buffer at $3000
+200F BD1003           (    demo/demo.asm):00070                         JSR     TGL_SETBUF
+2012 BD1006           (    demo/demo.asm):00071                         JSR     TGL_CLS         ; blank it
+                      (    demo/demo.asm):00072         
+                      (    demo/demo.asm):00073         ; ---------------------------------------------------------------------------
+                      (    demo/demo.asm):00074         ; Border round the whole graphics area
+                      (    demo/demo.asm):00075         ;
+                      (    demo/demo.asm):00076         ; TGL_LINE takes the start point in A (x) and B (y), and the end point
+                      (    demo/demo.asm):00077         ; packed into X: x1 in the high byte, y1 in the low byte. So LDX #$4D00
+                      (    demo/demo.asm):00078         ; means x1 = $4D (77), y1 = $00 (0).
+                      (    demo/demo.asm):00079         ;
+                      (    demo/demo.asm):00080         ; Library routines preserve all registers, so after one line A and B still
+                      (    demo/demo.asm):00081         ; hold the same start point and can be reused for the next line.
+                      (    demo/demo.asm):00082         ; ---------------------------------------------------------------------------
+2015 4F               (    demo/demo.asm):00083                         CLRA                    ; start (0,0): top-left corner
+2016 5F               (    demo/demo.asm):00084                         CLRB
+2017 8E4D00           (    demo/demo.asm):00085                         LDX     #$4D00          ; to (77,0): top edge
+201A BD100F           (    demo/demo.asm):00086                         JSR     TGL_LINE
+201D 8E0047           (    demo/demo.asm):00087                         LDX     #$0047          ; to (0,71): left edge ($47 = 71)
+2020 BD100F           (    demo/demo.asm):00088                         JSR     TGL_LINE
+2023 864D             (    demo/demo.asm):00089                         LDA     #77             ; start (77,71): bottom-right corner
+2025 C647             (    demo/demo.asm):00090                         LDB     #71
+2027 8E4D00           (    demo/demo.asm):00091                         LDX     #$4D00          ; to (77,0): right edge
+202A BD100F           (    demo/demo.asm):00092                         JSR     TGL_LINE
+202D 8E0047           (    demo/demo.asm):00093                         LDX     #$0047          ; to (0,71): bottom edge
+2030 BD100F           (    demo/demo.asm):00094                         JSR     TGL_LINE
+                      (    demo/demo.asm):00095         
+                      (    demo/demo.asm):00096         ; ---------------------------------------------------------------------------
+                      (    demo/demo.asm):00097         ; Starburst: lines from the centre (CX,CY) out to every 7th point round
+                      (    demo/demo.asm):00098         ; the border.
+                      (    demo/demo.asm):00099         ;
+                      (    demo/demo.asm):00100         ; Building the packed end point: put x in A and y in B, then TFR D,X.
+                      (    demo/demo.asm):00101         ; D is simply A:B as one 16-bit register (A is the high byte), so this
+                      (    demo/demo.asm):00102         ; gives X = x:y in a single instruction.
+                      (    demo/demo.asm):00103         ; ---------------------------------------------------------------------------
+                      (    demo/demo.asm):00104         
+                      (    demo/demo.asm):00105         ; First pass: top and bottom edges. D_N steps along x: 0, 7, 14 ... 77.
+2033 0F80             (    demo/demo.asm):00106                         CLR     <D_N            ; n = 0
+2035 9680             (    demo/demo.asm):00107         D_TB            LDA     <D_N            ; end point (n, 0) on the top edge
+2037 5F               (    demo/demo.asm):00108                         CLRB
+2038 1F01             (    demo/demo.asm):00109                         TFR     D,X             ; X = n:0
+203A 8626             (    demo/demo.asm):00110                         LDA     #CX             ; start at the centre
+203C C623             (    demo/demo.asm):00111                         LDB     #CY
+203E BD100F           (    demo/demo.asm):00112                         JSR     TGL_LINE
+2041 9680             (    demo/demo.asm):00113                         LDA     <D_N            ; end point (n, 71) on the bottom edge
+2043 C647             (    demo/demo.asm):00114                         LDB     #71
+2045 1F01             (    demo/demo.asm):00115                         TFR     D,X
+2047 8626             (    demo/demo.asm):00116                         LDA     #CX
+2049 C623             (    demo/demo.asm):00117                         LDB     #CY
+204B BD100F           (    demo/demo.asm):00118                         JSR     TGL_LINE
+204E 9680             (    demo/demo.asm):00119                         LDA     <D_N            ; n = n + 7
+2050 8B07             (    demo/demo.asm):00120                         ADDA    #7
+2052 9780             (    demo/demo.asm):00121                         STA     <D_N
+2054 814E             (    demo/demo.asm):00122                         CMPA    #78             ; carry on while n < 78 (BLO is an
+2056 25DD             (    demo/demo.asm):00123                         BLO     D_TB            ;  unsigned "branch if lower")
+                      (    demo/demo.asm):00124         
+                      (    demo/demo.asm):00125         ; Second pass: left and right edges. D_N steps down y: 0, 7, 14 ... 70.
+2058 0F80             (    demo/demo.asm):00126                         CLR     <D_N
+205A 4F               (    demo/demo.asm):00127         D_LR            CLRA                    ; end point (0, n) on the left edge
+205B D680             (    demo/demo.asm):00128                         LDB     <D_N
+205D 1F01             (    demo/demo.asm):00129                         TFR     D,X
+205F 8626             (    demo/demo.asm):00130                         LDA     #CX
+2061 C623             (    demo/demo.asm):00131                         LDB     #CY
+2063 BD100F           (    demo/demo.asm):00132                         JSR     TGL_LINE
+2066 864D             (    demo/demo.asm):00133                         LDA     #77             ; end point (77, n) on the right edge
+2068 D680             (    demo/demo.asm):00134                         LDB     <D_N
+206A 1F01             (    demo/demo.asm):00135                         TFR     D,X
+206C 8626             (    demo/demo.asm):00136                         LDA     #CX
+206E C623             (    demo/demo.asm):00137                         LDB     #CY
+2070 BD100F           (    demo/demo.asm):00138                         JSR     TGL_LINE
+2073 9680             (    demo/demo.asm):00139                         LDA     <D_N            ; n = n + 7, while n < 72
+2075 8B07             (    demo/demo.asm):00140                         ADDA    #7
+2077 9780             (    demo/demo.asm):00141                         STA     <D_N
+2079 8148             (    demo/demo.asm):00142                         CMPA    #72
+207B 25DD             (    demo/demo.asm):00143                         BLO     D_LR
+                      (    demo/demo.asm):00144         
+                      (    demo/demo.asm):00145         ; ---------------------------------------------------------------------------
+                      (    demo/demo.asm):00146         ; Everything so far was drawn into the buffer. Now copy it to the screen.
+                      (    demo/demo.asm):00147         ; ---------------------------------------------------------------------------
+207D BD1012           (    demo/demo.asm):00148                         JSR     TGL_BLIT
+                      (    demo/demo.asm):00149         
+                      (    demo/demo.asm):00150         ; ---------------------------------------------------------------------------
+                      (    demo/demo.asm):00151         ; Wait for a key, then exit.
+                      (    demo/demo.asm):00152         ;   TGL_INKEY doesn't wait: it returns Z set if no key is waiting, or Z clear
+                      (    demo/demo.asm):00153         ;   with the key in A. So loop until Z is clear.
+                      (    demo/demo.asm):00154         ;   TGL_EXIT restores the normal text display and returns to FLEX (or the
+                      (    demo/demo.asm):00155         ;   monitor on a standard System 3). It never comes back, so JMP not JSR.
+                      (    demo/demo.asm):00156         ; ---------------------------------------------------------------------------
+2080 BD101E           (    demo/demo.asm):00157         DONE            JSR     TGL_INKEY
+2083 27FB             (    demo/demo.asm):00158                         BEQ     DONE            ; no key yet: keep checking
+2085 7E1021           (    demo/demo.asm):00159                         JMP     TGL_EXIT
+
+Symbol Table:
+[ G] CX                               0026
+[ G] CY                               0023
+[ G] D_LR                             205A
+[ G] D_N                              0080
+[ G] D_TB                             2035
+[ G] DEMOBUF                          3000
+[ G] DONE                             2080
+[ G] STACK_TOP                        0200
+[ G] START                            2000
+[ G] TGL_BASE                         1000
+[ G] TGL_BLIT                         1012
+[ G] TGL_BUFSIZE                      03C0
+[ G] TGL_CLS                          1006
+[ G] TGL_DONE                         101B
+[ G] TGL_EXIT                         1021
+[ G] TGL_INIT                         1000
+[ G] TGL_INKEY                        101E
+[ G] TGL_LINE                         100F
+[ G] TGL_LINEC                        1018
+[ G] TGL_MODE_CLEAR                   0001
+[ G] TGL_MODE_SET                     0000
+[ G] TGL_MODE_XOR                     0002
+[ G] TGL_PLOT                         100C
+[ G] TGL_PLOTC                        1015
+[ G] TGL_SETBUF                       1003
+[ G] TGL_SETMODE                      1009

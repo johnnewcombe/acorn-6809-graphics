@@ -1,0 +1,1263 @@
+                      (      src/tgl.asm):00001         ; ===========================================================================
+                      (      src/tgl.asm):00002         ; Acorn System 3 Teletext Graphics Library (working name)
+                      (      src/tgl.asm):00003         ; 6809 sixel graphics for the Acorn teletext VDU (6845 + SAA5050)
+                      (      src/tgl.asm):00004         ;
+                      (      src/tgl.asm):00005         ; Build with -D TARGET_FLEX for the FLEX machine; default is a standard
+                      (      src/tgl.asm):00006         ; System 3. The binary is position-independent: load it anywhere and call
+                      (      src/tgl.asm):00007         ; the entry points as fixed offsets from the load address (tgl_api.inc).
+                      (      src/tgl.asm):00008         ;
+                      (      src/tgl.asm):00009         ; Rules that keep it position-independent:
+                      (      src/tgl.asm):00010         ;   - references to the library's own code/data use ,PCR
+                      (      src/tgl.asm):00011         ;   - the jump table uses LBRA
+                      (      src/tgl.asm):00012         ;   - only hardware (VDU, CRTC) and page-zero workspace are absolute
+                      (      src/tgl.asm):00013         ; The Makefile assembles at two origins and fails if the binaries differ.
+                      (      src/tgl.asm):00014         ; ===========================================================================
+                      (      src/tgl.asm):00015         
+                      (      src/tgl.asm):00016                         IFDEF   TARGET_FLEX
+                      (      src/tgl.asm):00017                         INCLUDE "target/flex.inc"
+                      (      src/tgl.asm):00018                         ELSE
+                      (      src/tgl.asm):00019                         INCLUDE "target/sys3.inc"
+                      (  target/sys3.inc):00001         ; ---------------------------------------------------------------------------
+                      (  target/sys3.inc):00002         ; Target: standard Acorn System 3 with 6809 CPU card
+                      (  target/sys3.inc):00003         ; ---------------------------------------------------------------------------
+     0400             (  target/sys3.inc):00004         VDU_BASE        EQU     $0400           ; teletext VDU screen RAM
+     0800             (  target/sys3.inc):00005         CRTC_ADDR       EQU     $0800           ; 6845 address register
+     0801             (  target/sys3.inc):00006         CRTC_DATA       EQU     $0801           ; 6845 data register
+                      (  target/sys3.inc):00007         
+                      (  target/sys3.inc):00008         ; Default load address. Override with: lwasm -D TGL_ORG=0x2000
+                      (  target/sys3.inc):00009         ; (The code is position-independent; this only sets where the
+                      (  target/sys3.inc):00010         ; listing and the default build place it.)
+                      (  target/sys3.inc):00011                         IFNDEF  TGL_ORG
+     1000             (  target/sys3.inc):00012         TGL_ORG         EQU     $1000
+                      (  target/sys3.inc):00013                         ENDC
+                      (  target/sys3.inc):00014         
+                      (  target/sys3.inc):00015         ; Monitor RAM vectors and keyboard buffer pointers (monitor RAM at $0300)
+                      (  target/sys3.inc):00016         ; Checked against the standard ROM listing (monitor source with BASE=$0000).
+     0365             (  target/sys3.inc):00017         MON_COPADR      EQU     $0365           ; console output routine address
+     0367             (  target/sys3.inc):00018         MON_CINADR      EQU     $0367           ; console input routine address
+     0387             (  target/sys3.inc):00019         MON_HEADST      EQU     $0387           ; keyboard buffer: static head
+     038B             (  target/sys3.inc):00020         MON_TAIL        EQU     $038B           ; keyboard buffer: tail
+                      (      src/tgl.asm):00020                         ENDC
+                      (      src/tgl.asm):00021         
+                      (      src/tgl.asm):00022                         INCLUDE "consts.inc"
+                      (       consts.inc):00001         ; ---------------------------------------------------------------------------
+                      (       consts.inc):00002         ; Screen geometry and teletext constants (target independent)
+                      (       consts.inc):00003         ; ---------------------------------------------------------------------------
+     0028             (       consts.inc):00004         COLS            EQU     40              ; characters per row
+     0018             (       consts.inc):00005         ROWS            EQU     24              ; graphics rows (row 24 left for status)
+     03C0             (       consts.inc):00006         BUFSIZE         EQU     COLS*ROWS       ; 960 bytes - off-screen buffer size
+                      (       consts.inc):00007         
+     0097             (       consts.inc):00008         GFX_WHITE       EQU     $97             ; white graphics control code
+     0020             (       consts.inc):00009         SIXEL_BLANK     EQU     $20             ; graphics cell, no pixels set
+     007F             (       consts.inc):00010         SIXEL_FULL      EQU     $7F             ; graphics cell, all six pixels set
+                      (       consts.inc):00011         
+                      (       consts.inc):00012         ; Plot modes (see TGL_SETMODE)
+     0000             (       consts.inc):00013         MODE_SET        EQU     0
+     0001             (       consts.inc):00014         MODE_CLEAR      EQU     1
+     0002             (       consts.inc):00015         MODE_XOR        EQU     2
+                      (       consts.inc):00016         
+     004D             (       consts.inc):00017         XMAX            EQU     77              ; largest visible x
+     0047             (       consts.inc):00018         YMAX            EQU     71              ; largest visible y
+                      (      src/tgl.asm):00023                         INCLUDE "ws.inc"
+                      (           ws.inc):00001         ; ---------------------------------------------------------------------------
+                      (           ws.inc):00002         ; Workspace - lives in the direct page. Callers must enter every library
+                      (           ws.inc):00003         ; routine with DP = $00.
+                      (           ws.inc):00004         ; ---------------------------------------------------------------------------
+     0000             (           ws.inc):00005         WS              EQU     $00             ; workspace base within page zero
+                      (           ws.inc):00006         
+     0000             (           ws.inc):00007         W_BUF           EQU     WS+0            ; 2  off-screen buffer address
+     0002             (           ws.inc):00008         W_SAVSP         EQU     WS+2            ; 2  caller's S, saved during blit
+     0004             (           ws.inc):00009         W_COUNT         EQU     WS+4            ; 1  general loop counter
+     0005             (           ws.inc):00010         W_MODE          EQU     WS+5            ; 1  current plot mode
+     0006             (           ws.inc):00011         W_X0            EQU     WS+6            ; 1  line start x  } W_X0/W_Y0 and
+     0007             (           ws.inc):00012         W_Y0            EQU     WS+7            ; 1  line start y  } W_X1/W_Y1 are
+     0008             (           ws.inc):00013         W_X1            EQU     WS+8            ; 1  line end x    } used as 16-bit
+     0009             (           ws.inc):00014         W_Y1            EQU     WS+9            ; 1  line end y    } pairs
+     000A             (           ws.inc):00015         W_ADX           EQU     WS+10           ; 1  |dx|
+     000B             (           ws.inc):00016         W_ADY           EQU     WS+11           ; 1  |dy|
+     000C             (           ws.inc):00017         W_ERR           EQU     WS+12           ; 1  Bresenham error term
+     000D             (           ws.inc):00018         W_C0            EQU     WS+13           ; 1  clip: outcode of start point
+     000E             (           ws.inc):00019         W_C1            EQU     WS+14           ; 1  clip: outcode of end point
+     000F             (           ws.inc):00020         I_U0            EQU     WS+15           ; 1  clip intersection: u0, u1, v0, v1
+     0010             (           ws.inc):00021         I_U1            EQU     WS+16           ; 1    (u = axis being solved for,
+     0011             (           ws.inc):00022         I_V0            EQU     WS+17           ; 1     v = axis of the edge)
+     0012             (           ws.inc):00023         I_V1            EQU     WS+18           ; 1
+     0013             (           ws.inc):00024         I_E             EQU     WS+19           ; 1  clip: edge position
+     0014             (           ws.inc):00025         I_SGN           EQU     WS+20           ; 1  clip: sign of the result offset
+     0015             (           ws.inc):00026         I_DU            EQU     WS+21           ; 1  clip: |u1-u0|
+     0016             (           ws.inc):00027         I_DV            EQU     WS+22           ; 1  clip: |v1-v0| (divisor)
+     0017             (           ws.inc):00028         I_CNT           EQU     WS+23           ; 1  clip: divide loop counter
+     0018             (           ws.inc):00029         WS_SIZE         EQU     24
+                      (      src/tgl.asm):00024         
+     00               (      src/tgl.asm):00025                         SETDP   $00
+                      (      src/tgl.asm):00026                         ORG     TGL_ORG
+                      (      src/tgl.asm):00027         
+                      (      src/tgl.asm):00028         ; ---------------------------------------------------------------------------
+                      (      src/tgl.asm):00029         ; Jump table - order and offsets must match tgl_api.inc
+                      (      src/tgl.asm):00030         ; ---------------------------------------------------------------------------
+1000                  (      src/tgl.asm):00031         TGL_START
+1000 160021           (      src/tgl.asm):00032         J_INIT          LBRA    T_INIT          ; +0
+1003 160048           (      src/tgl.asm):00033         J_SETBUF        LBRA    T_SETBUF        ; +3
+1006 160048           (      src/tgl.asm):00034         J_CLS           LBRA    T_CLS           ; +6
+1009 1600CB           (      src/tgl.asm):00035         J_SETMODE       LBRA    T_SETMODE       ; +9
+100C 160102           (      src/tgl.asm):00036         J_PLOT          LBRA    T_PLOT          ; +12
+100F 160125           (      src/tgl.asm):00037         J_LINE          LBRA    T_LINE          ; +15
+1012 1602D9           (      src/tgl.asm):00038         J_BLIT          LBRA    T_BLIT          ; +18
+1015 160308           (      src/tgl.asm):00039         J_PLOTC         LBRA    T_PLOTC         ; +21
+1018 160311           (      src/tgl.asm):00040         J_LINEC         LBRA    T_LINEC         ; +24
+101B 160407           (      src/tgl.asm):00041         J_DONE          LBRA    T_DONE          ; +27
+101E 16040E           (      src/tgl.asm):00042         J_INKEY         LBRA    T_INKEY         ; +30
+1021 160420           (      src/tgl.asm):00043         J_EXIT          LBRA    T_EXIT          ; +33
+                      (      src/tgl.asm):00044         
+                      (      src/tgl.asm):00045         ; Check the table against the published interface
+     1000             (      src/tgl.asm):00046         TGL_BASE        EQU     TGL_START
+                      (      src/tgl.asm):00047                         INCLUDE "tgl_api.inc"
+                      (      tgl_api.inc):00001         ; ---------------------------------------------------------------------------
+                      (      tgl_api.inc):00002         ; Acorn System 3 Teletext Graphics Library - caller interface
+                      (      tgl_api.inc):00003         ;
+                      (      tgl_api.inc):00004         ; Define TGL_BASE as the address the library binary is loaded at, then
+                      (      tgl_api.inc):00005         ; INCLUDE this file. Entry points are fixed offsets from the load address.
+                      (      tgl_api.inc):00006         ;
+                      (      tgl_api.inc):00007         ; All routines: enter with DP = $00. Registers are preserved unless stated.
+                      (      tgl_api.inc):00008         ; ---------------------------------------------------------------------------
+     1000             (      tgl_api.inc):00009         TGL_INIT        EQU     TGL_BASE+0      ; initialise; buffer = end of library
+     1003             (      tgl_api.inc):00010         TGL_SETBUF      EQU     TGL_BASE+3      ; X = off-screen buffer address
+     1006             (      tgl_api.inc):00011         TGL_CLS         EQU     TGL_BASE+6      ; clear buffer to blank graphics
+     1009             (      tgl_api.inc):00012         TGL_SETMODE     EQU     TGL_BASE+9      ; A = plot mode (TGL_MODE_xxx)
+     100C             (      tgl_api.inc):00013         TGL_PLOT        EQU     TGL_BASE+12     ; A = x (0-77), B = y (0-71)
+     100F             (      tgl_api.inc):00014         TGL_LINE        EQU     TGL_BASE+15     ; A,B = x0,y0  X = x1:y1 (hi:lo)
+     1012             (      tgl_api.inc):00015         TGL_BLIT        EQU     TGL_BASE+18     ; copy buffer to screen rows 0-23
+     1015             (      tgl_api.inc):00016         TGL_PLOTC       EQU     TGL_BASE+21     ; clipped plot: A,B = signed x,y
+     1018             (      tgl_api.inc):00017         TGL_LINEC       EQU     TGL_BASE+24     ; clipped line: signed coordinates
+     101B             (      tgl_api.inc):00018         TGL_DONE        EQU     TGL_BASE+27     ; restore text display (clears screen)
+     101E             (      tgl_api.inc):00019         TGL_INKEY       EQU     TGL_BASE+30     ; key waiting? Z set: none; else A = key
+     1021             (      tgl_api.inc):00020         TGL_EXIT        EQU     TGL_BASE+33     ; restore display, back to FLEX/monitor
+                      (      tgl_api.inc):00021         
+     03C0             (      tgl_api.inc):00022         TGL_BUFSIZE     EQU     960
+     0000             (      tgl_api.inc):00023         TGL_MODE_SET    EQU     0
+     0001             (      tgl_api.inc):00024         TGL_MODE_CLEAR  EQU     1
+     0002             (      tgl_api.inc):00025         TGL_MODE_XOR    EQU     2
+                      (      src/tgl.asm):00048                         IFNE    (J_SETBUF-TGL_SETBUF)|(J_CLS-TGL_CLS)|(J_SETMODE-TGL_SETMODE)
+                      (      src/tgl.asm):00049                         ERROR   "Jump table does not match tgl_api.inc"
+                      (      src/tgl.asm):00050                         ENDC
+                      (      src/tgl.asm):00051                         IFNE    (J_PLOT-TGL_PLOT)|(J_LINE-TGL_LINE)|(J_BLIT-TGL_BLIT)
+                      (      src/tgl.asm):00052                         ERROR   "Jump table does not match tgl_api.inc"
+                      (      src/tgl.asm):00053                         ENDC
+                      (      src/tgl.asm):00054                         IFNE    (J_PLOTC-TGL_PLOTC)|(J_LINEC-TGL_LINEC)
+                      (      src/tgl.asm):00055                         ERROR   "Jump table does not match tgl_api.inc"
+                      (      src/tgl.asm):00056                         ENDC
+                      (      src/tgl.asm):00057                         IFNE    (J_DONE-TGL_DONE)|(J_INKEY-TGL_INKEY)|(J_EXIT-TGL_EXIT)
+                      (      src/tgl.asm):00058                         ERROR   "Jump table does not match tgl_api.inc"
+                      (      src/tgl.asm):00059                         ENDC
+                      (      src/tgl.asm):00060         
+                      (      src/tgl.asm):00061         ; ---------------------------------------------------------------------------
+                      (      src/tgl.asm):00062         ; Modules
+                      (      src/tgl.asm):00063         ; ---------------------------------------------------------------------------
+                      (      src/tgl.asm):00064                         INCLUDE "init.asm"
+                      (         init.asm):00001         ; ---------------------------------------------------------------------------
+                      (         init.asm):00002         ; T_INIT - initialise the library
+                      (         init.asm):00003         ;   Resets the 6845 display start address (R12/R13) to zero so the visible
+                      (         init.asm):00004         ;   screen begins at VDU_BASE. The monitor and FLEX VDU drivers scroll in
+                      (         init.asm):00005         ;   hardware, which can leave the start address anywhere in the 1K.
+                      (         init.asm):00006         ;   Hides the hardware cursor (R10 = $20, the "no cursor" mode bits).
+                      (         init.asm):00007         ;   Sets the off-screen buffer to the memory immediately after the library
+                      (         init.asm):00008         ;   (BUFSIZE bytes must be free there) and the plot mode to MODE_SET.
+                      (         init.asm):00009         ;   Entry: DP = $00            Exit: all registers preserved
+                      (         init.asm):00010         ; ---------------------------------------------------------------------------
+1024 3416             (         init.asm):00011         T_INIT          PSHS    D,X
+1026 5F               (         init.asm):00012                         CLRB
+1027 860C             (         init.asm):00013                         LDA     #12             ; R12 - start address high
+1029 B70800           (         init.asm):00014                         STA     CRTC_ADDR
+102C F70801           (         init.asm):00015                         STB     CRTC_DATA
+102F 860D             (         init.asm):00016                         LDA     #13             ; R13 - start address low
+1031 B70800           (         init.asm):00017                         STA     CRTC_ADDR
+1034 F70801           (         init.asm):00018                         STB     CRTC_DATA
+1037 860A             (         init.asm):00019                         LDA     #10             ; R10 - cursor start / blink mode
+1039 B70800           (         init.asm):00020                         STA     CRTC_ADDR
+103C 8620             (         init.asm):00021                         LDA     #$20            ; bits 6-5 = 01: no cursor
+103E B70801           (         init.asm):00022                         STA     CRTC_DATA
+1041 308D0549         (         init.asm):00023                         LEAX    TGL_END,PCR
+1045 9F00             (         init.asm):00024                         STX     <W_BUF
+1047 8600             (         init.asm):00025                         LDA     #MODE_SET
+1049 17008B           (         init.asm):00026                         LBSR    T_SETMODE       ; patches T_PLOT for MODE_SET
+104C 3596             (         init.asm):00027                         PULS    D,X,PC
+                      (         init.asm):00028         
+                      (         init.asm):00029         ; ---------------------------------------------------------------------------
+                      (         init.asm):00030         ; T_SETBUF - use a caller-supplied off-screen buffer
+                      (         init.asm):00031         ;   Entry: X = buffer address (BUFSIZE bytes), DP = $00
+                      (         init.asm):00032         ;   Exit:  all registers preserved
+                      (         init.asm):00033         ; ---------------------------------------------------------------------------
+104E 9F00             (         init.asm):00034         T_SETBUF        STX     <W_BUF
+1050 39               (         init.asm):00035                         RTS
+                      (      src/tgl.asm):00065                         INCLUDE "cls.asm"
+                      (          cls.asm):00001         ; ---------------------------------------------------------------------------
+                      (          cls.asm):00002         ; T_CLS - clear the off-screen buffer
+                      (          cls.asm):00003         ;   Each row: white graphics code in column 0, blank sixel cells in 1-39.
+                      (          cls.asm):00004         ;   Fills the whole buffer with blank cells using PSHU from three registers
+                      (          cls.asm):00005         ;   (six bytes per instruction, working down from the end), then writes the
+                      (          cls.asm):00006         ;   graphics code into column 0 of each row. Roughly 2,100 cycles, about a
+                      (          cls.asm):00007         ;   fifth of a simple byte loop.
+                      (          cls.asm):00008         ;   Entry: DP = $00            Exit: all registers preserved
+                      (          cls.asm):00009         ; ---------------------------------------------------------------------------
+1051 3476             (          cls.asm):00010         T_CLS           PSHS    D,X,Y,U
+1053 8614             (          cls.asm):00011                         LDA     #BUFSIZE/48     ; 20 iterations x 48 bytes
+1055 9704             (          cls.asm):00012                         STA     <W_COUNT
+1057 DE00             (          cls.asm):00013                         LDU     <W_BUF
+1059 33C903C0         (          cls.asm):00014                         LEAU    BUFSIZE,U       ; PSHU fills downwards from the end
+105D CC2020           (          cls.asm):00015                         LDD     #SIXEL_BLANK*$101
+1060 1F01             (          cls.asm):00016                         TFR     D,X
+1062 1F02             (          cls.asm):00017                         TFR     D,Y
+1064                  (          cls.asm):00018         CLS_FILL
+1064 3636             (          cls.asm):00019                         PSHU    D,X,Y
+1066 3636             (          cls.asm):00020                         PSHU    D,X,Y
+1068 3636             (          cls.asm):00021                         PSHU    D,X,Y
+106A 3636             (          cls.asm):00022                         PSHU    D,X,Y
+106C 3636             (          cls.asm):00023                         PSHU    D,X,Y
+106E 3636             (          cls.asm):00024                         PSHU    D,X,Y
+1070 3636             (          cls.asm):00025                         PSHU    D,X,Y
+1072 3636             (          cls.asm):00026                         PSHU    D,X,Y
+1074 0A04             (          cls.asm):00027                         DEC     <W_COUNT
+1076 26EC             (          cls.asm):00028                         BNE     CLS_FILL
+1078 8697             (          cls.asm):00029                         LDA     #GFX_WHITE      ; U = buffer start
+107A A7C4             (          cls.asm):00030                         STA     0*COLS,U
+107C A7C828           (          cls.asm):00031                         STA     1*COLS,U
+107F A7C850           (          cls.asm):00032                         STA     2*COLS,U
+1082 A7C878           (          cls.asm):00033                         STA     3*COLS,U
+1085 A7C900A0         (          cls.asm):00034                         STA     4*COLS,U
+1089 A7C900C8         (          cls.asm):00035                         STA     5*COLS,U
+108D A7C900F0         (          cls.asm):00036                         STA     6*COLS,U
+1091 A7C90118         (          cls.asm):00037                         STA     7*COLS,U
+1095 A7C90140         (          cls.asm):00038                         STA     8*COLS,U
+1099 A7C90168         (          cls.asm):00039                         STA     9*COLS,U
+109D A7C90190         (          cls.asm):00040                         STA     10*COLS,U
+10A1 A7C901B8         (          cls.asm):00041                         STA     11*COLS,U
+10A5 A7C901E0         (          cls.asm):00042                         STA     12*COLS,U
+10A9 A7C90208         (          cls.asm):00043                         STA     13*COLS,U
+10AD A7C90230         (          cls.asm):00044                         STA     14*COLS,U
+10B1 A7C90258         (          cls.asm):00045                         STA     15*COLS,U
+10B5 A7C90280         (          cls.asm):00046                         STA     16*COLS,U
+10B9 A7C902A8         (          cls.asm):00047                         STA     17*COLS,U
+10BD A7C902D0         (          cls.asm):00048                         STA     18*COLS,U
+10C1 A7C902F8         (          cls.asm):00049                         STA     19*COLS,U
+10C5 A7C90320         (          cls.asm):00050                         STA     20*COLS,U
+10C9 A7C90348         (          cls.asm):00051                         STA     21*COLS,U
+10CD A7C90370         (          cls.asm):00052                         STA     22*COLS,U
+10D1 A7C90398         (          cls.asm):00053                         STA     23*COLS,U
+10D5 35F6             (          cls.asm):00054                         PULS    D,X,Y,U,PC
+                      (      src/tgl.asm):00066                         INCLUDE "plot.asm"
+                      (         plot.asm):00001         ; ---------------------------------------------------------------------------
+                      (         plot.asm):00002         ; T_SETMODE - select plot mode
+                      (         plot.asm):00003         ;   Patches the pre-op and operation bytes in T_PLOT and the four T_LINE
+                      (         plot.asm):00004         ;   loops, so pixel writes never test the mode. Out-of-range modes are
+                      (         plot.asm):00005         ;   ignored.
+                      (         plot.asm):00006         ;   Entry: A = MODE_SET, MODE_CLEAR or MODE_XOR, DP = $00
+                      (         plot.asm):00007         ;   Exit:  all registers preserved
+                      (         plot.asm):00008         ; ---------------------------------------------------------------------------
+10D7 8102             (         plot.asm):00009         T_SETMODE       CMPA    #MODE_XOR
+10D9 2235             (         plot.asm):00010                         BHI     SETM_X
+10DB 3416             (         plot.asm):00011                         PSHS    D,X
+10DD 9705             (         plot.asm):00012                         STA     <W_MODE
+10DF 308D0484         (         plot.asm):00013                         LEAX    MODETAB,PCR
+10E3 48               (         plot.asm):00014                         ASLA
+10E4 EC86             (         plot.asm):00015                         LDD     A,X             ; A = pre-op byte, B = opcode
+10E6 A78D0046         (         plot.asm):00016                         STA     PLOT_PRE,PCR
+10EA E78D0043         (         plot.asm):00017                         STB     PLOT_OP,PCR
+10EE A78D00F8         (         plot.asm):00018                         STA     LXD_PRE,PCR
+10F2 E78D00F5         (         plot.asm):00019                         STB     LXD_OP,PCR
+10F6 A78D0126         (         plot.asm):00020                         STA     LXU_PRE,PCR
+10FA E78D0123         (         plot.asm):00021                         STB     LXU_OP,PCR
+10FE A78D0154         (         plot.asm):00022                         STA     LYR_PRE,PCR
+1102 E78D0151         (         plot.asm):00023                         STB     LYR_OP,PCR
+1106 A78D0182         (         plot.asm):00024                         STA     LYL_PRE,PCR
+110A E78D017F         (         plot.asm):00025                         STB     LYL_OP,PCR
+110E 3516             (         plot.asm):00026                         PULS    D,X
+1110 39               (         plot.asm):00027         SETM_X          RTS
+                      (         plot.asm):00028         
+                      (         plot.asm):00029         ; ---------------------------------------------------------------------------
+                      (         plot.asm):00030         ; T_PLOT - plot one sixel pixel in the off-screen buffer
+                      (         plot.asm):00031         ;   Entry: A = x (0-77), B = y (0-71), DP = $00
+                      (         plot.asm):00032         ;   Exit:  all registers preserved
+                      (         plot.asm):00033         ;   No range checking in a normal build - out-of-range coordinates write
+                      (         plot.asm):00034         ;   outside the buffer. A TGL_SAFE build ignores off-screen points instead.
+                      (         plot.asm):00035         ;
+                      (         plot.asm):00036         ;   cell = buffer + (y/3)*40 + 1 + x/2,  mask from (x&1, y%3)
+                      (         plot.asm):00037         ; ---------------------------------------------------------------------------
+1111                  (         plot.asm):00038         T_PLOT
+                      (         plot.asm):00039                         IFDEF   TGL_SAFE
+                      (         plot.asm):00040                         CMPA    #XMAX           ; off screen: do nothing
+                      (         plot.asm):00041                         BHI     PLOT_RTS
+                      (         plot.asm):00042                         CMPB    #YMAX
+                      (         plot.asm):00043                         BHI     PLOT_RTS
+                      (         plot.asm):00044                         ENDC
+1111 3436             (         plot.asm):00045                         PSHS    D,X,Y
+1113 318D0330         (         plot.asm):00046                         LEAY    PTAB,PCR
+1117 4F               (         plot.asm):00047                         CLRA                    ; D = y
+1118 58               (         plot.asm):00048                         ASLB                    ; D = y*4 (entries are 4 bytes)
+1119 49               (         plot.asm):00049                         ROLA
+111A 58               (         plot.asm):00050                         ASLB
+111B 49               (         plot.asm):00051                         ROLA
+111C 31AB             (         plot.asm):00052                         LEAY    D,Y             ; Y -> PTAB entry for this y
+111E ECA4             (         plot.asm):00053                         LDD     ,Y              ; offset of column 1 of the cell row
+1120 D300             (         plot.asm):00054                         ADDD    <W_BUF
+1122 1F01             (         plot.asm):00055                         TFR     D,X
+1124 E6E4             (         plot.asm):00056                         LDB     ,S              ; x (caller's A, saved on the stack)
+1126 54               (         plot.asm):00057                         LSRB                    ; B = x/2, C = x&1
+1127 3A               (         plot.asm):00058                         ABX                     ; X -> cell (ABX leaves C alone)
+1128 2504             (         plot.asm):00059                         BCS     PLOT_R
+112A A622             (         plot.asm):00060                         LDA     2,Y             ; left pixel mask
+112C 2002             (         plot.asm):00061                         BRA     PLOT_PRE
+112E A623             (         plot.asm):00062         PLOT_R          LDA     3,Y             ; right pixel mask
+1130 12               (         plot.asm):00063         PLOT_PRE        NOP                     ; patched: NOP or COMA
+1131 AA84             (         plot.asm):00064         PLOT_OP         ORA     ,X              ; patched: ORA / ANDA / EORA ,X
+1133 A784             (         plot.asm):00065                         STA     ,X
+1135 35B6             (         plot.asm):00066                         PULS    D,X,Y,PC
+                      (         plot.asm):00067                         IFDEF   TGL_SAFE
+1137                  (         plot.asm):00068         PLOT_RTS        RTS
+                      (         plot.asm):00069                         ENDC
+                      (      src/tgl.asm):00067                         INCLUDE "line.asm"
+                      (         line.asm):00001         ; ---------------------------------------------------------------------------
+                      (         line.asm):00002         ; T_LINE - draw a line in the off-screen buffer (Bresenham)
+                      (         line.asm):00003         ;   Entry: A = x0, B = y0, X = x1 (high byte) : y1 (low byte), DP = $00
+                      (         line.asm):00004         ;          x 0-77, y 0-71. Uses the current plot mode.
+                      (         line.asm):00005         ;          No range checking in a normal build. A TGL_SAFE build draws
+                      (         line.asm):00006         ;          nothing if either endpoint is off screen.
+                      (         line.asm):00007         ;   Exit:  all registers preserved
+                      (         line.asm):00008         ;
+                      (         line.asm):00009         ;   Rather than calling the plot routine per pixel, the loop tracks the
+                      (         line.asm):00010         ;   cell pointer (X) and an internal pixel mask (B) and steps them directly.
+                      (         line.asm):00011         ;   Internal masks put the bottom-right pixel in bit 5, so every step is a
+                      (         line.asm):00012         ;   plain shift:
+                      (         line.asm):00013         ;
+                      (         line.asm):00014         ;        left right                 x step: shift 1   (cross cell: X +/- 1)
+                      (         line.asm):00015         ;   top     1    2                  y step: shift 2   (cross row:  X +/- 40)
+                      (         line.asm):00016         ;   middle  4    8
+                      (         line.asm):00017         ;   bottom 16   32 (screen bit 6)   MASKREAL converts internal -> screen
+                      (         line.asm):00018         ;
+                      (         line.asm):00019         ;   Endpoints are swapped so the major axis always runs positive, leaving
+                      (         line.asm):00020         ;   four loops: x-major with y up/down, y-major with x left/right. The
+                      (         line.asm):00021         ;   chosen loop's |dx| and |dy| are patched into it as immediates, and
+                      (         line.asm):00022         ;   T_SETMODE patches each loop's pixel operation.
+                      (         line.asm):00023         ;   Error term stays within -77..+77, so it fits a signed byte.
+                      (         line.asm):00024         ; ---------------------------------------------------------------------------
+                      (         line.asm):00025         
+                      (         line.asm):00026         ; Write the pixel at X with internal mask B (U -> MASKREAL)
+1137                  (         line.asm):00027         LN_PIXEL        MACRO
+                      (         line.asm):00028                         LDA     B,U             ; screen mask
+1137                  (         line.asm):00029         \1_PRE          NOP                     ; patched by T_SETMODE
+1137                  (         line.asm):00030         \1_OP           ORA     ,X              ; patched by T_SETMODE
+                      (         line.asm):00031                         STA     ,X
+                      (         line.asm):00032                         ENDM
+                      (         line.asm):00033         
+                      (         line.asm):00034         ; Step one pixel right / left / down / up
+1137                  (         line.asm):00035         LN_RIGHT        MACRO
+                      (         line.asm):00036                         BITB    #$15            ; left pixel?
+                      (         line.asm):00037                         BEQ     \1_RN
+                      (         line.asm):00038                         ASLB                    ; -> right pixel, same cell
+                      (         line.asm):00039                         BRA     \1_RD
+1137                  (         line.asm):00040         \1_RN           LSRB                    ; -> left pixel of next cell
+                      (         line.asm):00041                         LEAX    1,X
+1137                  (         line.asm):00042         \1_RD
+                      (         line.asm):00043                         ENDM
+                      (         line.asm):00044         
+1137                  (         line.asm):00045         LN_LEFT         MACRO
+                      (         line.asm):00046                         BITB    #$2A            ; right pixel?
+                      (         line.asm):00047                         BEQ     \1_LN
+                      (         line.asm):00048                         LSRB                    ; -> left pixel, same cell
+                      (         line.asm):00049                         BRA     \1_LD
+1137                  (         line.asm):00050         \1_LN           ASLB                    ; -> right pixel of previous cell
+                      (         line.asm):00051                         LEAX    -1,X
+1137                  (         line.asm):00052         \1_LD
+                      (         line.asm):00053                         ENDM
+                      (         line.asm):00054         
+1137                  (         line.asm):00055         LN_DOWN         MACRO
+                      (         line.asm):00056                         BITB    #$30            ; bottom sixel row?
+                      (         line.asm):00057                         BNE     \1_DN
+                      (         line.asm):00058                         ASLB                    ; -> next sixel row, same cell
+                      (         line.asm):00059                         ASLB
+                      (         line.asm):00060                         BRA     \1_DD
+1137                  (         line.asm):00061         \1_DN           LSRB                    ; -> top sixel row, cell below
+                      (         line.asm):00062                         LSRB
+                      (         line.asm):00063                         LSRB
+                      (         line.asm):00064                         LSRB
+                      (         line.asm):00065                         LEAX    COLS,X
+1137                  (         line.asm):00066         \1_DD
+                      (         line.asm):00067                         ENDM
+                      (         line.asm):00068         
+1137                  (         line.asm):00069         LN_UP           MACRO
+                      (         line.asm):00070                         BITB    #$03            ; top sixel row?
+                      (         line.asm):00071                         BNE     \1_UN
+                      (         line.asm):00072                         LSRB                    ; -> previous sixel row, same cell
+                      (         line.asm):00073                         LSRB
+                      (         line.asm):00074                         BRA     \1_UD
+1137                  (         line.asm):00075         \1_UN           ASLB                    ; -> bottom sixel row, cell above
+                      (         line.asm):00076                         ASLB
+                      (         line.asm):00077                         ASLB
+                      (         line.asm):00078                         ASLB
+                      (         line.asm):00079                         LEAX    -COLS,X
+1137                  (         line.asm):00080         \1_UD
+                      (         line.asm):00081                         ENDM
+                      (         line.asm):00082         
+                      (         line.asm):00083         ; One loop: \1 = name, \2 = major step, \3 = minor step
+1137                  (         line.asm):00084         LN_LOOP         MACRO
+1137                  (         line.asm):00085         \1              LN_PIXEL \1
+                      (         line.asm):00086                         LEAY    -1,Y
+                      (         line.asm):00087                         BEQ     \1_X           ; local exit keeps this a short branch
+                      (         line.asm):00088                         \2      \1
+                      (         line.asm):00089                         LDA     <W_ERR
+1137                  (         line.asm):00090         \1_SUB          SUBA    #0              ; patched: minor length
+                      (         line.asm):00091                         BPL     \1_NS
+1137                  (         line.asm):00092         \1_ADD          ADDA    #0              ; patched: major length
+                      (         line.asm):00093                         STA     <W_ERR
+                      (         line.asm):00094                         \3      \1
+                      (         line.asm):00095                         BRA     \1
+1137                  (         line.asm):00096         \1_NS           STA     <W_ERR
+                      (         line.asm):00097                         BRA     \1
+1137                  (         line.asm):00098         \1_X            PULS    D,X,Y,U,PC
+                      (         line.asm):00099                         ENDM
+                      (         line.asm):00100         
+                      (         line.asm):00101         ; ---------------------------------------------------------------------------
+1137                  (         line.asm):00102         T_LINE
+                      (         line.asm):00103                         IFDEF   TGL_SAFE
+                      (         line.asm):00104                         CMPA    #XMAX           ; start point off screen?
+                      (         line.asm):00105                         BHI     LN_RTS
+                      (         line.asm):00106                         CMPB    #YMAX
+                      (         line.asm):00107                         BHI     LN_RTS
+                      (         line.asm):00108                         PSHS    D,X             ; end point: 2,S = x1, 3,S = y1
+                      (         line.asm):00109                         LDA     2,S
+                      (         line.asm):00110                         CMPA    #XMAX
+                      (         line.asm):00111                         BHI     LN_BAD
+                      (         line.asm):00112                         LDA     3,S
+                      (         line.asm):00113                         CMPA    #YMAX
+                      (         line.asm):00114                         BHI     LN_BAD
+                      (         line.asm):00115                         PULS    D,X
+                      (         line.asm):00116                         BRA     LN_GO
+1137                  (         line.asm):00117         LN_BAD          PULS    D,X
+1137                  (         line.asm):00118         LN_RTS          RTS
+1137                  (         line.asm):00119         LN_GO
+                      (         line.asm):00120                         ENDC
+1137 3476             (         line.asm):00121                         PSHS    D,X,Y,U
+1139 DD06             (         line.asm):00122                         STD     <W_X0           ; W_X0 = x0, W_Y0 = y0
+113B 9F08             (         line.asm):00123                         STX     <W_X1           ; W_X1 = x1, W_Y1 = y1
+113D 9608             (         line.asm):00124                         LDA     <W_X1           ; |dx|
+113F 9006             (         line.asm):00125                         SUBA    <W_X0
+1141 2A01             (         line.asm):00126                         BPL     LN_1
+1143 40               (         line.asm):00127                         NEGA
+1144 970A             (         line.asm):00128         LN_1            STA     <W_ADX
+1146 9609             (         line.asm):00129                         LDA     <W_Y1           ; |dy|
+1148 9007             (         line.asm):00130                         SUBA    <W_Y0
+114A 2A01             (         line.asm):00131                         BPL     LN_2
+114C 40               (         line.asm):00132                         NEGA
+114D 970B             (         line.asm):00133         LN_2            STA     <W_ADY
+114F 910A             (         line.asm):00134                         CMPA    <W_ADX
+1151 224A             (         line.asm):00135                         BHI     LN_YMAJ
+                      (         line.asm):00136         
+                      (         line.asm):00137         ; --- x-major: make x1 >= x0, then the loop always steps right
+1153 9608             (         line.asm):00138                         LDA     <W_X1
+1155 9106             (         line.asm):00139                         CMPA    <W_X0
+1157 2403             (         line.asm):00140                         BHS     LN_3
+1159 170164           (         line.asm):00141                         LBSR    LN_SWAP
+115C 17016A           (         line.asm):00142         LN_3            LBSR    LN_START        ; X = cell, B = internal mask
+115F 3404             (         line.asm):00143                         PSHS    B
+1161 960A             (         line.asm):00144                         LDA     <W_ADX
+1163 44               (         line.asm):00145                         LSRA
+1164 970C             (         line.asm):00146                         STA     <W_ERR          ; error = major/2
+1166 D60A             (         line.asm):00147                         LDB     <W_ADX          ; Y = pixel count = |dx|+1
+1168 4F               (         line.asm):00148                         CLRA
+1169 C30001           (         line.asm):00149                         ADDD    #1
+116C 1F02             (         line.asm):00150                         TFR     D,Y
+116E 9609             (         line.asm):00151                         LDA     <W_Y1
+1170 9107             (         line.asm):00152                         CMPA    <W_Y0
+1172 2514             (         line.asm):00153                         BLO     LN_XUP
+1174 960B             (         line.asm):00154                         LDA     <W_ADY          ; y increasing: down the screen
+1176 A78D0086         (         line.asm):00155                         STA     LXD_SUB+1,PCR
+117A 960A             (         line.asm):00156                         LDA     <W_ADX
+117C A78D0084         (         line.asm):00157                         STA     LXD_ADD+1,PCR
+1180 338D03E9         (         line.asm):00158                         LEAU    MASKREAL,PCR
+1184 3504             (         line.asm):00159                         PULS    B
+1186 2060             (         line.asm):00160                         BRA     LXD
+1188 960B             (         line.asm):00161         LN_XUP          LDA     <W_ADY
+118A A78D00A8         (         line.asm):00162                         STA     LXU_SUB+1,PCR
+118E 960A             (         line.asm):00163                         LDA     <W_ADX
+1190 A78D00A6         (         line.asm):00164                         STA     LXU_ADD+1,PCR
+1194 338D03D5         (         line.asm):00165                         LEAU    MASKREAL,PCR
+1198 3504             (         line.asm):00166                         PULS    B
+119A 160081           (         line.asm):00167                         LBRA    LXU
+                      (         line.asm):00168         
+                      (         line.asm):00169         ; --- y-major: make y1 >= y0, then the loop always steps down
+119D 9609             (         line.asm):00170         LN_YMAJ         LDA     <W_Y1
+119F 9107             (         line.asm):00171                         CMPA    <W_Y0
+11A1 2403             (         line.asm):00172                         BHS     LN_4
+11A3 17011A           (         line.asm):00173                         LBSR    LN_SWAP
+11A6 170120           (         line.asm):00174         LN_4            LBSR    LN_START
+11A9 3404             (         line.asm):00175                         PSHS    B
+11AB 960B             (         line.asm):00176                         LDA     <W_ADY
+11AD 44               (         line.asm):00177                         LSRA
+11AE 970C             (         line.asm):00178                         STA     <W_ERR
+11B0 D60B             (         line.asm):00179                         LDB     <W_ADY
+11B2 4F               (         line.asm):00180                         CLRA
+11B3 C30001           (         line.asm):00181                         ADDD    #1
+11B6 1F02             (         line.asm):00182                         TFR     D,Y
+11B8 9608             (         line.asm):00183                         LDA     <W_X1
+11BA 9106             (         line.asm):00184                         CMPA    <W_X0
+11BC 2515             (         line.asm):00185                         BLO     LN_YLT
+11BE 960A             (         line.asm):00186                         LDA     <W_ADX          ; x increasing
+11C0 A78D00AD         (         line.asm):00187                         STA     LYR_SUB+1,PCR
+11C4 960B             (         line.asm):00188                         LDA     <W_ADY
+11C6 A78D00AB         (         line.asm):00189                         STA     LYR_ADD+1,PCR
+11CA 338D039F         (         line.asm):00190                         LEAU    MASKREAL,PCR
+11CE 3504             (         line.asm):00191                         PULS    B
+11D0 160081           (         line.asm):00192                         LBRA    LYR
+11D3 960A             (         line.asm):00193         LN_YLT          LDA     <W_ADX
+11D5 A78D00CE         (         line.asm):00194                         STA     LYL_SUB+1,PCR
+11D9 960B             (         line.asm):00195                         LDA     <W_ADY
+11DB A78D00CC         (         line.asm):00196                         STA     LYL_ADD+1,PCR
+11DF 338D038A         (         line.asm):00197                         LEAU    MASKREAL,PCR
+11E3 3504             (         line.asm):00198                         PULS    B
+11E5 1600A2           (         line.asm):00199                         LBRA    LYL
+                      (         line.asm):00200         
+                      (         line.asm):00201         ; --- the four loops
+                      (         line.asm):00202                         LN_LOOP LXD,LN_RIGHT,LN_DOWN
+11E8                  (          LN_LOOP):00001         LXD              LN_PIXEL LXD
+11E8 A6C5             (         LN_PIXEL):00001                         LDA     B,U             ; screen mask
+11EA 12               (         LN_PIXEL):00002         LXD_PRE          NOP                     ; patched by T_SETMODE
+11EB AA84             (         LN_PIXEL):00003         LXD_OP           ORA     ,X              ; patched by T_SETMODE
+11ED A784             (         LN_PIXEL):00004                         STA     ,X
+11EF 313F             (          LN_LOOP):00002                         LEAY    -1,Y
+11F1 2729             (          LN_LOOP):00003                         BEQ     LXD_X           ; local exit keeps this a short branch
+                      (          LN_LOOP):00004                         LN_RIGHT      LXD
+11F3 C515             (         LN_RIGHT):00001                         BITB    #$15            ; left pixel?
+11F5 2703             (         LN_RIGHT):00002                         BEQ     LXD_RN
+11F7 58               (         LN_RIGHT):00003                         ASLB                    ; -> right pixel, same cell
+11F8 2003             (         LN_RIGHT):00004                         BRA     LXD_RD
+11FA 54               (         LN_RIGHT):00005         LXD_RN           LSRB                    ; -> left pixel of next cell
+11FB 3001             (         LN_RIGHT):00006                         LEAX    1,X
+11FD                  (         LN_RIGHT):00007         LXD_RD
+11FD 960C             (          LN_LOOP):00005                         LDA     <W_ERR
+11FF 8000             (          LN_LOOP):00006         LXD_SUB          SUBA    #0              ; patched: minor length
+1201 2A15             (          LN_LOOP):00007                         BPL     LXD_NS
+1203 8B00             (          LN_LOOP):00008         LXD_ADD          ADDA    #0              ; patched: major length
+1205 970C             (          LN_LOOP):00009                         STA     <W_ERR
+                      (          LN_LOOP):00010                         LN_DOWN      LXD
+1207 C530             (          LN_DOWN):00001                         BITB    #$30            ; bottom sixel row?
+1209 2604             (          LN_DOWN):00002                         BNE     LXD_DN
+120B 58               (          LN_DOWN):00003                         ASLB                    ; -> next sixel row, same cell
+120C 58               (          LN_DOWN):00004                         ASLB
+120D 2007             (          LN_DOWN):00005                         BRA     LXD_DD
+120F 54               (          LN_DOWN):00006         LXD_DN           LSRB                    ; -> top sixel row, cell below
+1210 54               (          LN_DOWN):00007                         LSRB
+1211 54               (          LN_DOWN):00008                         LSRB
+1212 54               (          LN_DOWN):00009                         LSRB
+1213 308828           (          LN_DOWN):00010                         LEAX    COLS,X
+1216                  (          LN_DOWN):00011         LXD_DD
+1216 20D0             (          LN_LOOP):00011                         BRA     LXD
+1218 970C             (          LN_LOOP):00012         LXD_NS           STA     <W_ERR
+121A 20CC             (          LN_LOOP):00013                         BRA     LXD
+121C 35F6             (          LN_LOOP):00014         LXD_X            PULS    D,X,Y,U,PC
+                      (         line.asm):00203                         LN_LOOP LXU,LN_RIGHT,LN_UP
+121E                  (          LN_LOOP):00001         LXU              LN_PIXEL LXU
+121E A6C5             (         LN_PIXEL):00001                         LDA     B,U             ; screen mask
+1220 12               (         LN_PIXEL):00002         LXU_PRE          NOP                     ; patched by T_SETMODE
+1221 AA84             (         LN_PIXEL):00003         LXU_OP           ORA     ,X              ; patched by T_SETMODE
+1223 A784             (         LN_PIXEL):00004                         STA     ,X
+1225 313F             (          LN_LOOP):00002                         LEAY    -1,Y
+1227 2729             (          LN_LOOP):00003                         BEQ     LXU_X           ; local exit keeps this a short branch
+                      (          LN_LOOP):00004                         LN_RIGHT      LXU
+1229 C515             (         LN_RIGHT):00001                         BITB    #$15            ; left pixel?
+122B 2703             (         LN_RIGHT):00002                         BEQ     LXU_RN
+122D 58               (         LN_RIGHT):00003                         ASLB                    ; -> right pixel, same cell
+122E 2003             (         LN_RIGHT):00004                         BRA     LXU_RD
+1230 54               (         LN_RIGHT):00005         LXU_RN           LSRB                    ; -> left pixel of next cell
+1231 3001             (         LN_RIGHT):00006                         LEAX    1,X
+1233                  (         LN_RIGHT):00007         LXU_RD
+1233 960C             (          LN_LOOP):00005                         LDA     <W_ERR
+1235 8000             (          LN_LOOP):00006         LXU_SUB          SUBA    #0              ; patched: minor length
+1237 2A15             (          LN_LOOP):00007                         BPL     LXU_NS
+1239 8B00             (          LN_LOOP):00008         LXU_ADD          ADDA    #0              ; patched: major length
+123B 970C             (          LN_LOOP):00009                         STA     <W_ERR
+                      (          LN_LOOP):00010                         LN_UP      LXU
+123D C503             (            LN_UP):00001                         BITB    #$03            ; top sixel row?
+123F 2604             (            LN_UP):00002                         BNE     LXU_UN
+1241 54               (            LN_UP):00003                         LSRB                    ; -> previous sixel row, same cell
+1242 54               (            LN_UP):00004                         LSRB
+1243 2007             (            LN_UP):00005                         BRA     LXU_UD
+1245 58               (            LN_UP):00006         LXU_UN           ASLB                    ; -> bottom sixel row, cell above
+1246 58               (            LN_UP):00007                         ASLB
+1247 58               (            LN_UP):00008                         ASLB
+1248 58               (            LN_UP):00009                         ASLB
+1249 3088D8           (            LN_UP):00010                         LEAX    -COLS,X
+124C                  (            LN_UP):00011         LXU_UD
+124C 20D0             (          LN_LOOP):00011                         BRA     LXU
+124E 970C             (          LN_LOOP):00012         LXU_NS           STA     <W_ERR
+1250 20CC             (          LN_LOOP):00013                         BRA     LXU
+1252 35F6             (          LN_LOOP):00014         LXU_X            PULS    D,X,Y,U,PC
+                      (         line.asm):00204                         LN_LOOP LYR,LN_DOWN,LN_RIGHT
+1254                  (          LN_LOOP):00001         LYR              LN_PIXEL LYR
+1254 A6C5             (         LN_PIXEL):00001                         LDA     B,U             ; screen mask
+1256 12               (         LN_PIXEL):00002         LYR_PRE          NOP                     ; patched by T_SETMODE
+1257 AA84             (         LN_PIXEL):00003         LYR_OP           ORA     ,X              ; patched by T_SETMODE
+1259 A784             (         LN_PIXEL):00004                         STA     ,X
+125B 313F             (          LN_LOOP):00002                         LEAY    -1,Y
+125D 2729             (          LN_LOOP):00003                         BEQ     LYR_X           ; local exit keeps this a short branch
+                      (          LN_LOOP):00004                         LN_DOWN      LYR
+125F C530             (          LN_DOWN):00001                         BITB    #$30            ; bottom sixel row?
+1261 2604             (          LN_DOWN):00002                         BNE     LYR_DN
+1263 58               (          LN_DOWN):00003                         ASLB                    ; -> next sixel row, same cell
+1264 58               (          LN_DOWN):00004                         ASLB
+1265 2007             (          LN_DOWN):00005                         BRA     LYR_DD
+1267 54               (          LN_DOWN):00006         LYR_DN           LSRB                    ; -> top sixel row, cell below
+1268 54               (          LN_DOWN):00007                         LSRB
+1269 54               (          LN_DOWN):00008                         LSRB
+126A 54               (          LN_DOWN):00009                         LSRB
+126B 308828           (          LN_DOWN):00010                         LEAX    COLS,X
+126E                  (          LN_DOWN):00011         LYR_DD
+126E 960C             (          LN_LOOP):00005                         LDA     <W_ERR
+1270 8000             (          LN_LOOP):00006         LYR_SUB          SUBA    #0              ; patched: minor length
+1272 2A10             (          LN_LOOP):00007                         BPL     LYR_NS
+1274 8B00             (          LN_LOOP):00008         LYR_ADD          ADDA    #0              ; patched: major length
+1276 970C             (          LN_LOOP):00009                         STA     <W_ERR
+                      (          LN_LOOP):00010                         LN_RIGHT      LYR
+1278 C515             (         LN_RIGHT):00001                         BITB    #$15            ; left pixel?
+127A 2703             (         LN_RIGHT):00002                         BEQ     LYR_RN
+127C 58               (         LN_RIGHT):00003                         ASLB                    ; -> right pixel, same cell
+127D 2003             (         LN_RIGHT):00004                         BRA     LYR_RD
+127F 54               (         LN_RIGHT):00005         LYR_RN           LSRB                    ; -> left pixel of next cell
+1280 3001             (         LN_RIGHT):00006                         LEAX    1,X
+1282                  (         LN_RIGHT):00007         LYR_RD
+1282 20D0             (          LN_LOOP):00011                         BRA     LYR
+1284 970C             (          LN_LOOP):00012         LYR_NS           STA     <W_ERR
+1286 20CC             (          LN_LOOP):00013                         BRA     LYR
+1288 35F6             (          LN_LOOP):00014         LYR_X            PULS    D,X,Y,U,PC
+                      (         line.asm):00205                         LN_LOOP LYL,LN_DOWN,LN_LEFT
+128A                  (          LN_LOOP):00001         LYL              LN_PIXEL LYL
+128A A6C5             (         LN_PIXEL):00001                         LDA     B,U             ; screen mask
+128C 12               (         LN_PIXEL):00002         LYL_PRE          NOP                     ; patched by T_SETMODE
+128D AA84             (         LN_PIXEL):00003         LYL_OP           ORA     ,X              ; patched by T_SETMODE
+128F A784             (         LN_PIXEL):00004                         STA     ,X
+1291 313F             (          LN_LOOP):00002                         LEAY    -1,Y
+1293 2729             (          LN_LOOP):00003                         BEQ     LYL_X           ; local exit keeps this a short branch
+                      (          LN_LOOP):00004                         LN_DOWN      LYL
+1295 C530             (          LN_DOWN):00001                         BITB    #$30            ; bottom sixel row?
+1297 2604             (          LN_DOWN):00002                         BNE     LYL_DN
+1299 58               (          LN_DOWN):00003                         ASLB                    ; -> next sixel row, same cell
+129A 58               (          LN_DOWN):00004                         ASLB
+129B 2007             (          LN_DOWN):00005                         BRA     LYL_DD
+129D 54               (          LN_DOWN):00006         LYL_DN           LSRB                    ; -> top sixel row, cell below
+129E 54               (          LN_DOWN):00007                         LSRB
+129F 54               (          LN_DOWN):00008                         LSRB
+12A0 54               (          LN_DOWN):00009                         LSRB
+12A1 308828           (          LN_DOWN):00010                         LEAX    COLS,X
+12A4                  (          LN_DOWN):00011         LYL_DD
+12A4 960C             (          LN_LOOP):00005                         LDA     <W_ERR
+12A6 8000             (          LN_LOOP):00006         LYL_SUB          SUBA    #0              ; patched: minor length
+12A8 2A10             (          LN_LOOP):00007                         BPL     LYL_NS
+12AA 8B00             (          LN_LOOP):00008         LYL_ADD          ADDA    #0              ; patched: major length
+12AC 970C             (          LN_LOOP):00009                         STA     <W_ERR
+                      (          LN_LOOP):00010                         LN_LEFT      LYL
+12AE C52A             (          LN_LEFT):00001                         BITB    #$2A            ; right pixel?
+12B0 2703             (          LN_LEFT):00002                         BEQ     LYL_LN
+12B2 54               (          LN_LEFT):00003                         LSRB                    ; -> left pixel, same cell
+12B3 2003             (          LN_LEFT):00004                         BRA     LYL_LD
+12B5 58               (          LN_LEFT):00005         LYL_LN           ASLB                    ; -> right pixel of previous cell
+12B6 301F             (          LN_LEFT):00006                         LEAX    -1,X
+12B8                  (          LN_LEFT):00007         LYL_LD
+12B8 20D0             (          LN_LOOP):00011                         BRA     LYL
+12BA 970C             (          LN_LOOP):00012         LYL_NS           STA     <W_ERR
+12BC 20CC             (          LN_LOOP):00013                         BRA     LYL
+12BE 35F6             (          LN_LOOP):00014         LYL_X            PULS    D,X,Y,U,PC
+                      (         line.asm):00206         
+                      (         line.asm):00207         ; ---------------------------------------------------------------------------
+                      (         line.asm):00208         ; LN_SWAP - exchange the line's endpoints
+                      (         line.asm):00209         ; ---------------------------------------------------------------------------
+12C0 DC06             (         line.asm):00210         LN_SWAP         LDD     <W_X0
+12C2 9E08             (         line.asm):00211                         LDX     <W_X1
+12C4 9F06             (         line.asm):00212                         STX     <W_X0
+12C6 DD08             (         line.asm):00213                         STD     <W_X1
+12C8 39               (         line.asm):00214                         RTS
+                      (         line.asm):00215         
+                      (         line.asm):00216         ; ---------------------------------------------------------------------------
+                      (         line.asm):00217         ; LN_START - locate the start pixel (W_X0, W_Y0)
+                      (         line.asm):00218         ;   Exit: X = cell address, B = internal mask. A, U corrupted.
+                      (         line.asm):00219         ; ---------------------------------------------------------------------------
+12C9 338D017A         (         line.asm):00220         LN_START        LEAU    PTAB,PCR
+12CD 4F               (         line.asm):00221                         CLRA
+12CE D607             (         line.asm):00222                         LDB     <W_Y0
+12D0 58               (         line.asm):00223                         ASLB
+12D1 49               (         line.asm):00224                         ROLA
+12D2 58               (         line.asm):00225                         ASLB
+12D3 49               (         line.asm):00226                         ROLA
+12D4 33CB             (         line.asm):00227                         LEAU    D,U
+12D6 ECC4             (         line.asm):00228                         LDD     ,U
+12D8 D300             (         line.asm):00229                         ADDD    <W_BUF
+12DA 1F01             (         line.asm):00230                         TFR     D,X
+12DC D606             (         line.asm):00231                         LDB     <W_X0
+12DE 54               (         line.asm):00232                         LSRB
+12DF 3A               (         line.asm):00233                         ABX
+12E0 2503             (         line.asm):00234                         BCS     LS_R
+12E2 E642             (         line.asm):00235                         LDB     2,U
+12E4 39               (         line.asm):00236                         RTS
+12E5 E643             (         line.asm):00237         LS_R            LDB     3,U
+12E7 C140             (         line.asm):00238                         CMPB    #$40
+12E9 2602             (         line.asm):00239                         BNE     LS_X
+12EB C620             (         line.asm):00240                         LDB     #$20            ; bottom-right is bit 5 internally
+12ED 39               (         line.asm):00241         LS_X            RTS
+                      (      src/tgl.asm):00068                         INCLUDE "blit.asm"
+                      (         blit.asm):00001         ; ---------------------------------------------------------------------------
+                      (         blit.asm):00002         ; T_BLIT - copy the off-screen buffer to screen rows 0-23 (960 bytes)
+                      (         blit.asm):00003         ;   Stack-blast copy: PULU six bytes from the buffer, PSHS them to the
+                      (         blit.asm):00004         ;   screen. S is borrowed, so IRQ and FIRQ are masked for the duration
+                      (         blit.asm):00005         ;   (roughly 5ms at 1MHz).
+                      (         blit.asm):00006         ;   Entry: DP = $00            Exit: all registers preserved
+                      (         blit.asm):00007         ; ---------------------------------------------------------------------------
+12EE                  (         blit.asm):00008         BLAST6          MACRO
+                      (         blit.asm):00009                         PULU    D,X,Y
+                      (         blit.asm):00010                         PSHS    D,X,Y
+                      (         blit.asm):00011                         LEAS    12,S
+                      (         blit.asm):00012                         ENDM
+                      (         blit.asm):00013         
+12EE 347F             (         blit.asm):00014         T_BLIT          PSHS    CC,D,DP,X,Y,U
+12F0 1A50             (         blit.asm):00015                         ORCC    #$50            ; mask IRQ and FIRQ
+12F2 10DF02           (         blit.asm):00016                         STS     <W_SAVSP
+12F5 8628             (         blit.asm):00017                         LDA     #BUFSIZE/24     ; 40 iterations x 24 bytes
+12F7 9704             (         blit.asm):00018                         STA     <W_COUNT
+12F9 DE00             (         blit.asm):00019                         LDU     <W_BUF
+12FB 10CE0406         (         blit.asm):00020                         LDS     #VDU_BASE+6     ; PSHS writes downwards from here
+12FF                  (         blit.asm):00021         BLIT_LOOP       BLAST6
+12FF 3736             (           BLAST6):00001                         PULU    D,X,Y
+1301 3436             (           BLAST6):00002                         PSHS    D,X,Y
+1303 326C             (           BLAST6):00003                         LEAS    12,S
+                      (         blit.asm):00022                         BLAST6
+1305 3736             (           BLAST6):00001                         PULU    D,X,Y
+1307 3436             (           BLAST6):00002                         PSHS    D,X,Y
+1309 326C             (           BLAST6):00003                         LEAS    12,S
+                      (         blit.asm):00023                         BLAST6
+130B 3736             (           BLAST6):00001                         PULU    D,X,Y
+130D 3436             (           BLAST6):00002                         PSHS    D,X,Y
+130F 326C             (           BLAST6):00003                         LEAS    12,S
+                      (         blit.asm):00024                         BLAST6
+1311 3736             (           BLAST6):00001                         PULU    D,X,Y
+1313 3436             (           BLAST6):00002                         PSHS    D,X,Y
+1315 326C             (           BLAST6):00003                         LEAS    12,S
+1317 0A04             (         blit.asm):00025                         DEC     <W_COUNT
+1319 26E4             (         blit.asm):00026                         BNE     BLIT_LOOP
+131B 10DE02           (         blit.asm):00027                         LDS     <W_SAVSP
+131E 35FF             (         blit.asm):00028                         PULS    CC,D,DP,X,Y,U,PC
+                      (      src/tgl.asm):00069                         INCLUDE "clip.asm"
+                      (         clip.asm):00001         ; ---------------------------------------------------------------------------
+                      (         clip.asm):00002         ; Clipped drawing - coordinates are signed bytes (-128..127); anything
+                      (         clip.asm):00003         ; outside x 0-77, y 0-71 is not drawn.
+                      (         clip.asm):00004         ; ---------------------------------------------------------------------------
+                      (         clip.asm):00005         
+                      (         clip.asm):00006         ; ---------------------------------------------------------------------------
+                      (         clip.asm):00007         ; T_PLOTC - plot a pixel if it is on screen
+                      (         clip.asm):00008         ;   Entry: A = x, B = y (signed), DP = $00
+                      (         clip.asm):00009         ;   Exit:  all registers preserved
+                      (         clip.asm):00010         ;   A negative signed value is above XMAX/YMAX when compared unsigned, so
+                      (         clip.asm):00011         ;   one unsigned compare per axis rejects both sides.
+                      (         clip.asm):00012         ; ---------------------------------------------------------------------------
+1320 814D             (         clip.asm):00013         T_PLOTC         CMPA    #XMAX
+1322 2207             (         clip.asm):00014                         BHI     PC_X
+1324 C147             (         clip.asm):00015                         CMPB    #YMAX
+1326 2203             (         clip.asm):00016                         BHI     PC_X
+1328 16FDE6           (         clip.asm):00017                         LBRA    T_PLOT          ; tail call
+132B 39               (         clip.asm):00018         PC_X            RTS
+                      (         clip.asm):00019         
+                      (         clip.asm):00020         ; ---------------------------------------------------------------------------
+                      (         clip.asm):00021         ; T_LINEC - draw the visible part of a line (Cohen-Sutherland)
+                      (         clip.asm):00022         ;   Entry: A = x0, B = y0, X = x1 (high byte) : y1 (low byte), all signed
+                      (         clip.asm):00023         ;          DP = $00
+                      (         clip.asm):00024         ;   Exit:  all registers preserved
+                      (         clip.asm):00025         ;
+                      (         clip.asm):00026         ;   Each endpoint gets an outcode (bit 0 left, 1 right, 2 top, 3 bottom).
+                      (         clip.asm):00027         ;   Both zero: draw. Common bit: entirely off one side, nothing to draw.
+                      (         clip.asm):00028         ;   Otherwise move an outside endpoint onto the edge it is beyond, and
+                      (         clip.asm):00029         ;   repeat. The intersection always interpolates between the two current
+                      (         clip.asm):00030         ;   endpoints, so a point never moves back outside an edge already
+                      (         clip.asm):00031         ;   satisfied, and the loop ends after at most four moves per endpoint.
+                      (         clip.asm):00032         ;   The trimmed line is drawn by T_LINE.
+                      (         clip.asm):00033         ; ---------------------------------------------------------------------------
+132C 3476             (         clip.asm):00034         T_LINEC         PSHS    D,X,Y,U
+132E DD06             (         clip.asm):00035                         STD     <W_X0
+1330 9F08             (         clip.asm):00036                         STX     <W_X1
+1332 DC06             (         clip.asm):00037         LC_LOOP         LDD     <W_X0
+1334 8D2D             (         clip.asm):00038                         BSR     OUTCODE
+1336 970D             (         clip.asm):00039                         STA     <W_C0
+1338 DC08             (         clip.asm):00040                         LDD     <W_X1
+133A 8D27             (         clip.asm):00041                         BSR     OUTCODE
+133C 970E             (         clip.asm):00042                         STA     <W_C1
+133E 9A0D             (         clip.asm):00043                         ORA     <W_C0
+1340 2718             (         clip.asm):00044                         BEQ     LC_DRAW         ; both inside
+1342 960D             (         clip.asm):00045                         LDA     <W_C0
+1344 940E             (         clip.asm):00046                         ANDA    <W_C1
+1346 2619             (         clip.asm):00047                         BNE     LC_EXIT         ; both beyond the same edge
+1348 960D             (         clip.asm):00048                         LDA     <W_C0
+134A 2706             (         clip.asm):00049                         BEQ     LC_P1
+134C 8D36             (         clip.asm):00050                         BSR     LC_CLIP         ; move the start point
+134E DD06             (         clip.asm):00051                         STD     <W_X0
+1350 20E0             (         clip.asm):00052                         BRA     LC_LOOP
+1352 960E             (         clip.asm):00053         LC_P1           LDA     <W_C1
+1354 8D2E             (         clip.asm):00054                         BSR     LC_CLIP         ; move the end point
+1356 DD08             (         clip.asm):00055                         STD     <W_X1
+1358 20D8             (         clip.asm):00056                         BRA     LC_LOOP
+135A DC06             (         clip.asm):00057         LC_DRAW         LDD     <W_X0
+135C 9E08             (         clip.asm):00058                         LDX     <W_X1
+135E 17FDD6           (         clip.asm):00059                         LBSR    T_LINE
+1361 35F6             (         clip.asm):00060         LC_EXIT         PULS    D,X,Y,U,PC
+                      (         clip.asm):00061         
+                      (         clip.asm):00062         ; ---------------------------------------------------------------------------
+                      (         clip.asm):00063         ; OUTCODE - Entry: A = x, B = y (signed)   Exit: A = outcode, B corrupted
+                      (         clip.asm):00064         ; ---------------------------------------------------------------------------
+1363 3404             (         clip.asm):00065         OUTCODE         PSHS    B
+1365 5F               (         clip.asm):00066                         CLRB
+1366 4D               (         clip.asm):00067                         TSTA
+1367 2A04             (         clip.asm):00068                         BPL     OC_1
+1369 CA01             (         clip.asm):00069                         ORB     #1              ; left
+136B 2006             (         clip.asm):00070                         BRA     OC_2
+136D 814D             (         clip.asm):00071         OC_1            CMPA    #XMAX
+136F 2302             (         clip.asm):00072                         BLS     OC_2
+1371 CA02             (         clip.asm):00073                         ORB     #2              ; right
+1373 A6E0             (         clip.asm):00074         OC_2            LDA     ,S+             ; y
+1375 2A04             (         clip.asm):00075                         BPL     OC_3
+1377 CA04             (         clip.asm):00076                         ORB     #4              ; top
+1379 2006             (         clip.asm):00077                         BRA     OC_4
+137B 8147             (         clip.asm):00078         OC_3            CMPA    #YMAX
+137D 2302             (         clip.asm):00079                         BLS     OC_4
+137F CA08             (         clip.asm):00080                         ORB     #8              ; bottom
+1381 1F98             (         clip.asm):00081         OC_4            TFR     B,A
+1383 39               (         clip.asm):00082                         RTS
+                      (         clip.asm):00083         
+                      (         clip.asm):00084         ; ---------------------------------------------------------------------------
+                      (         clip.asm):00085         ; LC_CLIP - move a point onto the first edge in its outcode
+                      (         clip.asm):00086         ;   Entry: A = outcode of the point being moved
+                      (         clip.asm):00087         ;   Exit:  A = new x, B = new y
+                      (         clip.asm):00088         ; ---------------------------------------------------------------------------
+1384 8504             (         clip.asm):00089         LC_CLIP         BITA    #4
+1386 2703             (         clip.asm):00090                         BEQ     LCC_1
+1388 5F               (         clip.asm):00091                         CLRB                    ; top edge, y = 0
+1389 2006             (         clip.asm):00092                         BRA     LCC_H
+138B 8508             (         clip.asm):00093         LCC_1           BITA    #8
+138D 2715             (         clip.asm):00094                         BEQ     LCC_2
+138F C647             (         clip.asm):00095                         LDB     #YMAX           ; bottom edge
+1391 D713             (         clip.asm):00096         LCC_H           STB     <I_E            ; horizontal edge: solve for x
+1393 DC06             (         clip.asm):00097                         LDD     <W_X0
+1395 970F             (         clip.asm):00098                         STA     <I_U0
+1397 D711             (         clip.asm):00099                         STB     <I_V0
+1399 DC08             (         clip.asm):00100                         LDD     <W_X1
+139B 9710             (         clip.asm):00101                         STA     <I_U1
+139D D712             (         clip.asm):00102                         STB     <I_V1
+139F 8D21             (         clip.asm):00103                         BSR     ISECT
+13A1 D613             (         clip.asm):00104                         LDB     <I_E
+13A3 39               (         clip.asm):00105                         RTS
+13A4 8502             (         clip.asm):00106         LCC_2           BITA    #2
+13A6 2704             (         clip.asm):00107                         BEQ     LCC_3
+13A8 C64D             (         clip.asm):00108                         LDB     #XMAX           ; right edge
+13AA 2001             (         clip.asm):00109                         BRA     LCC_V
+13AC 5F               (         clip.asm):00110         LCC_3           CLRB                    ; left edge, x = 0
+13AD D713             (         clip.asm):00111         LCC_V           STB     <I_E            ; vertical edge: solve for y
+13AF DC06             (         clip.asm):00112                         LDD     <W_X0
+13B1 9711             (         clip.asm):00113                         STA     <I_V0
+13B3 D70F             (         clip.asm):00114                         STB     <I_U0
+13B5 DC08             (         clip.asm):00115                         LDD     <W_X1
+13B7 9712             (         clip.asm):00116                         STA     <I_V1
+13B9 D710             (         clip.asm):00117                         STB     <I_U1
+13BB 8D05             (         clip.asm):00118                         BSR     ISECT
+13BD 1F89             (         clip.asm):00119                         TFR     A,B
+13BF 9613             (         clip.asm):00120                         LDA     <I_E
+13C1 39               (         clip.asm):00121                         RTS
+                      (         clip.asm):00122         
+                      (         clip.asm):00123         ; ---------------------------------------------------------------------------
+                      (         clip.asm):00124         ; ISECT - A = u0 + (u1-u0) * (e-v0) / (v1-v0)
+                      (         clip.asm):00125         ;   Rounded to the nearest pixel, which keeps trimmed lines closer to the
+                      (         clip.asm):00126         ;   path the unclipped line would take (never more than one pixel off).
+                      (         clip.asm):00127         ;   Worked in sign and magnitude: each difference is at most 255, and
+                      (         clip.asm):00128         ;   |e-v0| <= |v1-v0| because the edge lies between the endpoints, so the
+                      (         clip.asm):00129         ;   product fits 16 bits and the quotient fits 8. The result lies between
+                      (         clip.asm):00130         ;   u0 and u1, so plain 8-bit addition gives the right signed value.
+                      (         clip.asm):00131         ;   B corrupted.
+                      (         clip.asm):00132         ; ---------------------------------------------------------------------------
+13C2 0F14             (         clip.asm):00133         ISECT           CLR     <I_SGN
+13C4 9610             (         clip.asm):00134                         LDA     <I_U1           ; |u1-u0|
+13C6 900F             (         clip.asm):00135                         SUBA    <I_U0
+13C8 D610             (         clip.asm):00136                         LDB     <I_U1
+13CA D10F             (         clip.asm):00137                         CMPB    <I_U0
+13CC 2C03             (         clip.asm):00138                         BGE     IS_1
+13CE 40               (         clip.asm):00139                         NEGA
+13CF 0314             (         clip.asm):00140                         COM     <I_SGN
+13D1 9715             (         clip.asm):00141         IS_1            STA     <I_DU
+13D3 9613             (         clip.asm):00142                         LDA     <I_E            ; |e-v0|
+13D5 9011             (         clip.asm):00143                         SUBA    <I_V0
+13D7 D613             (         clip.asm):00144                         LDB     <I_E
+13D9 D111             (         clip.asm):00145                         CMPB    <I_V0
+13DB 2C03             (         clip.asm):00146                         BGE     IS_2
+13DD 40               (         clip.asm):00147                         NEGA
+13DE 0314             (         clip.asm):00148                         COM     <I_SGN
+13E0 D615             (         clip.asm):00149         IS_2            LDB     <I_DU
+13E2 3D               (         clip.asm):00150                         MUL                     ; D = |u1-u0| * |e-v0|
+13E3 3406             (         clip.asm):00151                         PSHS    D
+13E5 9612             (         clip.asm):00152                         LDA     <I_V1           ; |v1-v0|
+13E7 9011             (         clip.asm):00153                         SUBA    <I_V0
+13E9 D612             (         clip.asm):00154                         LDB     <I_V1
+13EB D111             (         clip.asm):00155                         CMPB    <I_V0
+13ED 2C03             (         clip.asm):00156                         BGE     IS_3
+13EF 40               (         clip.asm):00157                         NEGA
+13F0 0314             (         clip.asm):00158                         COM     <I_SGN
+13F2 9716             (         clip.asm):00159         IS_3            STA     <I_DV
+13F4 44               (         clip.asm):00160                         LSRA                    ; round: add |v1-v0|/2 before dividing
+13F5 9717             (         clip.asm):00161                         STA     <I_CNT          ;  (I_CNT as a temporary; DIV8 resets it)
+13F7 3506             (         clip.asm):00162                         PULS    D
+13F9 DB17             (         clip.asm):00163                         ADDB    <I_CNT
+13FB 8900             (         clip.asm):00164                         ADCA    #0
+13FD 8D0E             (         clip.asm):00165                         BSR     DIV8            ; B = rounded quotient
+13FF 960F             (         clip.asm):00166                         LDA     <I_U0
+1401 3404             (         clip.asm):00167                         PSHS    B
+1403 0D14             (         clip.asm):00168                         TST     <I_SGN
+1405 2603             (         clip.asm):00169                         BNE     IS_4
+1407 ABE0             (         clip.asm):00170                         ADDA    ,S+
+1409 39               (         clip.asm):00171                         RTS
+140A A0E0             (         clip.asm):00172         IS_4            SUBA    ,S+
+140C 39               (         clip.asm):00173                         RTS
+                      (         clip.asm):00174         
+                      (         clip.asm):00175         ; ---------------------------------------------------------------------------
+                      (         clip.asm):00176         ; DIV8 - unsigned D / I_DV, needs A < I_DV (quotient fits 8 bits)
+                      (         clip.asm):00177         ;   Exit: B = quotient, A = remainder
+                      (         clip.asm):00178         ; ---------------------------------------------------------------------------
+140D 3402             (         clip.asm):00179         DIV8            PSHS    A
+140F 8608             (         clip.asm):00180                         LDA     #8
+1411 9717             (         clip.asm):00181                         STA     <I_CNT
+1413 3502             (         clip.asm):00182                         PULS    A
+1415 58               (         clip.asm):00183         DV_LOOP         ASLB                    ; shift dividend left; quotient
+1416 49               (         clip.asm):00184                         ROLA                    ;  bits enter B from the right
+1417 2504             (         clip.asm):00185                         BCS     DV_SUB
+1419 9116             (         clip.asm):00186                         CMPA    <I_DV
+141B 2503             (         clip.asm):00187                         BLO     DV_NEXT
+141D 9016             (         clip.asm):00188         DV_SUB          SUBA    <I_DV
+141F 5C               (         clip.asm):00189                         INCB
+1420 0A17             (         clip.asm):00190         DV_NEXT         DEC     <I_CNT
+1422 26F1             (         clip.asm):00191                         BNE     DV_LOOP
+1424 39               (         clip.asm):00192                         RTS
+                      (      src/tgl.asm):00070                         INCLUDE "system.asm"
+                      (       system.asm):00001         ; ---------------------------------------------------------------------------
+                      (       system.asm):00002         ; System services: restoring the display, reading the keyboard, exiting.
+                      (       system.asm):00003         ; These go through the monitor's RAM vectors (target/*.inc), so they work
+                      (       system.asm):00004         ; whichever monitor version is fitted.
+                      (       system.asm):00005         ; ---------------------------------------------------------------------------
+                      (       system.asm):00006         
+                      (       system.asm):00007         ; ---------------------------------------------------------------------------
+                      (       system.asm):00008         ; T_DONE - give the display back to the monitor / FLEX
+                      (       system.asm):00009         ;   Sends a form feed through the monitor's console output vector. The
+                      (       system.asm):00010         ;   monitor's form-feed handler (CRTCI) re-detects the 6845 type, reloads
+                      (       system.asm):00011         ;   all its registers (restoring the cursor and start address), resets the
+                      (       system.asm):00012         ;   driver's row, column and scroll position, homes the cursor and clears
+                      (       system.asm):00013         ;   the screen.
+                      (       system.asm):00014         ;   Entry: any DP              Exit: all registers preserved
+                      (       system.asm):00015         ; ---------------------------------------------------------------------------
+1425 3402             (       system.asm):00016         T_DONE          PSHS    A
+1427 860C             (       system.asm):00017                         LDA     #$0C            ; form feed
+1429 AD9F0365         (       system.asm):00018                         JSR     [MON_COPADR]
+142D 3582             (       system.asm):00019                         PULS    A,PC
+                      (       system.asm):00020         
+                      (       system.asm):00021         ; ---------------------------------------------------------------------------
+                      (       system.asm):00022         ; T_INKEY - check for a key without waiting
+                      (       system.asm):00023         ;   The monitor's IRQ handler buffers keypresses; a key is waiting when the
+                      (       system.asm):00024         ;   buffer's tail and static head differ. Needs IRQs enabled.
+                      (       system.asm):00025         ;   Entry: any DP
+                      (       system.asm):00026         ;   Exit:  Z set, A = 0 if no key; Z clear, A = key if there was one.
+                      (       system.asm):00027         ;          Other registers preserved.
+                      (       system.asm):00028         ; ---------------------------------------------------------------------------
+142F 3410             (       system.asm):00029         T_INKEY         PSHS    X
+1431 BE038B           (       system.asm):00030                         LDX     MON_TAIL
+1434 BC0387           (       system.asm):00031                         CMPX    MON_HEADST
+1437 2708             (       system.asm):00032                         BEQ     IK_NONE
+1439 AD9F0367         (       system.asm):00033                         JSR     [MON_CINADR]    ; returns at once: a key is waiting
+143D 1CFB             (       system.asm):00034                         ANDCC   #$FB            ; Z clear: key in A
+143F 3590             (       system.asm):00035                         PULS    X,PC
+1441 4F               (       system.asm):00036         IK_NONE         CLRA                    ; Z set (PULS leaves flags alone)
+1442 3590             (       system.asm):00037                         PULS    X,PC
+                      (       system.asm):00038         
+                      (       system.asm):00039         ; ---------------------------------------------------------------------------
+                      (       system.asm):00040         ; T_EXIT - restore the display and return to the operating system
+                      (       system.asm):00041         ;   FLEX machine: FLEX warm start. Standard System 3: SWI into the monitor
+                      (       system.asm):00042         ;   (it shows the registers and stays in the monitor; proceeding just
+                      (       system.asm):00043         ;   re-executes the SWI).
+                      (       system.asm):00044         ;   Does not return.
+                      (       system.asm):00045         ; ---------------------------------------------------------------------------
+1444 8DDF             (       system.asm):00046         T_EXIT          BSR     T_DONE
+                      (       system.asm):00047                         IFDEF   TARGET_FLEX
+                      (       system.asm):00048                         JMP     FLEX_WARMS
+                      (       system.asm):00049                         ELSE
+1446 3F               (       system.asm):00050                         SWI
+                      (       system.asm):00051                         ENDC
+                      (      src/tgl.asm):00071                         INCLUDE "tables.asm"
+                      (       tables.asm):00001         ; ---------------------------------------------------------------------------
+                      (       tables.asm):00002         ; Lookup tables - always referenced with ,PCR
+                      (       tables.asm):00003         ;
+                      (       tables.asm):00004         ; PTAB: one 4-byte entry per pixel row y (0-71):
+                      (       tables.asm):00005         ;   +0,+1  offset of column 1 of the cell row within the buffer: (y/3)*40+1
+                      (       tables.asm):00006         ;   +2     sixel mask for an even x (left pixel)
+                      (       tables.asm):00007         ;   +3     sixel mask for an odd x (right pixel)
+                      (       tables.asm):00008         ; Sixel bits: top row 0/1, middle row 2/3, bottom row 4/6 (bit 5 always set)
+                      (       tables.asm):00009         ; ---------------------------------------------------------------------------
+1447                  (       tables.asm):00010         PTAB
+1447 00010102         (       tables.asm):00011                         FCB     $00,$01,$01,$02     ; y=0
+144B 00010408         (       tables.asm):00012                         FCB     $00,$01,$04,$08     ; y=1
+144F 00011040         (       tables.asm):00013                         FCB     $00,$01,$10,$40     ; y=2
+1453 00290102         (       tables.asm):00014                         FCB     $00,$29,$01,$02     ; y=3
+1457 00290408         (       tables.asm):00015                         FCB     $00,$29,$04,$08     ; y=4
+145B 00291040         (       tables.asm):00016                         FCB     $00,$29,$10,$40     ; y=5
+145F 00510102         (       tables.asm):00017                         FCB     $00,$51,$01,$02     ; y=6
+1463 00510408         (       tables.asm):00018                         FCB     $00,$51,$04,$08     ; y=7
+1467 00511040         (       tables.asm):00019                         FCB     $00,$51,$10,$40     ; y=8
+146B 00790102         (       tables.asm):00020                         FCB     $00,$79,$01,$02     ; y=9
+146F 00790408         (       tables.asm):00021                         FCB     $00,$79,$04,$08     ; y=10
+1473 00791040         (       tables.asm):00022                         FCB     $00,$79,$10,$40     ; y=11
+1477 00A10102         (       tables.asm):00023                         FCB     $00,$A1,$01,$02     ; y=12
+147B 00A10408         (       tables.asm):00024                         FCB     $00,$A1,$04,$08     ; y=13
+147F 00A11040         (       tables.asm):00025                         FCB     $00,$A1,$10,$40     ; y=14
+1483 00C90102         (       tables.asm):00026                         FCB     $00,$C9,$01,$02     ; y=15
+1487 00C90408         (       tables.asm):00027                         FCB     $00,$C9,$04,$08     ; y=16
+148B 00C91040         (       tables.asm):00028                         FCB     $00,$C9,$10,$40     ; y=17
+148F 00F10102         (       tables.asm):00029                         FCB     $00,$F1,$01,$02     ; y=18
+1493 00F10408         (       tables.asm):00030                         FCB     $00,$F1,$04,$08     ; y=19
+1497 00F11040         (       tables.asm):00031                         FCB     $00,$F1,$10,$40     ; y=20
+149B 01190102         (       tables.asm):00032                         FCB     $01,$19,$01,$02     ; y=21
+149F 01190408         (       tables.asm):00033                         FCB     $01,$19,$04,$08     ; y=22
+14A3 01191040         (       tables.asm):00034                         FCB     $01,$19,$10,$40     ; y=23
+14A7 01410102         (       tables.asm):00035                         FCB     $01,$41,$01,$02     ; y=24
+14AB 01410408         (       tables.asm):00036                         FCB     $01,$41,$04,$08     ; y=25
+14AF 01411040         (       tables.asm):00037                         FCB     $01,$41,$10,$40     ; y=26
+14B3 01690102         (       tables.asm):00038                         FCB     $01,$69,$01,$02     ; y=27
+14B7 01690408         (       tables.asm):00039                         FCB     $01,$69,$04,$08     ; y=28
+14BB 01691040         (       tables.asm):00040                         FCB     $01,$69,$10,$40     ; y=29
+14BF 01910102         (       tables.asm):00041                         FCB     $01,$91,$01,$02     ; y=30
+14C3 01910408         (       tables.asm):00042                         FCB     $01,$91,$04,$08     ; y=31
+14C7 01911040         (       tables.asm):00043                         FCB     $01,$91,$10,$40     ; y=32
+14CB 01B90102         (       tables.asm):00044                         FCB     $01,$B9,$01,$02     ; y=33
+14CF 01B90408         (       tables.asm):00045                         FCB     $01,$B9,$04,$08     ; y=34
+14D3 01B91040         (       tables.asm):00046                         FCB     $01,$B9,$10,$40     ; y=35
+14D7 01E10102         (       tables.asm):00047                         FCB     $01,$E1,$01,$02     ; y=36
+14DB 01E10408         (       tables.asm):00048                         FCB     $01,$E1,$04,$08     ; y=37
+14DF 01E11040         (       tables.asm):00049                         FCB     $01,$E1,$10,$40     ; y=38
+14E3 02090102         (       tables.asm):00050                         FCB     $02,$09,$01,$02     ; y=39
+14E7 02090408         (       tables.asm):00051                         FCB     $02,$09,$04,$08     ; y=40
+14EB 02091040         (       tables.asm):00052                         FCB     $02,$09,$10,$40     ; y=41
+14EF 02310102         (       tables.asm):00053                         FCB     $02,$31,$01,$02     ; y=42
+14F3 02310408         (       tables.asm):00054                         FCB     $02,$31,$04,$08     ; y=43
+14F7 02311040         (       tables.asm):00055                         FCB     $02,$31,$10,$40     ; y=44
+14FB 02590102         (       tables.asm):00056                         FCB     $02,$59,$01,$02     ; y=45
+14FF 02590408         (       tables.asm):00057                         FCB     $02,$59,$04,$08     ; y=46
+1503 02591040         (       tables.asm):00058                         FCB     $02,$59,$10,$40     ; y=47
+1507 02810102         (       tables.asm):00059                         FCB     $02,$81,$01,$02     ; y=48
+150B 02810408         (       tables.asm):00060                         FCB     $02,$81,$04,$08     ; y=49
+150F 02811040         (       tables.asm):00061                         FCB     $02,$81,$10,$40     ; y=50
+1513 02A90102         (       tables.asm):00062                         FCB     $02,$A9,$01,$02     ; y=51
+1517 02A90408         (       tables.asm):00063                         FCB     $02,$A9,$04,$08     ; y=52
+151B 02A91040         (       tables.asm):00064                         FCB     $02,$A9,$10,$40     ; y=53
+151F 02D10102         (       tables.asm):00065                         FCB     $02,$D1,$01,$02     ; y=54
+1523 02D10408         (       tables.asm):00066                         FCB     $02,$D1,$04,$08     ; y=55
+1527 02D11040         (       tables.asm):00067                         FCB     $02,$D1,$10,$40     ; y=56
+152B 02F90102         (       tables.asm):00068                         FCB     $02,$F9,$01,$02     ; y=57
+152F 02F90408         (       tables.asm):00069                         FCB     $02,$F9,$04,$08     ; y=58
+1533 02F91040         (       tables.asm):00070                         FCB     $02,$F9,$10,$40     ; y=59
+1537 03210102         (       tables.asm):00071                         FCB     $03,$21,$01,$02     ; y=60
+153B 03210408         (       tables.asm):00072                         FCB     $03,$21,$04,$08     ; y=61
+153F 03211040         (       tables.asm):00073                         FCB     $03,$21,$10,$40     ; y=62
+1543 03490102         (       tables.asm):00074                         FCB     $03,$49,$01,$02     ; y=63
+1547 03490408         (       tables.asm):00075                         FCB     $03,$49,$04,$08     ; y=64
+154B 03491040         (       tables.asm):00076                         FCB     $03,$49,$10,$40     ; y=65
+154F 03710102         (       tables.asm):00077                         FCB     $03,$71,$01,$02     ; y=66
+1553 03710408         (       tables.asm):00078                         FCB     $03,$71,$04,$08     ; y=67
+1557 03711040         (       tables.asm):00079                         FCB     $03,$71,$10,$40     ; y=68
+155B 03990102         (       tables.asm):00080                         FCB     $03,$99,$01,$02     ; y=69
+155F 03990408         (       tables.asm):00081                         FCB     $03,$99,$04,$08     ; y=70
+1563 03991040         (       tables.asm):00082                         FCB     $03,$99,$10,$40     ; y=71
+                      (       tables.asm):00083         
+                      (       tables.asm):00084         ; T_SETMODE patch values: pre-op byte, operation opcode (indexed ,X)
+1567 12AA             (       tables.asm):00085         MODETAB         FCB     $12,$AA         ; MODE_SET:   NOP,  ORA  ,X
+1569 43A4             (       tables.asm):00086                         FCB     $43,$A4         ; MODE_CLEAR: COMA, ANDA ,X
+156B 12A8             (       tables.asm):00087                         FCB     $12,$A8         ; MODE_XOR:   NOP,  EORA ,X
+                      (       tables.asm):00088         
+                      (       tables.asm):00089         ; MASKREAL: internal line mask (1,2,4,8,16,32) -> screen sixel mask
+156D 0001020004000000 (       tables.asm):00090         MASKREAL        FCB     0,$01,$02,0,$04,0,0,0,$08,0,0,0,0,0,0,0
+     0800000000000000
+157D 1000000000000000 (       tables.asm):00091                         FCB     $10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+     0000000000000000
+158D 40               (       tables.asm):00092                         FCB     $40
+                      (      src/tgl.asm):00072         
+158E                  (      src/tgl.asm):00073         TGL_END                                 ; default buffer starts here
+
+Symbol Table:
+[ G] BLIT_LOOP                        12FF
+[ G] BUFSIZE                          03C0
+[ G] CLS_FILL                         1064
+[ G] COLS                             0028
+[ G] CRTC_ADDR                        0800
+[ G] CRTC_DATA                        0801
+[ G] DIV8                             140D
+[ G] DV_LOOP                          1415
+[ G] DV_NEXT                          1420
+[ G] DV_SUB                           141D
+[ G] GFX_WHITE                        0097
+[ G] I_CNT                            0017
+[ G] I_DU                             0015
+[ G] I_DV                             0016
+[ G] I_E                              0013
+[ G] I_SGN                            0014
+[ G] I_U0                             000F
+[ G] I_U1                             0010
+[ G] I_V0                             0011
+[ G] I_V1                             0012
+[ G] IK_NONE                          1441
+[ G] IS_1                             13D1
+[ G] IS_2                             13E0
+[ G] IS_3                             13F2
+[ G] IS_4                             140A
+[ G] ISECT                            13C2
+[ G] J_BLIT                           1012
+[ G] J_CLS                            1006
+[ G] J_DONE                           101B
+[ G] J_EXIT                           1021
+[ G] J_INIT                           1000
+[ G] J_INKEY                          101E
+[ G] J_LINE                           100F
+[ G] J_LINEC                          1018
+[ G] J_PLOT                           100C
+[ G] J_PLOTC                          1015
+[ G] J_SETBUF                         1003
+[ G] J_SETMODE                        1009
+[ G] LC_CLIP                          1384
+[ G] LC_DRAW                          135A
+[ G] LC_EXIT                          1361
+[ G] LC_LOOP                          1332
+[ G] LC_P1                            1352
+[ G] LCC_1                            138B
+[ G] LCC_2                            13A4
+[ G] LCC_3                            13AC
+[ G] LCC_H                            1391
+[ G] LCC_V                            13AD
+[ G] LN_1                             1144
+[ G] LN_2                             114D
+[ G] LN_3                             115C
+[ G] LN_4                             11A6
+[ G] LN_START                         12C9
+[ G] LN_SWAP                          12C0
+[ G] LN_XUP                           1188
+[ G] LN_YLT                           11D3
+[ G] LN_YMAJ                          119D
+[ G] LS_R                             12E5
+[ G] LS_X                             12ED
+[ G] LXD                              11E8
+[ G] LXD_ADD                          1203
+[ G] LXD_DD                           1216
+[ G] LXD_DN                           120F
+[ G] LXD_NS                           1218
+[ G] LXD_OP                           11EB
+[ G] LXD_PRE                          11EA
+[ G] LXD_RD                           11FD
+[ G] LXD_RN                           11FA
+[ G] LXD_SUB                          11FF
+[ G] LXD_X                            121C
+[ G] LXU                              121E
+[ G] LXU_ADD                          1239
+[ G] LXU_NS                           124E
+[ G] LXU_OP                           1221
+[ G] LXU_PRE                          1220
+[ G] LXU_RD                           1233
+[ G] LXU_RN                           1230
+[ G] LXU_SUB                          1235
+[ G] LXU_UD                           124C
+[ G] LXU_UN                           1245
+[ G] LXU_X                            1252
+[ G] LYL                              128A
+[ G] LYL_ADD                          12AA
+[ G] LYL_DD                           12A4
+[ G] LYL_DN                           129D
+[ G] LYL_LD                           12B8
+[ G] LYL_LN                           12B5
+[ G] LYL_NS                           12BA
+[ G] LYL_OP                           128D
+[ G] LYL_PRE                          128C
+[ G] LYL_SUB                          12A6
+[ G] LYL_X                            12BE
+[ G] LYR                              1254
+[ G] LYR_ADD                          1274
+[ G] LYR_DD                           126E
+[ G] LYR_DN                           1267
+[ G] LYR_NS                           1284
+[ G] LYR_OP                           1257
+[ G] LYR_PRE                          1256
+[ G] LYR_RD                           1282
+[ G] LYR_RN                           127F
+[ G] LYR_SUB                          1270
+[ G] LYR_X                            1288
+[ G] MASKREAL                         156D
+[ G] MODE_CLEAR                       0001
+[ G] MODE_SET                         0000
+[ G] MODE_XOR                         0002
+[ G] MODETAB                          1567
+[ G] MON_CINADR                       0367
+[ G] MON_COPADR                       0365
+[ G] MON_HEADST                       0387
+[ G] MON_TAIL                         038B
+[ G] OC_1                             136D
+[ G] OC_2                             1373
+[ G] OC_3                             137B
+[ G] OC_4                             1381
+[ G] OUTCODE                          1363
+[ G] PC_X                             132B
+[ G] PLOT_OP                          1131
+[ G] PLOT_PRE                         1130
+[ G] PLOT_R                           112E
+[ G] PTAB                             1447
+[ G] ROWS                             0018
+[ G] SETM_X                           1110
+[ G] SIXEL_BLANK                      0020
+[ G] SIXEL_FULL                       007F
+[ G] T_BLIT                           12EE
+[ G] T_CLS                            1051
+[ G] T_DONE                           1425
+[ G] T_EXIT                           1444
+[ G] T_INIT                           1024
+[ G] T_INKEY                          142F
+[ G] T_LINE                           1137
+[ G] T_LINEC                          132C
+[ G] T_PLOT                           1111
+[ G] T_PLOTC                          1320
+[ G] T_SETBUF                         104E
+[ G] T_SETMODE                        10D7
+[ G] TGL_BASE                         1000
+[ G] TGL_BLIT                         1012
+[ G] TGL_BUFSIZE                      03C0
+[ G] TGL_CLS                          1006
+[ G] TGL_DONE                         101B
+[ G] TGL_END                          158E
+[ G] TGL_EXIT                         1021
+[ G] TGL_INIT                         1000
+[ G] TGL_INKEY                        101E
+[ G] TGL_LINE                         100F
+[ G] TGL_LINEC                        1018
+[ G] TGL_MODE_CLEAR                   0001
+[ G] TGL_MODE_SET                     0000
+[ G] TGL_MODE_XOR                     0002
+[ G] TGL_ORG                          1000
+[ G] TGL_PLOT                         100C
+[ G] TGL_PLOTC                        1015
+[ G] TGL_SETBUF                       1003
+[ G] TGL_SETMODE                      1009
+[ G] TGL_START                        1000
+[ G] VDU_BASE                         0400
+[ G] W_ADX                            000A
+[ G] W_ADY                            000B
+[ G] W_BUF                            0000
+[ G] W_C0                             000D
+[ G] W_C1                             000E
+[ G] W_COUNT                          0004
+[ G] W_ERR                            000C
+[ G] W_MODE                           0005
+[ G] W_SAVSP                          0002
+[ G] W_X0                             0006
+[ G] W_X1                             0008
+[ G] W_Y0                             0007
+[ G] W_Y1                             0009
+[ G] WS                               0000
+[ G] WS_SIZE                          0018
+[ G] XMAX                             004D
+[ G] YMAX                             0047
