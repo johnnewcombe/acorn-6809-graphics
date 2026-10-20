@@ -7,7 +7,7 @@ Acorn System machines. It is currently designed for Assembler calls only. It was
 
 The _build_ folder contains binaries for Linux (AMD63), for other platforms see _Building_ below. alongside 
 
-Mame was used for testing and within the _mame_ folder is a bootable Acorn System 6809 Flex9 disk a long with a disk 
+Mame was used for testing and within the _mame_ folder is a bootable Acorn System 6809 Flex9 disk along with a disk 
 containing the graphics library and demo binaries. Assuming Flex9 is booted to disk 0 and the `TGL.dsk` disk is 
 inserted in disk 1, the following commands will load the graphics library and demo binaries. 
 
