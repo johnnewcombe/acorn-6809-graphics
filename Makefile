@@ -3,8 +3,9 @@
 #   make            build library for both targets, plus the demos
 #   make sys3       standard Acorn System 3 (VDU at $0400)
 #   make flex       FLEX machine (VDU at $E400)
-#   make SAFE=1     range-checked TGL_PLOT/TGL_LINE (use make -B or clean first
-#                   when switching between normal and safe builds)
+#   make SAFE=1     range-checked TGL_PLOT/TGL_LINE
+#   make NOPACE=1   TGL_PACE does nothing and never touches the VIA timer
+#                   (use make -B or clean first when switching build options)
 #   make test       build, put the FLEX build and demos on TGL.dsk, run MAME
 #   make clean
 
@@ -14,7 +15,12 @@ SRC      = $(wildcard src/*.asm src/*.inc src/target/*.inc)
 
 ifdef SAFE
 LWFLAGS += -D TGL_SAFE
-BUILDTYPE = , SAFE build
+BUILDTYPE := $(BUILDTYPE), SAFE build
+endif
+
+ifdef NOPACE
+LWFLAGS += -D TGL_NOPACE
+BUILDTYPE := $(BUILDTYPE), NOPACE build
 endif
 MAME 	 = /home/john/Dropbox/Repositories/mame-acorn-flex/mame
 DEMO     = ./build/demo.bin

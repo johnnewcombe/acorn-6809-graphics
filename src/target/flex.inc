@@ -16,3 +16,7 @@ MON_CINADR      EQU     $E367           ; console input routine address
 MON_HEADST      EQU     $E387           ; keyboard buffer: static head
 MON_TAIL        EQU     $E38B           ; keyboard buffer: tail
 FLEX_WARMS      EQU     $CD03           ; FLEX warm start
+
+; Main VIA (keyboard/printer/cassette). The library uses only Timer 2, and
+; only inside TGL_PACE; the monitor uses Timer 1 and never touches Timer 2.
+VIA_BASE        EQU     $E980

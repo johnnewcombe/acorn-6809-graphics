@@ -13,8 +13,11 @@
 ;     3. build the rotation for this frame's angles        (MATRIX)
 ;     4. rotate the 8 corners and project them to screen   (CORNERS)
 ;     5. draw the 12 edges between corners                 (EDGES)
-;     6. copy the buffer to the screen                     (TGL_BLIT)
-;     7. advance the angles and zoom, check for a key, repeat
+;     6. wait for the frame period to run out              (TGL_PACE)
+;     7. copy the buffer to the screen                     (TGL_BLIT)
+;     8. advance the angles and zoom, check for a key, repeat
+;   TGL_PACE keeps every frame the same length, so the cube turns at an
+;   even speed instead of slowing down as it zooms in.
 ;   Drawing off-screen and blitting the finished frame means no flicker.
 ;
 ; ---------------------------------------------------------------------------
@@ -84,6 +87,9 @@ CY              EQU     36
 STEP_A          EQU     2               ; rotation speed about x (per frame,
 STEP_B          EQU     3               ;  and about y; 256 = a full turn)
 STEP_Z          EQU     1               ; zoom speed (256 steps per in-and-out)
+PACE_TICKS      EQU     2               ; frame length in 50Hz ticks: 2 = 25
+                                        ;  frames per second. If the cube
+                                        ;  slows when zoomed in, try 3
 
 ; ---------------------------------------------------------------------------
 ; Variables, in page zero so they can use fast direct addressing.
@@ -138,6 +144,8 @@ FRAME           JSR     TGL_CLS         ; blank the buffer
                 LBSR    MATRIX          ; terms TX, TY, TZ for this frame
                 LBSR    CORNERS         ; screen positions PX, PY
                 LBSR    EDGES           ; draw into the buffer
+                LDA     #PACE_TICKS     ; wait for the frame period, so every
+                JSR     TGL_PACE        ;  frame takes the same time
                 JSR     TGL_BLIT        ; show it
 
 ; Advance the angles and zoom phase. Being bytes, they wrap from 255 back

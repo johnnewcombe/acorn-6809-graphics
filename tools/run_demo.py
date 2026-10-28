@@ -16,6 +16,9 @@ mem = Memory(Cfg({"verbosity": None, "trace": None}))
 cpu = CPU(mem, Cfg({"verbosity": None, "trace": None}))
 mem.load(0x1000, bytearray(open(tgl, "rb").read()))
 mem.load(0x2000, bytearray(open(demo, "rb").read()))
+# There is no VIA here: hold Timer 2's "timed out" flag set so TGL_PACE
+# never waits (it would otherwise wait for ever)
+mem.load(0x0980 + 0xD, bytearray([0x20]))
 cpu.test_run(0x2000, done)
 
 scr = [mem.read_byte(vdu + i) for i in range(960)]

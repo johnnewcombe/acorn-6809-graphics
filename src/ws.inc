@@ -63,4 +63,5 @@ K_LAST          EQU     WS+65           ; 1  colour: last row
 K_CODE          EQU     WS+66           ; 1  colour: control code
 ROWCOL          EQU     WS+67           ; 24 each row's graphics control code,
                                         ;    written into column 0 by TGL_CLS
-WS_SIZE         EQU     91
+P_RUN           EQU     WS+91           ; 1  pace: a frame period is running
+WS_SIZE         EQU     92

@@ -18,3 +18,7 @@ MON_COPADR      EQU     $0365           ; console output routine address
 MON_CINADR      EQU     $0367           ; console input routine address
 MON_HEADST      EQU     $0387           ; keyboard buffer: static head
 MON_TAIL        EQU     $038B           ; keyboard buffer: tail
+
+; Main VIA (keyboard/printer/cassette). The library uses only Timer 2, and
+; only inside TGL_PACE; the monitor uses Timer 1 and never touches Timer 2.
+VIA_BASE        EQU     $0980
