@@ -43,6 +43,11 @@ J_INKEY         LBRA    T_INKEY         ; +30
 J_EXIT          LBRA    T_EXIT          ; +33
 J_RECT          LBRA    T_RECT          ; +36
 J_RECTF         LBRA    T_RECTF         ; +39
+J_CIRC          LBRA    T_CIRC          ; +42
+J_CIRCF         LBRA    T_CIRCF         ; +45
+J_TEXT          LBRA    T_TEXT          ; +48
+J_TCLR          LBRA    T_TCLR          ; +51
+J_TNUM          LBRA    T_TNUM          ; +54
 
 ; Check the table against the published interface
 TGL_BASE        EQU     TGL_START
@@ -62,6 +67,12 @@ TGL_BASE        EQU     TGL_START
                 IFNE    (J_RECT-TGL_RECT)|(J_RECTF-TGL_RECTF)
                 ERROR   "Jump table does not match tgl_api.inc"
                 ENDC
+                IFNE    (J_CIRC-TGL_CIRC)|(J_CIRCF-TGL_CIRCF)
+                ERROR   "Jump table does not match tgl_api.inc"
+                ENDC
+                IFNE    (J_TEXT-TGL_TEXT)|(J_TCLR-TGL_TCLR)|(J_TNUM-TGL_TNUM)
+                ERROR   "Jump table does not match tgl_api.inc"
+                ENDC
 
 ; ---------------------------------------------------------------------------
 ; Modules
@@ -73,6 +84,8 @@ TGL_BASE        EQU     TGL_START
                 INCLUDE "blit.asm"
                 INCLUDE "clip.asm"
                 INCLUDE "rect.asm"
+                INCLUDE "circle.asm"
+                INCLUDE "text.asm"
                 INCLUDE "system.asm"
                 INCLUDE "tables.asm"
 

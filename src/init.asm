@@ -4,6 +4,7 @@
 ;   screen begins at VDU_BASE. The monitor and FLEX VDU drivers scroll in
 ;   hardware, which can leave the start address anywhere in the 1K.
 ;   Hides the hardware cursor (R10 = $20, the "no cursor" mode bits).
+;   Clears the status row (row 24).
 ;   Sets the off-screen buffer to the memory immediately after the library
 ;   (BUFSIZE bytes must be free there) and the plot mode to MODE_SET.
 ;   Entry: DP = $00            Exit: all registers preserved
@@ -20,6 +21,7 @@ T_INIT          PSHS    D,X
                 STA     CRTC_ADDR
                 LDA     #$20            ; bits 6-5 = 01: no cursor
                 STA     CRTC_DATA
+                LBSR    T_TCLR          ; blank the status row
                 LEAX    TGL_END,PCR
                 STX     <W_BUF
                 LDA     #MODE_SET

@@ -20,6 +20,11 @@ TGL_INKEY       EQU     TGL_BASE+30     ; key waiting? Z set: none; else A = key
 TGL_EXIT        EQU     TGL_BASE+33     ; restore display, back to FLEX/monitor
 TGL_RECT        EQU     TGL_BASE+36     ; outline rectangle: corners as TGL_LINEC
 TGL_RECTF       EQU     TGL_BASE+39     ; filled rectangle: corners as TGL_LINEC
+TGL_CIRC        EQU     TGL_BASE+42     ; outline circle: A,B = centre, X = radius
+TGL_CIRCF       EQU     TGL_BASE+45     ; filled circle: A,B = centre, X = radius
+TGL_TEXT        EQU     TGL_BASE+48     ; status row text: A = column, X -> string
+TGL_TCLR        EQU     TGL_BASE+51     ; clear the status row
+TGL_TNUM        EQU     TGL_BASE+54     ; status row number: A = column, X = value
 
 TGL_BUFSIZE     EQU     960
 TGL_MODE_SET    EQU     0

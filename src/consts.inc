@@ -16,3 +16,5 @@ MODE_XOR        EQU     2
 
 XMAX            EQU     77              ; largest visible x
 YMAX            EQU     71              ; largest visible y
+STATUS_ROW      EQU     24              ; the status (text) row: below the
+                                        ;  graphics, never touched by the blit

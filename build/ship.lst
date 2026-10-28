@@ -85,11 +85,16 @@
      1021             (      tgl_api.inc):00020         TGL_EXIT        EQU     TGL_BASE+33     ; restore display, back to FLEX/monitor
      1024             (      tgl_api.inc):00021         TGL_RECT        EQU     TGL_BASE+36     ; outline rectangle: corners as TGL_LINEC
      1027             (      tgl_api.inc):00022         TGL_RECTF       EQU     TGL_BASE+39     ; filled rectangle: corners as TGL_LINEC
-                      (      tgl_api.inc):00023         
-     03C0             (      tgl_api.inc):00024         TGL_BUFSIZE     EQU     960
-     0000             (      tgl_api.inc):00025         TGL_MODE_SET    EQU     0
-     0001             (      tgl_api.inc):00026         TGL_MODE_CLEAR  EQU     1
-     0002             (      tgl_api.inc):00027         TGL_MODE_XOR    EQU     2
+     102A             (      tgl_api.inc):00023         TGL_CIRC        EQU     TGL_BASE+42     ; outline circle: A,B = centre, X = radius
+     102D             (      tgl_api.inc):00024         TGL_CIRCF       EQU     TGL_BASE+45     ; filled circle: A,B = centre, X = radius
+     1030             (      tgl_api.inc):00025         TGL_TEXT        EQU     TGL_BASE+48     ; status row text: A = column, X -> string
+     1033             (      tgl_api.inc):00026         TGL_TCLR        EQU     TGL_BASE+51     ; clear the status row
+     1036             (      tgl_api.inc):00027         TGL_TNUM        EQU     TGL_BASE+54     ; status row number: A = column, X = value
+                      (      tgl_api.inc):00028         
+     03C0             (      tgl_api.inc):00029         TGL_BUFSIZE     EQU     960
+     0000             (      tgl_api.inc):00030         TGL_MODE_SET    EQU     0
+     0001             (      tgl_api.inc):00031         TGL_MODE_CLEAR  EQU     1
+     0002             (      tgl_api.inc):00032         TGL_MODE_XOR    EQU     2
                       (    demo/ship.asm):00066         
                       (    demo/ship.asm):00067         ; ---------------------------------------------------------------------------
                       (    demo/ship.asm):00068         ; Memory
@@ -770,6 +775,8 @@ Symbol Table:
 [ G] TGL_BASE                         1000
 [ G] TGL_BLIT                         1012
 [ G] TGL_BUFSIZE                      03C0
+[ G] TGL_CIRC                         102A
+[ G] TGL_CIRCF                        102D
 [ G] TGL_CLS                          1006
 [ G] TGL_DONE                         101B
 [ G] TGL_EXIT                         1021
@@ -786,6 +793,9 @@ Symbol Table:
 [ G] TGL_RECTF                        1027
 [ G] TGL_SETBUF                       1003
 [ G] TGL_SETMODE                      1009
+[ G] TGL_TCLR                         1033
+[ G] TGL_TEXT                         1030
+[ G] TGL_TNUM                         1036
 [ G] TMPX                             009E
 [ G] VEC                              008F
 [ G] VI                               0096

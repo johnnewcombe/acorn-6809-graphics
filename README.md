@@ -25,14 +25,15 @@ inserted in disk 1, the following commands will load the graphics library and de
     make cube       # rotating cube demo only
     make ship       # spaceship demo only
     make boxes      # rectangles demo only
+    make circles    # circles demo only
     make SAFE=1     # range-checked build (see below)
     make test       # build, put the FLEX library and demos on TGL.dsk,
                     #  and start MAME
     make clean      # remove the build directory
 
 Output is raw binary: `build/sys3/tgl.bin`, `build/flex/tgl.bin`,
-`build/demo.bin`, `build/cube.bin`, `build/ship.bin` and `build/boxes.bin`,
-with listings alongside.
+`build/demo.bin`, `build/cube.bin`, `build/ship.bin`, `build/boxes.bin` and
+`build/circles.bin`, with listings alongside.
 
 ### Safe builds
 
@@ -73,8 +74,12 @@ __Image of a rotating space ship which runs at about 16 frames per second.__
 
 - `boxes.bin` - four filled boxes drift and bounce in XOR mode, so their
   overlaps cancel out, sliding partly off the screen edges to show the
-  clipping, with two outline frames (also XOR) on top. About 66,000
-  cycles per frame (roughly 15 frames per second at 1MHz).
+  clipping, with two outline frames (also XOR) on top, and a coloured
+  title and frame counter on the status row. About 66,000 cycles per frame
+  (roughly 15 frames per second at 1MHz).
+- `circles.bin` - a filled ball bounces around, partly off the edges,
+  while rings ripple outwards from the centre, all in XOR so the rings
+  invert where they cross the ball.
 
 ## Using the library
 
@@ -99,7 +104,7 @@ the binaries differ, so position independence can't silently break.
 
 | Entry       | Offset | Function |
 |-------------|--------|----------|
-| TGL_INIT    | +0     | Reset 6845 start address, hide cursor, buffer after library, SET mode |
+| TGL_INIT    | +0     | Reset 6845 start address, hide cursor, clear status row, buffer after library, SET mode |
 | TGL_SETBUF  | +3     | X = off-screen buffer address |
 | TGL_CLS     | +6     | Clear buffer to blank graphics |
 | TGL_SETMODE | +9     | A = mode: 0 set, 1 clear, 2 XOR |
@@ -113,6 +118,11 @@ the binaries differ, so position independence can't silently break.
 | TGL_EXIT    | +33    | Restore the display, return to FLEX / the monitor |
 | TGL_RECT    | +36    | Outline rectangle: corners as TGL_LINEC |
 | TGL_RECTF   | +39    | Filled rectangle: corners as TGL_LINEC |
+| TGL_CIRC    | +42    | Outline circle: A,B = signed centre x,y; X = radius (0-127) |
+| TGL_CIRCF   | +45    | Filled circle: A,B = signed centre x,y; X = radius (0-127) |
+| TGL_TEXT    | +48    | Status row text: A = column (0-39), X -> zero-terminated string |
+| TGL_TCLR    | +51    | Clear the status row |
+| TGL_TNUM    | +54    | Status row number: A = column, X = value (0-65535), 5 characters |
 
 `TGL_PLOT` and `TGL_LINE` do not range-check, for speed. `TGL_PLOTC` and
 `TGL_LINEC` accept signed coordinates and draw only what is on screen;
@@ -128,6 +138,30 @@ pixel: a full-screen fill takes about 36,000 cycles. `TGL_RECT` draws the
 outline as four thin fills that never overlap, so every pixel is drawn
 exactly once (in XOR mode, drawing a rectangle twice removes it); a
 full-screen outline takes about 19,000 cycles.
+
+`TGL_CIRC` and `TGL_CIRCF` take the radius in vertical pixels and scale
+every width by 13/16, because teletext pixels are wider than they are
+tall: the result is narrower than it is tall in pixels but looks round on
+screen. Both clip and use the current plot mode, and the outline draws
+every pixel exactly once, so XOR works. The circle is worked out a row at
+a time with an integer midpoint method (additions only). A radius-20
+outline takes about 34,000 cycles and a radius-20 filled circle about
+52,000.
+
+The status row is screen row 24, below the graphics. `TGL_BLIT` never
+touches it, so text written there stays put while the graphics above it
+change. `TGL_TEXT`, `TGL_TCLR` and `TGL_TNUM` write straight to the screen,
+so text appears immediately. Strings stop at the right-hand edge rather
+than wrapping, and may contain teletext control codes to colour the text
+that follows: $81 red, $82 green, $83 yellow, $84 blue, $85 magenta,
+$86 cyan, $87 white (each takes one character position and shows as a
+space). `TGL_TNUM` always writes five characters, right-aligned with
+leading spaces, so a shrinking value leaves no stray digits behind.
+
+Cycle figures in this README come from the Python emulator used for
+testing, which counts some indexed instructions as slower than the real
+6809 does. Frame rates measured in MAME suggest real costs are around
+15-20% lower.
 
 ## System routines
 

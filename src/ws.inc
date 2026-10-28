@@ -44,4 +44,18 @@ F_MR            EQU     WS+38           ; 1  fill: right-pixel mask for this row
 W_FM            EQU     WS+39           ; 1  fill: mask being applied
 F_ROW           EQU     WS+40           ; 2  fill: address of this cell row
 F_LAST          EQU     WS+42           ; 2  fill: address of the last cell row
-WS_SIZE         EQU     44
+C_CX            EQU     WS+44           ; 1  circle: centre x (signed)
+C_CY            EQU     WS+45           ; 1  circle: centre y (signed)
+C_R             EQU     WS+46           ; 1  circle: radius (0-127)
+C_ROW           EQU     WS+47           ; 1  circle: row offset being drawn
+C_X             EQU     WS+48           ; 1  circle: unscaled half-width
+C_F             EQU     WS+49           ; 2  circle: midpoint error term
+C_HC            EQU     WS+51           ; 1  circle: scaled half-width, this row
+C_HN            EQU     WS+52           ; 1  circle: scaled half-width, next row
+C_ST            EQU     WS+53           ; 1  circle: where this row's run starts
+C_Y             EQU     WS+54           ; 1  circle: screen y being drawn
+C_FILL          EQU     WS+55           ; 1  circle: 0 outline, else filled
+T_BUF           EQU     WS+56           ; 6  text: number being formatted
+T_DIG           EQU     WS+62           ; 1  text: digit being counted
+T_LEAD          EQU     WS+63           ; 1  text: non-zero digit seen yet
+WS_SIZE         EQU     64
