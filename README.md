@@ -12,8 +12,8 @@ containing the graphics library and demo binaries. Assuming Flex9 is booted to d
 inserted in disk 1, the following commands will load the graphics library and demo binaries. 
 
 ```text
-+++ GET 1.TGL.BIN
-+++ 1.CUBE.BIN
++++ GET TGL.BIN
++++ CUBE.BIN
 ```
 
 ## Building

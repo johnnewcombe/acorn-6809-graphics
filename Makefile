@@ -91,7 +91,7 @@ test: flex demo cube ship
 	# To build the mame command line, use the following URL
 	# https://arcade.vastheman.com/minimaws/machine/acrnsys3_6809
 	# Note that VIB for use with flex needs to be at EC00 not the default of 0C00
-	$(MAME) acrnsys3_flex40 -noreadconfig -rompath ./mame/roms -keymap -verbose -uimodekey CAPSLOCK -window -flop1 ./mame/disks/ACORN_ORIGINAL.FLEX.hfe -flop2 $(DESTDISK) -bus6 vib
+	$(MAME) acrnsys_flex -noreadconfig -rompath ./mame/roms -keymap -verbose -uimodekey CAPSLOCK -window -flop1 ./mame/disks/ACORN_ORIGINAL.FLEX.hfe -flop2 $(DESTDISK) -bus6 vib
 
 clean:
 	rm -rf build
