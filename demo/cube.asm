@@ -1,8 +1,10 @@
 ; ===========================================================================
 ; Rotating cube demo for the teletext graphics library
 ;
-;   A wireframe cube that tumbles about two axes and slowly zooms in and out,
-;   drawn in perspective. Press any key to exit.
+;   A cube that tumbles about two axes and slowly zooms in and out, drawn
+;   in perspective with its hidden lines removed so it looks solid. Press
+;   the space bar to switch hidden-line removal off and on (to see the full
+;   wireframe); any other key exits.
 ;
 ;   Loading: tgl.bin at $1000 (TGL_BASE below), cube.bin at $2000 (its ORG).
 ;   Run from START ($2000). Works with either machine's library build.
@@ -12,10 +14,12 @@
 ;     2. work out this frame's size from the zoom phase    (ZOOMSZ)
 ;     3. build the rotation for this frame's angles        (MATRIX)
 ;     4. rotate the 8 corners and project them to screen   (CORNERS)
-;     5. draw the 12 edges between corners                 (EDGES)
-;     6. wait for the frame period to run out              (TGL_PACE)
-;     7. copy the buffer to the screen                     (TGL_BLIT)
-;     8. advance the angles and zoom, check for a key, repeat
+;     5. work out which of the 6 faces point at the viewer (FACES)
+;     6. draw the 12 edges between corners, skipping edges
+;        whose two faces are both hidden                   (EDGES)
+;     7. wait for the frame period to run out              (TGL_PACE)
+;     8. copy the buffer to the screen                     (TGL_BLIT)
+;     9. advance the angles and zoom, check for a key, repeat
 ;   TGL_PACE keeps every frame the same length, so the cube turns at an
 ;   even speed instead of slowing down as it zooms in.
 ;   Drawing off-screen and blitting the finished frame means no flicker.
@@ -56,13 +60,24 @@
 ;   The x table uses a smaller F than the y table because teletext pixels
 ;   are wider than they are tall; this keeps the cube looking square.
 ;
+;   Hidden lines. A face is visible when it points back towards the viewer.
+;   Rather than rotate the faces, FACES works out where the viewer's eye
+;   is in the cube's own coordinates (as the ship demo does). The cube's
+;   faces are the six sides of a box, so the test is then trivial: the +x
+;   face is visible when the eye's x is beyond +S, the -x face when it is
+;   below -S, and likewise for y and z. The eye sits 100 units in front of
+;   the viewer's screen, the distance the projection tables assume; in
+;   cube coordinates it is -100 * (z row of the rotation matrix).
+;   Each edge borders two faces and is drawn if either is visible.
+;
 ;   Corner numbering. Corners are numbered 0-7. Bit 0 of the number says
 ;   whether the corner's x is +S (bit set) or -S (bit clear); bit 1 does
 ;   the same for y and bit 2 for z. Two corners are joined by an edge when
 ;   their numbers differ in exactly one bit (see EDGETAB).
 ;
 ;   Build with -D TESTFRAMES=n to stop after n frames (used by the emulator
-;   tests; a normal build runs until a key is pressed).
+;   tests; a normal build runs until a key is pressed), and -D WIREFRAME to
+;   start with hidden-line removal off.
 ; ===========================================================================
 
 ; ---------------------------------------------------------------------------
@@ -111,6 +126,13 @@ EC              EQU     $92             ; edges left to draw
 FRAMES          EQU     $93             ; frame counter (test builds only)
 SIZE            EQU     $94             ; this frame's half edge length (S)
 ZOOM            EQU     $95             ; zoom phase (0-255, like an angle)
+EX              EQU     $96             ; the viewer's eye, in cube
+EY              EQU     $97             ;  coordinates
+EZ              EQU     $98
+HIDE            EQU     $99             ; $FF: remove hidden lines, 0: don't
+VIS             EQU     $B0             ; 6 bytes: per face, $FF if visible.
+                                        ;  Faces: 0 +x, 1 -x, 2 +y, 3 -y,
+                                        ;  4 +z, 5 -z
 PX              EQU     $A0             ; 8 bytes: screen x of corners 0-7
 PY              EQU     $A8             ; 8 bytes: screen y of corners 0-7.
                                         ;  PY is exactly PX+8, so if X points
@@ -135,6 +157,15 @@ START           LDS     #STACK_TOP
                 CLR     <ANG_B
                 CLR     <FRAMES
                 CLR     <ZOOM
+                IFDEF   WIREFRAME
+                CLR     <HIDE           ; start showing every edge
+                ELSE
+                LDA     #$FF            ; start with hidden lines removed
+                STA     <HIDE
+                ENDC
+                CLRA                    ; status row: how to use the keys
+                LDX     #KEYHELP
+                JSR     TGL_TEXT
 
 ; ---------------------------------------------------------------------------
 ; Main loop: one pass per frame
@@ -143,6 +174,7 @@ FRAME           JSR     TGL_CLS         ; blank the buffer
                 BSR     ZOOMSZ          ; SIZE for this frame
                 LBSR    MATRIX          ; terms TX, TY, TZ for this frame
                 LBSR    CORNERS         ; screen positions PX, PY
+                LBSR    FACES           ; which faces can be seen
                 LBSR    EDGES           ; draw into the buffer
                 LDA     #PACE_TICKS     ; wait for the frame period, so every
                 JSR     TGL_PACE        ;  frame takes the same time
@@ -160,10 +192,14 @@ FRAME           JSR     TGL_CLS         ; blank the buffer
                 ADDA    #STEP_Z
                 STA     <ZOOM
 
-; Any key exits. TGL_INKEY returns Z clear if a key was pressed, and
-; TGL_EXIT never returns, so a long branch straight to it is enough.
+; Keys: space toggles hidden-line removal, anything else exits.
+; TGL_INKEY returns Z set if no key is waiting, else the key in A.
                 JSR     TGL_INKEY
-                LBNE    TGL_EXIT
+                BEQ     NOKEY
+                CMPA    #' '
+                LBNE    TGL_EXIT        ; not space: exit (never returns)
+                COM     <HIDE           ; space: $FF <-> 0
+NOKEY
 
 ; Test builds stop after TESTFRAMES frames so the emulator can inspect
 ; the result. Normal builds skip this.
@@ -326,6 +362,56 @@ MS_3            LEAS    2,S             ; discard the saved originals
                 RTS
 
 ; ---------------------------------------------------------------------------
+; FACES - which of the six faces point towards the viewer
+;
+;   The eye in cube coordinates is -100 * (z row of the rotation matrix),
+;   using the unscaled matrix entries (127 = 1.0) from MATRIX:
+;       z row = [ -sb*ca, sa, cb*ca ]
+;   Multiplying by -101 and dividing by 128 (MULS7) gives -100 * row / 127.
+;   Then, for each axis, the + face is visible if the eye is beyond +S and
+;   the - face if it is beyond -S.
+; ---------------------------------------------------------------------------
+FACES           LDA     <SB             ; EX = -100 * (-sb*ca)
+                LDB     <CA
+                LBSR    MULS7
+                NEGA
+                LDB     #-101
+                LBSR    MULS7
+                STA     <EX
+                LDA     <SA             ; EY = -100 * sa
+                LDB     #-101
+                LBSR    MULS7
+                STA     <EY
+                LDA     <CB             ; EZ = -100 * (cb*ca)
+                LDB     <CA
+                LBSR    MULS7
+                LDB     #-101
+                LBSR    MULS7
+                STA     <EZ
+                LDU     #VIS            ; set VIS for the six faces
+                LDA     <EX
+                BSR     FACEPAIR        ;  +x, -x
+                LDA     <EY
+                BSR     FACEPAIR        ;  +y, -y
+                LDA     <EZ
+                ; fall into FACEPAIR    ;  +z, -z
+
+; FACEPAIR - Entry: A = one coordinate of the eye, U -> VIS slot for the
+;   + face. Sets that slot and the next ($FF visible, 0 hidden), U += 2.
+FACEPAIR        CLRB                    ; + face: visible if eye > S
+                CMPA    <SIZE           ;  (signed compare)
+                BLE     FP_1
+                DECB                    ;  B = $FF
+FP_1            STB     ,U+
+                CLRB                    ; - face: visible if eye < -S,
+                NEGA                    ;  i.e. -eye > S (the eye stays
+                CMPA    <SIZE           ;  within +/-101, so NEGA can't
+                BLE     FP_2            ;  overflow)
+                DECB
+FP_2            STB     ,U+
+                RTS
+
+; ---------------------------------------------------------------------------
 ; CORNERS - rotate and project all 8 corners into PX/PY
 ;
 ;   For each corner number VI (0-7):
@@ -434,13 +520,26 @@ PM_1            MUL                     ; positive coordinate: A * B
 ;   TGL_LINEC (the clipped line) is used because, when the cube is zoomed
 ;   right in, some corners land off the screen.
 ;
-;   Y walks through EDGETAB two bytes at a time: 0,Y is the start corner,
-;   1,Y the end corner.
+;   Y walks through EDGETAB four bytes at a time: 0,Y is the start corner,
+;   1,Y the end corner, and 2,Y and 3,Y the two faces the edge borders.
+;   With hidden-line removal on, an edge is skipped if both faces are
+;   hidden.
 ; ---------------------------------------------------------------------------
 EDGES           LEAY    EDGETAB,PCR
                 LDA     #12             ; 12 edges to draw
                 STA     <EC
-ED_LOOP         LDX     #PX             ; end corner's position -> U
+ED_LOOP         TST     <HIDE           ; removing hidden lines?
+                BEQ     ED_DRAW
+                LDX     #VIS            ; skip the edge unless one of its
+                LDB     2,Y             ;  faces is visible
+                ABX
+                LDA     ,X
+                LDX     #VIS
+                LDB     3,Y
+                ABX
+                ORA     ,X
+                BEQ     ED_NEXT
+ED_DRAW         LDX     #PX             ; end corner's position -> U
                 LDB     1,Y             ;  X -> PX + end corner
                 ABX
                 LDA     ,X              ;  A = its x
@@ -453,18 +552,39 @@ ED_LOOP         LDX     #PX             ; end corner's position -> U
                 LDB     8,X             ;  B = y0
                 TFR     U,X             ; X = x1:y1, the packed end point
                 JSR     TGL_LINEC
-                LEAY    2,Y             ; next pair
+ED_NEXT         LEAY    4,Y             ; next edge
                 DEC     <EC
                 BNE     ED_LOOP
                 RTS
 
 ; ---------------------------------------------------------------------------
-; The 12 edges, as pairs of corner numbers. Corners differing only in bit 0
-; are joined by an edge running along x; bit 1 along y; bit 2 along z.
+; The 12 edges: start corner, end corner, and the two faces the edge
+; borders (0 +x, 1 -x, 2 +y, 3 -y, 4 +z, 5 -z). The two corners differ in
+; one bit, so the edge runs along that axis; its faces come from the other
+; two bits (bit set: the + face, clear: the - face).
 ; ---------------------------------------------------------------------------
-EDGETAB         FCB     0,1,2,3,4,5,6,7         ; edges along x
-                FCB     0,2,1,3,4,6,5,7         ; edges along y
-                FCB     0,4,1,5,2,6,3,7         ; edges along z
+EDGETAB
+                FCB     0,1,3,5         ; along x: faces -y, -z
+                FCB     2,3,2,5         ; along x: faces +y, -z
+                FCB     4,5,3,4         ; along x: faces -y, +z
+                FCB     6,7,2,4         ; along x: faces +y, +z
+                FCB     0,2,1,5         ; along y: faces -x, -z
+                FCB     1,3,0,5         ; along y: faces +x, -z
+                FCB     4,6,1,4         ; along y: faces -x, +z
+                FCB     5,7,0,4         ; along y: faces +x, +z
+                FCB     0,4,1,3         ; along z: faces -x, -y
+                FCB     1,5,0,3         ; along z: faces +x, -y
+                FCB     2,6,1,2         ; along z: faces -x, +y
+                FCB     3,7,0,2         ; along z: faces +x, +y
+
+; Status row help. $83 yellow, $87 white, $86 cyan text codes.
+KEYHELP         FCB     $83
+                FCC     "SPACE"
+                FCB     $87
+                FCC     "HIDDEN LINES"
+                FCB     $86
+                FCC     "OTHER KEY EXITS"
+                FCB     0
 
 ; Sine table and perspective tables, generated by tools/gen_cube_tables.py
                 INCLUDE "cube_tables.asm"
