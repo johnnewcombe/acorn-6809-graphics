@@ -79,7 +79,8 @@ __Image of a rotating space ship which runs at about 16 frames per second.__
   (roughly 15 frames per second at 1MHz).
 - `circles.bin` - a filled ball bounces around, partly off the edges,
   while rings ripple outwards from the centre, all in XOR so the rings
-  invert where they cross the ball.
+  invert where they cross the ball. Six rainbow colour bands scroll slowly
+  down the screen, with a coloured title on the status row.
 
 ## Using the library
 
@@ -104,9 +105,9 @@ the binaries differ, so position independence can't silently break.
 
 | Entry       | Offset | Function |
 |-------------|--------|----------|
-| TGL_INIT    | +0     | Reset 6845 start address, hide cursor, clear status row, buffer after library, SET mode |
+| TGL_INIT    | +0     | Reset 6845 start address, hide cursor, clear status row, all rows white, buffer after library, SET mode |
 | TGL_SETBUF  | +3     | X = off-screen buffer address |
-| TGL_CLS     | +6     | Clear buffer to blank graphics |
+| TGL_CLS     | +6     | Clear buffer to blank graphics (keeping row colours) |
 | TGL_SETMODE | +9     | A = mode: 0 set, 1 clear, 2 XOR |
 | TGL_PLOT    | +12    | A = x (0-77), B = y (0-71) |
 | TGL_LINE    | +15    | A,B = x0,y0; X = x1:y1 (high:low) |
@@ -123,6 +124,7 @@ the binaries differ, so position independence can't silently break.
 | TGL_TEXT    | +48    | Status row text: A = column (0-39), X -> zero-terminated string |
 | TGL_TCLR    | +51    | Clear the status row |
 | TGL_TNUM    | +54    | Status row number: A = column, X = value (0-65535), 5 characters |
+| TGL_COLOUR  | +57    | Row colour: A,B = first,last row (0-23), X = colour (1-7) |
 
 `TGL_PLOT` and `TGL_LINE` do not range-check, for speed. `TGL_PLOTC` and
 `TGL_LINEC` accept signed coordinates and draw only what is on screen;
@@ -157,6 +159,15 @@ that follows: $81 red, $82 green, $83 yellow, $84 blue, $85 magenta,
 $86 cyan, $87 white (each takes one character position and shows as a
 space). `TGL_TNUM` always writes five characters, right-aligned with
 leading spaces, so a shrinking value leaves no stray digits behind.
+
+Teletext colours whole rows: each row of character cells starts with a
+colour code, which the library keeps in column 0. `TGL_COLOUR` sets the
+graphics colour of a band of rows (row r covers pixel rows y = 3r to
+3r+2): 1 red, 2 green, 3 yellow, 4 blue, 5 magenta, 6 cyan, 7 white, also
+available as `TGL_RED` ... `TGL_WHITE` in `tgl_api.inc`. The change goes
+into the buffer straight away, shows at the next blit, and is remembered,
+so `TGL_CLS` keeps each row's colour. Changing colours costs no pixels and
+no drawing time.
 
 Cycle figures in this README come from the Python emulator used for
 testing, which counts some indexed instructions as slower than the real

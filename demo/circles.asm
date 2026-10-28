@@ -4,7 +4,14 @@
 ;   A filled ball bounces around the screen, sliding partly off the edges
 ;   (showing the clipping), while rings ripple outwards from the centre.
 ;   Everything is drawn in XOR mode, so the rings invert where they cross
-;   the ball. Press any key to exit.
+;   the ball. The screen is coloured in six rainbow bands that scroll slowly
+;   downwards, and the status row shows a coloured title.
+;   Press any key to exit.
+;
+;   Teletext colours whole rows: each row of character cells starts with a
+;   colour code, which the library keeps in column 0. TGL_COLOUR sets it
+;   for a band of rows and the library remembers it, so TGL_CLS keeps the
+;   colours from frame to frame. Changing colours costs no drawing time.
 ;
 ;   Circles are corrected for the teletext pixel shape (pixels are wider
 ;   than they are tall), so they look round on screen even though they are
@@ -44,6 +51,12 @@ BALLDY          EQU     $83
 PHASE           EQU     $84             ; ripple phase, 0 .. RING_GAP-1
 RING            EQU     $85             ; radius of the ring being drawn
 FRAMES          EQU     $86             ; frame counter (test builds)
+SHIFT           EQU     $87             ; rainbow position, 0-5
+CYC             EQU     $88             ; frames until the rainbow moves
+BAND            EQU     $89             ; band being coloured, 0-5
+
+NBANDS          EQU     6               ; six bands of four rows = 24 rows
+CYCLE           EQU     4               ; frames between rainbow moves
 
                 ORG     $2000
 
@@ -63,6 +76,12 @@ START           LDS     #STACK_TOP
                 STD     <BALLDX
                 CLR     <PHASE
                 CLR     <FRAMES
+                CLR     <SHIFT
+                LDA     #1              ; colour the bands on the first frame
+                STA     <CYC
+                CLRA                    ; status row title, at column 0
+                LDX     #TITLE
+                JSR     TGL_TEXT
 
 ; ---------------------------------------------------------------------------
 ; Main loop
@@ -120,6 +139,41 @@ RG_LOOP         CLRA                    ; X = radius: D = 0:RING, then
                 CLRA
 PH_OK           STA     <PHASE
 
+; The rainbow. Every CYCLE frames each band takes the colour of the band
+; above it, so the colours scroll downwards. Band b (rows 4b to 4b+3) gets
+; RAINBOW[(b - SHIFT) mod 6]. The library remembers row colours, so this
+; only needs doing when they change.
+                DEC     <CYC
+                BNE     RB_DONE
+                LDA     #CYCLE
+                STA     <CYC
+                CLR     <BAND
+RB_LOOP         LDA     <BAND           ; colour index = (band - shift) mod 6
+                SUBA    <SHIFT
+                BPL     RB_1
+                ADDA    #NBANDS
+RB_1            LEAX    RAINBOW,PCR     ; B = colour for this band
+                LDB     A,X
+                CLRA                    ; X = colour
+                TFR     D,X
+                LDA     <BAND           ; A = first row = band * 4
+                ASLA
+                ASLA
+                TFR     A,B             ; B = last row = first + 3
+                ADDB    #3
+                JSR     TGL_COLOUR
+                INC     <BAND
+                LDA     <BAND
+                CMPA    #NBANDS
+                BLO     RB_LOOP
+                LDA     <SHIFT          ; move the rainbow on for next time
+                INCA
+                CMPA    #NBANDS
+                BLO     RB_2
+                CLRA
+RB_2            STA     <SHIFT
+RB_DONE
+
                 JSR     TGL_BLIT        ; show the frame
                 JSR     TGL_INKEY       ; any key exits
                 LBNE    TGL_EXIT
@@ -131,3 +185,15 @@ PH_OK           STA     <PHASE
                 ENDC
                 LBRA    FRAME
 DONE            BRA     DONE
+
+; Rainbow order: red, yellow, green, cyan, blue, magenta
+RAINBOW         FCB     TGL_RED,TGL_YELLOW,TGL_GREEN,TGL_CYAN,TGL_BLUE,TGL_MAGENTA
+
+; Status row title: $83 yellow, $86 cyan and $82 green text codes
+TITLE           FCB     $83
+                FCC     "CIRCLES"
+                FCB     $86
+                FCC     "AND"
+                FCB     $82
+                FCC     "COLOUR"
+                FCB     0

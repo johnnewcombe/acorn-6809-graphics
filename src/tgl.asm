@@ -48,6 +48,7 @@ J_CIRCF         LBRA    T_CIRCF         ; +45
 J_TEXT          LBRA    T_TEXT          ; +48
 J_TCLR          LBRA    T_TCLR          ; +51
 J_TNUM          LBRA    T_TNUM          ; +54
+J_COLOUR        LBRA    T_COLOUR        ; +57
 
 ; Check the table against the published interface
 TGL_BASE        EQU     TGL_START
@@ -73,6 +74,9 @@ TGL_BASE        EQU     TGL_START
                 IFNE    (J_TEXT-TGL_TEXT)|(J_TCLR-TGL_TCLR)|(J_TNUM-TGL_TNUM)
                 ERROR   "Jump table does not match tgl_api.inc"
                 ENDC
+                IFNE    (J_COLOUR-TGL_COLOUR)
+                ERROR   "Jump table does not match tgl_api.inc"
+                ENDC
 
 ; ---------------------------------------------------------------------------
 ; Modules
@@ -86,6 +90,7 @@ TGL_BASE        EQU     TGL_START
                 INCLUDE "rect.asm"
                 INCLUDE "circle.asm"
                 INCLUDE "text.asm"
+                INCLUDE "colour.asm"
                 INCLUDE "system.asm"
                 INCLUDE "tables.asm"
 

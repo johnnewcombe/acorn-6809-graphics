@@ -94,11 +94,21 @@
      1030             (      tgl_api.inc):00025         TGL_TEXT        EQU     TGL_BASE+48     ; status row text: A = column, X -> string
      1033             (      tgl_api.inc):00026         TGL_TCLR        EQU     TGL_BASE+51     ; clear the status row
      1036             (      tgl_api.inc):00027         TGL_TNUM        EQU     TGL_BASE+54     ; status row number: A = column, X = value
-                      (      tgl_api.inc):00028         
-     03C0             (      tgl_api.inc):00029         TGL_BUFSIZE     EQU     960
-     0000             (      tgl_api.inc):00030         TGL_MODE_SET    EQU     0
-     0001             (      tgl_api.inc):00031         TGL_MODE_CLEAR  EQU     1
-     0002             (      tgl_api.inc):00032         TGL_MODE_XOR    EQU     2
+     1039             (      tgl_api.inc):00028         TGL_COLOUR      EQU     TGL_BASE+57     ; row colour: A,B = first,last row, X = colour
+                      (      tgl_api.inc):00029         
+     03C0             (      tgl_api.inc):00030         TGL_BUFSIZE     EQU     960
+     0000             (      tgl_api.inc):00031         TGL_MODE_SET    EQU     0
+     0001             (      tgl_api.inc):00032         TGL_MODE_CLEAR  EQU     1
+     0002             (      tgl_api.inc):00033         TGL_MODE_XOR    EQU     2
+                      (      tgl_api.inc):00034         
+                      (      tgl_api.inc):00035         ; Colours for TGL_COLOUR
+     0001             (      tgl_api.inc):00036         TGL_RED         EQU     1
+     0002             (      tgl_api.inc):00037         TGL_GREEN       EQU     2
+     0003             (      tgl_api.inc):00038         TGL_YELLOW      EQU     3
+     0004             (      tgl_api.inc):00039         TGL_BLUE        EQU     4
+     0005             (      tgl_api.inc):00040         TGL_MAGENTA     EQU     5
+     0006             (      tgl_api.inc):00041         TGL_CYAN        EQU     6
+     0007             (      tgl_api.inc):00042         TGL_WHITE       EQU     7
                       (    demo/cube.asm):00070         
                       (    demo/cube.asm):00071         ; ---------------------------------------------------------------------------
                       (    demo/cube.asm):00072         ; Memory
@@ -604,16 +614,21 @@ Symbol Table:
 [ G] STEP_Z                           0001
 [ G] TGL_BASE                         1000
 [ G] TGL_BLIT                         1012
+[ G] TGL_BLUE                         0004
 [ G] TGL_BUFSIZE                      03C0
 [ G] TGL_CIRC                         102A
 [ G] TGL_CIRCF                        102D
 [ G] TGL_CLS                          1006
+[ G] TGL_COLOUR                       1039
+[ G] TGL_CYAN                         0006
 [ G] TGL_DONE                         101B
 [ G] TGL_EXIT                         1021
+[ G] TGL_GREEN                        0002
 [ G] TGL_INIT                         1000
 [ G] TGL_INKEY                        101E
 [ G] TGL_LINE                         100F
 [ G] TGL_LINEC                        1018
+[ G] TGL_MAGENTA                      0005
 [ G] TGL_MODE_CLEAR                   0001
 [ G] TGL_MODE_SET                     0000
 [ G] TGL_MODE_XOR                     0002
@@ -621,11 +636,14 @@ Symbol Table:
 [ G] TGL_PLOTC                        1015
 [ G] TGL_RECT                         1024
 [ G] TGL_RECTF                        1027
+[ G] TGL_RED                          0001
 [ G] TGL_SETBUF                       1003
 [ G] TGL_SETMODE                      1009
 [ G] TGL_TCLR                         1033
 [ G] TGL_TEXT                         1030
 [ G] TGL_TNUM                         1036
+[ G] TGL_WHITE                        0007
+[ G] TGL_YELLOW                       0003
 [ G] TX                               0086
 [ G] TY                               0089
 [ G] TZ                               008C

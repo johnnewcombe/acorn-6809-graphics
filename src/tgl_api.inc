@@ -25,8 +25,18 @@ TGL_CIRCF       EQU     TGL_BASE+45     ; filled circle: A,B = centre, X = radiu
 TGL_TEXT        EQU     TGL_BASE+48     ; status row text: A = column, X -> string
 TGL_TCLR        EQU     TGL_BASE+51     ; clear the status row
 TGL_TNUM        EQU     TGL_BASE+54     ; status row number: A = column, X = value
+TGL_COLOUR      EQU     TGL_BASE+57     ; row colour: A,B = first,last row, X = colour
 
 TGL_BUFSIZE     EQU     960
 TGL_MODE_SET    EQU     0
 TGL_MODE_CLEAR  EQU     1
 TGL_MODE_XOR    EQU     2
+
+; Colours for TGL_COLOUR
+TGL_RED         EQU     1
+TGL_GREEN       EQU     2
+TGL_YELLOW      EQU     3
+TGL_BLUE        EQU     4
+TGL_MAGENTA     EQU     5
+TGL_CYAN        EQU     6
+TGL_WHITE       EQU     7

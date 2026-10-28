@@ -58,4 +58,9 @@ C_FILL          EQU     WS+55           ; 1  circle: 0 outline, else filled
 T_BUF           EQU     WS+56           ; 6  text: number being formatted
 T_DIG           EQU     WS+62           ; 1  text: digit being counted
 T_LEAD          EQU     WS+63           ; 1  text: non-zero digit seen yet
-WS_SIZE         EQU     64
+K_FIRST         EQU     WS+64           ; 1  colour: first row
+K_LAST          EQU     WS+65           ; 1  colour: last row
+K_CODE          EQU     WS+66           ; 1  colour: control code
+ROWCOL          EQU     WS+67           ; 24 each row's graphics control code,
+                                        ;    written into column 0 by TGL_CLS
+WS_SIZE         EQU     91
