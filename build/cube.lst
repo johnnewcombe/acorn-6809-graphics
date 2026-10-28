@@ -13,60 +13,63 @@
                       (    demo/cube.asm):00013         ;     3. build the rotation for this frame's angles        (MATRIX)
                       (    demo/cube.asm):00014         ;     4. rotate the 8 corners and project them to screen   (CORNERS)
                       (    demo/cube.asm):00015         ;     5. draw the 12 edges between corners                 (EDGES)
-                      (    demo/cube.asm):00016         ;     6. copy the buffer to the screen                     (TGL_BLIT)
-                      (    demo/cube.asm):00017         ;     7. advance the angles and zoom, check for a key, repeat
-                      (    demo/cube.asm):00018         ;   Drawing off-screen and blitting the finished frame means no flicker.
-                      (    demo/cube.asm):00019         ;
-                      (    demo/cube.asm):00020         ; ---------------------------------------------------------------------------
-                      (    demo/cube.asm):00021         ; The maths, and how it is kept cheap on an 8-bit CPU
-                      (    demo/cube.asm):00022         ; ---------------------------------------------------------------------------
-                      (    demo/cube.asm):00023         ;
-                      (    demo/cube.asm):00024         ;   Fixed point. Sines and cosines are stored as signed bytes where 127
-                      (    demo/cube.asm):00025         ;   stands for 1.0 (so 64 is about 0.5, -127 is -1.0). Multiplying two such
-                      (    demo/cube.asm):00026         ;   numbers gives a result 128 times too big, so products are divided by
-                      (    demo/cube.asm):00027         ;   128 afterwards (see MULS7).
-                      (    demo/cube.asm):00028         ;
-                      (    demo/cube.asm):00029         ;   Angles. A full circle is 256 steps instead of 360 degrees, so an angle
-                      (    demo/cube.asm):00030         ;   fits in one byte and wraps round by itself when it overflows. A quarter
-                      (    demo/cube.asm):00031         ;   turn is 64 steps, which gives cos(a) = sin(a + 64): one sine table
-                      (    demo/cube.asm):00032         ;   serves for both.
-                      (    demo/cube.asm):00033         ;
-                      (    demo/cube.asm):00034         ;   Rotation. The cube is centred on the origin, so its corners are every
-                      (    demo/cube.asm):00035         ;   combination of (+S or -S, +S or -S, +S or -S), where S is half the edge
-                      (    demo/cube.asm):00036         ;   length. Rotating a point means multiplying it by a 3x3 matrix:
-                      (    demo/cube.asm):00037         ;
-                      (    demo/cube.asm):00038         ;       rotated x = m00*x + m01*y + m02*z      (and similarly for y, z)
-                      (    demo/cube.asm):00039         ;
-                      (    demo/cube.asm):00040         ;   With every coordinate being +S or -S, each product is just +/-(m * S).
-                      (    demo/cube.asm):00041         ;   So once per frame we work out the nine values m*S (the "terms" TX, TY,
-                      (    demo/cube.asm):00042         ;   TZ), and then every rotated corner coordinate is three of those terms
-                      (    demo/cube.asm):00043         ;   added or subtracted according to the corner's signs. That's 8 multiplies
-                      (    demo/cube.asm):00044         ;   per frame for the whole cube, instead of 9 per corner.
-                      (    demo/cube.asm):00045         ;
-                      (    demo/cube.asm):00046         ;   Perspective. Further-away points should be drawn closer to the centre:
-                      (    demo/cube.asm):00047         ;
-                      (    demo/cube.asm):00048         ;       screen x = centre + x * F / (distance + z)
-                      (    demo/cube.asm):00049         ;
-                      (    demo/cube.asm):00050         ;   Dividing is slow on a 6809, so the value F / (distance + z), suitably
-                      (    demo/cube.asm):00051         ;   scaled, is precomputed for every possible z and stored in a table
-                      (    demo/cube.asm):00052         ;   (RXTAB, RYTAB). Projecting is then one table lookup and one MUL.
-                      (    demo/cube.asm):00053         ;   The x table uses a smaller F than the y table because teletext pixels
-                      (    demo/cube.asm):00054         ;   are wider than they are tall; this keeps the cube looking square.
-                      (    demo/cube.asm):00055         ;
-                      (    demo/cube.asm):00056         ;   Corner numbering. Corners are numbered 0-7. Bit 0 of the number says
-                      (    demo/cube.asm):00057         ;   whether the corner's x is +S (bit set) or -S (bit clear); bit 1 does
-                      (    demo/cube.asm):00058         ;   the same for y and bit 2 for z. Two corners are joined by an edge when
-                      (    demo/cube.asm):00059         ;   their numbers differ in exactly one bit (see EDGETAB).
-                      (    demo/cube.asm):00060         ;
-                      (    demo/cube.asm):00061         ;   Build with -D TESTFRAMES=n to stop after n frames (used by the emulator
-                      (    demo/cube.asm):00062         ;   tests; a normal build runs until a key is pressed).
-                      (    demo/cube.asm):00063         ; ===========================================================================
-                      (    demo/cube.asm):00064         
-                      (    demo/cube.asm):00065         ; ---------------------------------------------------------------------------
-                      (    demo/cube.asm):00066         ; Library entry points (see tgl_api.inc)
-                      (    demo/cube.asm):00067         ; ---------------------------------------------------------------------------
-     1000             (    demo/cube.asm):00068         TGL_BASE        EQU     $1000
-                      (    demo/cube.asm):00069                         INCLUDE "tgl_api.inc"
+                      (    demo/cube.asm):00016         ;     6. wait for the frame period to run out              (TGL_PACE)
+                      (    demo/cube.asm):00017         ;     7. copy the buffer to the screen                     (TGL_BLIT)
+                      (    demo/cube.asm):00018         ;     8. advance the angles and zoom, check for a key, repeat
+                      (    demo/cube.asm):00019         ;   TGL_PACE keeps every frame the same length, so the cube turns at an
+                      (    demo/cube.asm):00020         ;   even speed instead of slowing down as it zooms in.
+                      (    demo/cube.asm):00021         ;   Drawing off-screen and blitting the finished frame means no flicker.
+                      (    demo/cube.asm):00022         ;
+                      (    demo/cube.asm):00023         ; ---------------------------------------------------------------------------
+                      (    demo/cube.asm):00024         ; The maths, and how it is kept cheap on an 8-bit CPU
+                      (    demo/cube.asm):00025         ; ---------------------------------------------------------------------------
+                      (    demo/cube.asm):00026         ;
+                      (    demo/cube.asm):00027         ;   Fixed point. Sines and cosines are stored as signed bytes where 127
+                      (    demo/cube.asm):00028         ;   stands for 1.0 (so 64 is about 0.5, -127 is -1.0). Multiplying two such
+                      (    demo/cube.asm):00029         ;   numbers gives a result 128 times too big, so products are divided by
+                      (    demo/cube.asm):00030         ;   128 afterwards (see MULS7).
+                      (    demo/cube.asm):00031         ;
+                      (    demo/cube.asm):00032         ;   Angles. A full circle is 256 steps instead of 360 degrees, so an angle
+                      (    demo/cube.asm):00033         ;   fits in one byte and wraps round by itself when it overflows. A quarter
+                      (    demo/cube.asm):00034         ;   turn is 64 steps, which gives cos(a) = sin(a + 64): one sine table
+                      (    demo/cube.asm):00035         ;   serves for both.
+                      (    demo/cube.asm):00036         ;
+                      (    demo/cube.asm):00037         ;   Rotation. The cube is centred on the origin, so its corners are every
+                      (    demo/cube.asm):00038         ;   combination of (+S or -S, +S or -S, +S or -S), where S is half the edge
+                      (    demo/cube.asm):00039         ;   length. Rotating a point means multiplying it by a 3x3 matrix:
+                      (    demo/cube.asm):00040         ;
+                      (    demo/cube.asm):00041         ;       rotated x = m00*x + m01*y + m02*z      (and similarly for y, z)
+                      (    demo/cube.asm):00042         ;
+                      (    demo/cube.asm):00043         ;   With every coordinate being +S or -S, each product is just +/-(m * S).
+                      (    demo/cube.asm):00044         ;   So once per frame we work out the nine values m*S (the "terms" TX, TY,
+                      (    demo/cube.asm):00045         ;   TZ), and then every rotated corner coordinate is three of those terms
+                      (    demo/cube.asm):00046         ;   added or subtracted according to the corner's signs. That's 8 multiplies
+                      (    demo/cube.asm):00047         ;   per frame for the whole cube, instead of 9 per corner.
+                      (    demo/cube.asm):00048         ;
+                      (    demo/cube.asm):00049         ;   Perspective. Further-away points should be drawn closer to the centre:
+                      (    demo/cube.asm):00050         ;
+                      (    demo/cube.asm):00051         ;       screen x = centre + x * F / (distance + z)
+                      (    demo/cube.asm):00052         ;
+                      (    demo/cube.asm):00053         ;   Dividing is slow on a 6809, so the value F / (distance + z), suitably
+                      (    demo/cube.asm):00054         ;   scaled, is precomputed for every possible z and stored in a table
+                      (    demo/cube.asm):00055         ;   (RXTAB, RYTAB). Projecting is then one table lookup and one MUL.
+                      (    demo/cube.asm):00056         ;   The x table uses a smaller F than the y table because teletext pixels
+                      (    demo/cube.asm):00057         ;   are wider than they are tall; this keeps the cube looking square.
+                      (    demo/cube.asm):00058         ;
+                      (    demo/cube.asm):00059         ;   Corner numbering. Corners are numbered 0-7. Bit 0 of the number says
+                      (    demo/cube.asm):00060         ;   whether the corner's x is +S (bit set) or -S (bit clear); bit 1 does
+                      (    demo/cube.asm):00061         ;   the same for y and bit 2 for z. Two corners are joined by an edge when
+                      (    demo/cube.asm):00062         ;   their numbers differ in exactly one bit (see EDGETAB).
+                      (    demo/cube.asm):00063         ;
+                      (    demo/cube.asm):00064         ;   Build with -D TESTFRAMES=n to stop after n frames (used by the emulator
+                      (    demo/cube.asm):00065         ;   tests; a normal build runs until a key is pressed).
+                      (    demo/cube.asm):00066         ; ===========================================================================
+                      (    demo/cube.asm):00067         
+                      (    demo/cube.asm):00068         ; ---------------------------------------------------------------------------
+                      (    demo/cube.asm):00069         ; Library entry points (see tgl_api.inc)
+                      (    demo/cube.asm):00070         ; ---------------------------------------------------------------------------
+     1000             (    demo/cube.asm):00071         TGL_BASE        EQU     $1000
+                      (    demo/cube.asm):00072                         INCLUDE "tgl_api.inc"
                       (      tgl_api.inc):00001         ; ---------------------------------------------------------------------------
                       (      tgl_api.inc):00002         ; Acorn System 3 Teletext Graphics Library - caller interface
                       (      tgl_api.inc):00003         ;
@@ -95,483 +98,489 @@
      1033             (      tgl_api.inc):00026         TGL_TCLR        EQU     TGL_BASE+51     ; clear the status row
      1036             (      tgl_api.inc):00027         TGL_TNUM        EQU     TGL_BASE+54     ; status row number: A = column, X = value
      1039             (      tgl_api.inc):00028         TGL_COLOUR      EQU     TGL_BASE+57     ; row colour: A,B = first,last row, X = colour
-                      (      tgl_api.inc):00029         
-     03C0             (      tgl_api.inc):00030         TGL_BUFSIZE     EQU     960
-     0000             (      tgl_api.inc):00031         TGL_MODE_SET    EQU     0
-     0001             (      tgl_api.inc):00032         TGL_MODE_CLEAR  EQU     1
-     0002             (      tgl_api.inc):00033         TGL_MODE_XOR    EQU     2
-                      (      tgl_api.inc):00034         
-                      (      tgl_api.inc):00035         ; Colours for TGL_COLOUR
-     0001             (      tgl_api.inc):00036         TGL_RED         EQU     1
-     0002             (      tgl_api.inc):00037         TGL_GREEN       EQU     2
-     0003             (      tgl_api.inc):00038         TGL_YELLOW      EQU     3
-     0004             (      tgl_api.inc):00039         TGL_BLUE        EQU     4
-     0005             (      tgl_api.inc):00040         TGL_MAGENTA     EQU     5
-     0006             (      tgl_api.inc):00041         TGL_CYAN        EQU     6
-     0007             (      tgl_api.inc):00042         TGL_WHITE       EQU     7
-                      (    demo/cube.asm):00070         
-                      (    demo/cube.asm):00071         ; ---------------------------------------------------------------------------
-                      (    demo/cube.asm):00072         ; Memory
-                      (    demo/cube.asm):00073         ; ---------------------------------------------------------------------------
-     3000             (    demo/cube.asm):00074         BUFFER          EQU     $3000           ; off-screen buffer (960 bytes)
-     0200             (    demo/cube.asm):00075         STACK_TOP       EQU     $0200           ; stack $0100-$01FF
-                      (    demo/cube.asm):00076         
-                      (    demo/cube.asm):00077         ; ---------------------------------------------------------------------------
-                      (    demo/cube.asm):00078         ; Settings you can change
-                      (    demo/cube.asm):00079         ; ---------------------------------------------------------------------------
-     0015             (    demo/cube.asm):00080         SIZE_MID        EQU     21              ; middle of the zoom range; the half
-                      (    demo/cube.asm):00081                                                 ;  edge length pulses 5..36 around it
-     0027             (    demo/cube.asm):00082         CX              EQU     39              ; screen position of the cube's centre
-     0024             (    demo/cube.asm):00083         CY              EQU     36
-     0002             (    demo/cube.asm):00084         STEP_A          EQU     2               ; rotation speed about x (per frame,
-     0003             (    demo/cube.asm):00085         STEP_B          EQU     3               ;  and about y; 256 = a full turn)
-     0001             (    demo/cube.asm):00086         STEP_Z          EQU     1               ; zoom speed (256 steps per in-and-out)
-                      (    demo/cube.asm):00087         
-                      (    demo/cube.asm):00088         ; ---------------------------------------------------------------------------
-                      (    demo/cube.asm):00089         ; Variables, in page zero so they can use fast direct addressing.
-                      (    demo/cube.asm):00090         ; The library's own workspace is $00-$17, so these start at $80.
-                      (    demo/cube.asm):00091         ; ---------------------------------------------------------------------------
-     0080             (    demo/cube.asm):00092         ANG_A           EQU     $80             ; rotation angle about x (0-255)
-     0081             (    demo/cube.asm):00093         ANG_B           EQU     $81             ; rotation angle about y (0-255)
-     0082             (    demo/cube.asm):00094         SA              EQU     $82             ; sin(ANG_A)   (127 = 1.0)
-     0083             (    demo/cube.asm):00095         CA              EQU     $83             ; cos(ANG_A)
-     0084             (    demo/cube.asm):00096         SB              EQU     $84             ; sin(ANG_B)
-     0085             (    demo/cube.asm):00097         CB              EQU     $85             ; cos(ANG_B)
-     0086             (    demo/cube.asm):00098         TX              EQU     $86             ; 3 bytes: terms for rotated x
-     0089             (    demo/cube.asm):00099         TY              EQU     $89             ; 3 bytes: terms for rotated y
-     008C             (    demo/cube.asm):00100         TZ              EQU     $8C             ; 3 bytes: terms for rotated z
-     008F             (    demo/cube.asm):00101         VI              EQU     $8F             ; corner number being worked on (0-7)
-     0090             (    demo/cube.asm):00102         VX              EQU     $90             ; that corner's rotated x
-     0091             (    demo/cube.asm):00103         ZI              EQU     $91             ; its depth, as an index into RXTAB/RYTAB
-     0092             (    demo/cube.asm):00104         EC              EQU     $92             ; edges left to draw
-     0093             (    demo/cube.asm):00105         FRAMES          EQU     $93             ; frame counter (test builds only)
-     0094             (    demo/cube.asm):00106         SIZE            EQU     $94             ; this frame's half edge length (S)
-     0095             (    demo/cube.asm):00107         ZOOM            EQU     $95             ; zoom phase (0-255, like an angle)
-     00A0             (    demo/cube.asm):00108         PX              EQU     $A0             ; 8 bytes: screen x of corners 0-7
-     00A8             (    demo/cube.asm):00109         PY              EQU     $A8             ; 8 bytes: screen y of corners 0-7.
-                      (    demo/cube.asm):00110                                                 ;  PY is exactly PX+8, so if X points
-                      (    demo/cube.asm):00111                                                 ;  at a corner's PX entry, its PY is
-                      (    demo/cube.asm):00112                                                 ;  at 8,X
-                      (    demo/cube.asm):00113         
-                      (    demo/cube.asm):00114                         ORG     $2000
-                      (    demo/cube.asm):00115         
-                      (    demo/cube.asm):00116         ; ---------------------------------------------------------------------------
-                      (    demo/cube.asm):00117         ; Set up
-                      (    demo/cube.asm):00118         ; ---------------------------------------------------------------------------
-2000 10CE0200         (    demo/cube.asm):00119         START           LDS     #STACK_TOP
-2004 4F               (    demo/cube.asm):00120                         CLRA                    ; DP = $00: the library (and our
-2005 1F8B             (    demo/cube.asm):00121                         TFR     A,DP            ;  variables) use direct addressing
-     00               (    demo/cube.asm):00122                         SETDP   $00             ;  in page zero
-2007 1CEF             (    demo/cube.asm):00123                         ANDCC   #$EF            ; enable IRQs: the keyboard is read
-                      (    demo/cube.asm):00124                                                 ;  under interrupt
-2009 BD1000           (    demo/cube.asm):00125                         JSR     TGL_INIT        ; reset CRTC start, hide cursor
-200C 8E3000           (    demo/cube.asm):00126                         LDX     #BUFFER         ; draw into our buffer at $3000
-200F BD1003           (    demo/cube.asm):00127                         JSR     TGL_SETBUF
-2012 0F80             (    demo/cube.asm):00128                         CLR     <ANG_A          ; start square-on, mid zoom
-2014 0F81             (    demo/cube.asm):00129                         CLR     <ANG_B
-2016 0F93             (    demo/cube.asm):00130                         CLR     <FRAMES
-2018 0F95             (    demo/cube.asm):00131                         CLR     <ZOOM
-                      (    demo/cube.asm):00132         
-                      (    demo/cube.asm):00133         ; ---------------------------------------------------------------------------
-                      (    demo/cube.asm):00134         ; Main loop: one pass per frame
-                      (    demo/cube.asm):00135         ; ---------------------------------------------------------------------------
-201A BD1006           (    demo/cube.asm):00136         FRAME           JSR     TGL_CLS         ; blank the buffer
-201D 8D29             (    demo/cube.asm):00137                         BSR     ZOOMSZ          ; SIZE for this frame
-201F 170037           (    demo/cube.asm):00138                         LBSR    MATRIX          ; terms TX, TY, TZ for this frame
-2022 1700D4           (    demo/cube.asm):00139                         LBSR    CORNERS         ; screen positions PX, PY
-2025 17014B           (    demo/cube.asm):00140                         LBSR    EDGES           ; draw into the buffer
-2028 BD1012           (    demo/cube.asm):00141                         JSR     TGL_BLIT        ; show it
-                      (    demo/cube.asm):00142         
-                      (    demo/cube.asm):00143         ; Advance the angles and zoom phase. Being bytes, they wrap from 255 back
-                      (    demo/cube.asm):00144         ; to 0 by themselves, which is exactly one full turn.
-202B 9680             (    demo/cube.asm):00145                         LDA     <ANG_A
-202D 8B02             (    demo/cube.asm):00146                         ADDA    #STEP_A
-202F 9780             (    demo/cube.asm):00147                         STA     <ANG_A
-2031 9681             (    demo/cube.asm):00148                         LDA     <ANG_B
-2033 8B03             (    demo/cube.asm):00149                         ADDA    #STEP_B
-2035 9781             (    demo/cube.asm):00150                         STA     <ANG_B
-2037 9695             (    demo/cube.asm):00151                         LDA     <ZOOM
-2039 8B01             (    demo/cube.asm):00152                         ADDA    #STEP_Z
-203B 9795             (    demo/cube.asm):00153                         STA     <ZOOM
-                      (    demo/cube.asm):00154         
-                      (    demo/cube.asm):00155         ; Any key exits. TGL_INKEY returns Z clear if a key was pressed, and
-                      (    demo/cube.asm):00156         ; TGL_EXIT never returns, so a long branch straight to it is enough.
-203D BD101E           (    demo/cube.asm):00157                         JSR     TGL_INKEY
-2040 1026EFDD         (    demo/cube.asm):00158                         LBNE    TGL_EXIT
-                      (    demo/cube.asm):00159         
-                      (    demo/cube.asm):00160         ; Test builds stop after TESTFRAMES frames so the emulator can inspect
-                      (    demo/cube.asm):00161         ; the result. Normal builds skip this.
-                      (    demo/cube.asm):00162                         IFDEF   TESTFRAMES
-                      (    demo/cube.asm):00163                         INC     <FRAMES
-                      (    demo/cube.asm):00164                         LDA     <FRAMES
-                      (    demo/cube.asm):00165                         CMPA    #TESTFRAMES
-                      (    demo/cube.asm):00166                         BEQ     DONE
-                      (    demo/cube.asm):00167                         ENDC
-2044 20D4             (    demo/cube.asm):00168                         BRA     FRAME
-2046 20FE             (    demo/cube.asm):00169         DONE            BRA     DONE
-                      (    demo/cube.asm):00170         
-                      (    demo/cube.asm):00171         ; ---------------------------------------------------------------------------
-                      (    demo/cube.asm):00172         ; ZOOMSZ - set SIZE from the zoom phase
-                      (    demo/cube.asm):00173         ;
-                      (    demo/cube.asm):00174         ;   SIZE = SIZE_MID + sin(ZOOM)/8, which swings smoothly between 5 and 36
-                      (    demo/cube.asm):00175         ;   as ZOOM goes round. From about 26 upwards the cube overhangs the screen
-                      (    demo/cube.asm):00176         ;   and TGL_LINEC clips it. Don't go above 36: beyond that the depth no
-                      (    demo/cube.asm):00177         ;   longer fits the projection tables (-64..63), and projected points no
-                      (    demo/cube.asm):00178         ;   longer fit the signed -128..127 that TGL_LINEC accepts.
+     103C             (      tgl_api.inc):00029         TGL_PACE        EQU     TGL_BASE+60     ; steady frame rate: A = 50Hz ticks (1-3)
+                      (      tgl_api.inc):00030         
+     03C0             (      tgl_api.inc):00031         TGL_BUFSIZE     EQU     960
+     0000             (      tgl_api.inc):00032         TGL_MODE_SET    EQU     0
+     0001             (      tgl_api.inc):00033         TGL_MODE_CLEAR  EQU     1
+     0002             (      tgl_api.inc):00034         TGL_MODE_XOR    EQU     2
+                      (      tgl_api.inc):00035         
+                      (      tgl_api.inc):00036         ; Colours for TGL_COLOUR
+     0001             (      tgl_api.inc):00037         TGL_RED         EQU     1
+     0002             (      tgl_api.inc):00038         TGL_GREEN       EQU     2
+     0003             (      tgl_api.inc):00039         TGL_YELLOW      EQU     3
+     0004             (      tgl_api.inc):00040         TGL_BLUE        EQU     4
+     0005             (      tgl_api.inc):00041         TGL_MAGENTA     EQU     5
+     0006             (      tgl_api.inc):00042         TGL_CYAN        EQU     6
+     0007             (      tgl_api.inc):00043         TGL_WHITE       EQU     7
+                      (    demo/cube.asm):00073         
+                      (    demo/cube.asm):00074         ; ---------------------------------------------------------------------------
+                      (    demo/cube.asm):00075         ; Memory
+                      (    demo/cube.asm):00076         ; ---------------------------------------------------------------------------
+     3000             (    demo/cube.asm):00077         BUFFER          EQU     $3000           ; off-screen buffer (960 bytes)
+     0200             (    demo/cube.asm):00078         STACK_TOP       EQU     $0200           ; stack $0100-$01FF
+                      (    demo/cube.asm):00079         
+                      (    demo/cube.asm):00080         ; ---------------------------------------------------------------------------
+                      (    demo/cube.asm):00081         ; Settings you can change
+                      (    demo/cube.asm):00082         ; ---------------------------------------------------------------------------
+     0015             (    demo/cube.asm):00083         SIZE_MID        EQU     21              ; middle of the zoom range; the half
+                      (    demo/cube.asm):00084                                                 ;  edge length pulses 5..36 around it
+     0027             (    demo/cube.asm):00085         CX              EQU     39              ; screen position of the cube's centre
+     0024             (    demo/cube.asm):00086         CY              EQU     36
+     0002             (    demo/cube.asm):00087         STEP_A          EQU     2               ; rotation speed about x (per frame,
+     0003             (    demo/cube.asm):00088         STEP_B          EQU     3               ;  and about y; 256 = a full turn)
+     0001             (    demo/cube.asm):00089         STEP_Z          EQU     1               ; zoom speed (256 steps per in-and-out)
+     0002             (    demo/cube.asm):00090         PACE_TICKS      EQU     2               ; frame length in 50Hz ticks: 2 = 25
+                      (    demo/cube.asm):00091                                                 ;  frames per second. If the cube
+                      (    demo/cube.asm):00092                                                 ;  slows when zoomed in, try 3
+                      (    demo/cube.asm):00093         
+                      (    demo/cube.asm):00094         ; ---------------------------------------------------------------------------
+                      (    demo/cube.asm):00095         ; Variables, in page zero so they can use fast direct addressing.
+                      (    demo/cube.asm):00096         ; The library's own workspace is $00-$17, so these start at $80.
+                      (    demo/cube.asm):00097         ; ---------------------------------------------------------------------------
+     0080             (    demo/cube.asm):00098         ANG_A           EQU     $80             ; rotation angle about x (0-255)
+     0081             (    demo/cube.asm):00099         ANG_B           EQU     $81             ; rotation angle about y (0-255)
+     0082             (    demo/cube.asm):00100         SA              EQU     $82             ; sin(ANG_A)   (127 = 1.0)
+     0083             (    demo/cube.asm):00101         CA              EQU     $83             ; cos(ANG_A)
+     0084             (    demo/cube.asm):00102         SB              EQU     $84             ; sin(ANG_B)
+     0085             (    demo/cube.asm):00103         CB              EQU     $85             ; cos(ANG_B)
+     0086             (    demo/cube.asm):00104         TX              EQU     $86             ; 3 bytes: terms for rotated x
+     0089             (    demo/cube.asm):00105         TY              EQU     $89             ; 3 bytes: terms for rotated y
+     008C             (    demo/cube.asm):00106         TZ              EQU     $8C             ; 3 bytes: terms for rotated z
+     008F             (    demo/cube.asm):00107         VI              EQU     $8F             ; corner number being worked on (0-7)
+     0090             (    demo/cube.asm):00108         VX              EQU     $90             ; that corner's rotated x
+     0091             (    demo/cube.asm):00109         ZI              EQU     $91             ; its depth, as an index into RXTAB/RYTAB
+     0092             (    demo/cube.asm):00110         EC              EQU     $92             ; edges left to draw
+     0093             (    demo/cube.asm):00111         FRAMES          EQU     $93             ; frame counter (test builds only)
+     0094             (    demo/cube.asm):00112         SIZE            EQU     $94             ; this frame's half edge length (S)
+     0095             (    demo/cube.asm):00113         ZOOM            EQU     $95             ; zoom phase (0-255, like an angle)
+     00A0             (    demo/cube.asm):00114         PX              EQU     $A0             ; 8 bytes: screen x of corners 0-7
+     00A8             (    demo/cube.asm):00115         PY              EQU     $A8             ; 8 bytes: screen y of corners 0-7.
+                      (    demo/cube.asm):00116                                                 ;  PY is exactly PX+8, so if X points
+                      (    demo/cube.asm):00117                                                 ;  at a corner's PX entry, its PY is
+                      (    demo/cube.asm):00118                                                 ;  at 8,X
+                      (    demo/cube.asm):00119         
+                      (    demo/cube.asm):00120                         ORG     $2000
+                      (    demo/cube.asm):00121         
+                      (    demo/cube.asm):00122         ; ---------------------------------------------------------------------------
+                      (    demo/cube.asm):00123         ; Set up
+                      (    demo/cube.asm):00124         ; ---------------------------------------------------------------------------
+2000 10CE0200         (    demo/cube.asm):00125         START           LDS     #STACK_TOP
+2004 4F               (    demo/cube.asm):00126                         CLRA                    ; DP = $00: the library (and our
+2005 1F8B             (    demo/cube.asm):00127                         TFR     A,DP            ;  variables) use direct addressing
+     00               (    demo/cube.asm):00128                         SETDP   $00             ;  in page zero
+2007 1CEF             (    demo/cube.asm):00129                         ANDCC   #$EF            ; enable IRQs: the keyboard is read
+                      (    demo/cube.asm):00130                                                 ;  under interrupt
+2009 BD1000           (    demo/cube.asm):00131                         JSR     TGL_INIT        ; reset CRTC start, hide cursor
+200C 8E3000           (    demo/cube.asm):00132                         LDX     #BUFFER         ; draw into our buffer at $3000
+200F BD1003           (    demo/cube.asm):00133                         JSR     TGL_SETBUF
+2012 0F80             (    demo/cube.asm):00134                         CLR     <ANG_A          ; start square-on, mid zoom
+2014 0F81             (    demo/cube.asm):00135                         CLR     <ANG_B
+2016 0F93             (    demo/cube.asm):00136                         CLR     <FRAMES
+2018 0F95             (    demo/cube.asm):00137                         CLR     <ZOOM
+                      (    demo/cube.asm):00138         
+                      (    demo/cube.asm):00139         ; ---------------------------------------------------------------------------
+                      (    demo/cube.asm):00140         ; Main loop: one pass per frame
+                      (    demo/cube.asm):00141         ; ---------------------------------------------------------------------------
+201A BD1006           (    demo/cube.asm):00142         FRAME           JSR     TGL_CLS         ; blank the buffer
+201D 8D2E             (    demo/cube.asm):00143                         BSR     ZOOMSZ          ; SIZE for this frame
+201F 17003C           (    demo/cube.asm):00144                         LBSR    MATRIX          ; terms TX, TY, TZ for this frame
+2022 1700D9           (    demo/cube.asm):00145                         LBSR    CORNERS         ; screen positions PX, PY
+2025 170150           (    demo/cube.asm):00146                         LBSR    EDGES           ; draw into the buffer
+2028 8602             (    demo/cube.asm):00147                         LDA     #PACE_TICKS     ; wait for the frame period, so every
+202A BD103C           (    demo/cube.asm):00148                         JSR     TGL_PACE        ;  frame takes the same time
+202D BD1012           (    demo/cube.asm):00149                         JSR     TGL_BLIT        ; show it
+                      (    demo/cube.asm):00150         
+                      (    demo/cube.asm):00151         ; Advance the angles and zoom phase. Being bytes, they wrap from 255 back
+                      (    demo/cube.asm):00152         ; to 0 by themselves, which is exactly one full turn.
+2030 9680             (    demo/cube.asm):00153                         LDA     <ANG_A
+2032 8B02             (    demo/cube.asm):00154                         ADDA    #STEP_A
+2034 9780             (    demo/cube.asm):00155                         STA     <ANG_A
+2036 9681             (    demo/cube.asm):00156                         LDA     <ANG_B
+2038 8B03             (    demo/cube.asm):00157                         ADDA    #STEP_B
+203A 9781             (    demo/cube.asm):00158                         STA     <ANG_B
+203C 9695             (    demo/cube.asm):00159                         LDA     <ZOOM
+203E 8B01             (    demo/cube.asm):00160                         ADDA    #STEP_Z
+2040 9795             (    demo/cube.asm):00161                         STA     <ZOOM
+                      (    demo/cube.asm):00162         
+                      (    demo/cube.asm):00163         ; Any key exits. TGL_INKEY returns Z clear if a key was pressed, and
+                      (    demo/cube.asm):00164         ; TGL_EXIT never returns, so a long branch straight to it is enough.
+2042 BD101E           (    demo/cube.asm):00165                         JSR     TGL_INKEY
+2045 1026EFD8         (    demo/cube.asm):00166                         LBNE    TGL_EXIT
+                      (    demo/cube.asm):00167         
+                      (    demo/cube.asm):00168         ; Test builds stop after TESTFRAMES frames so the emulator can inspect
+                      (    demo/cube.asm):00169         ; the result. Normal builds skip this.
+                      (    demo/cube.asm):00170                         IFDEF   TESTFRAMES
+                      (    demo/cube.asm):00171                         INC     <FRAMES
+                      (    demo/cube.asm):00172                         LDA     <FRAMES
+                      (    demo/cube.asm):00173                         CMPA    #TESTFRAMES
+                      (    demo/cube.asm):00174                         BEQ     DONE
+                      (    demo/cube.asm):00175                         ENDC
+2049 20CF             (    demo/cube.asm):00176                         BRA     FRAME
+204B 20FE             (    demo/cube.asm):00177         DONE            BRA     DONE
+                      (    demo/cube.asm):00178         
                       (    demo/cube.asm):00179         ; ---------------------------------------------------------------------------
-2048 308D0169         (    demo/cube.asm):00180         ZOOMSZ          LEAX    SINTAB,PCR      ; X -> sine table
-204C D695             (    demo/cube.asm):00181                         LDB     <ZOOM           ; X -> sin(ZOOM). ABX adds B as an
-204E 3A               (    demo/cube.asm):00182                         ABX                     ;  UNSIGNED byte (0-255). "LDA B,X"
-                      (    demo/cube.asm):00183                                                 ;  would treat B as signed and read
-                      (    demo/cube.asm):00184                                                 ;  before the table for B >= 128
-204F A684             (    demo/cube.asm):00185                         LDA     ,X              ; A = sin(ZOOM), -127..127
-2051 47               (    demo/cube.asm):00186                         ASRA                    ; divide by 8. ASR keeps the sign bit,
-2052 47               (    demo/cube.asm):00187                         ASRA                    ;  so negative numbers stay negative:
-2053 47               (    demo/cube.asm):00188                         ASRA                    ;  -127..127 becomes -16..15
-2054 8B15             (    demo/cube.asm):00189                         ADDA    #SIZE_MID       ; 5..36
-2056 9794             (    demo/cube.asm):00190                         STA     <SIZE
-2058 39               (    demo/cube.asm):00191                         RTS
-                      (    demo/cube.asm):00192         
-                      (    demo/cube.asm):00193         ; ---------------------------------------------------------------------------
-                      (    demo/cube.asm):00194         ; MATRIX - work out this frame's nine terms
-                      (    demo/cube.asm):00195         ;
-                      (    demo/cube.asm):00196         ;   The cube is turned first about the y axis (angle B), then about the x
-                      (    demo/cube.asm):00197         ;   axis (angle A). Multiplying those two rotations together gives this
-                      (    demo/cube.asm):00198         ;   matrix (each entry scaled so 127 = 1.0):
-                      (    demo/cube.asm):00199         ;
-                      (    demo/cube.asm):00200         ;               x part      y part     z part
-                      (    demo/cube.asm):00201         ;     row x: [  cb,         0,         sb       ]
-                      (    demo/cube.asm):00202         ;     row y: [  sb*sa,      ca,       -cb*sa    ]
-                      (    demo/cube.asm):00203         ;     row z: [ -sb*ca,      sa,        cb*ca    ]
-                      (    demo/cube.asm):00204         ;
-                      (    demo/cube.asm):00205         ;   Each entry is then multiplied by SIZE to give the terms, e.g.
-                      (    demo/cube.asm):00206         ;   TX = [ cb*S, 0, sb*S ]. Two-factor entries like sb*sa need two
-                      (    demo/cube.asm):00207         ;   multiplies: first sb*sa, then that result * S.
-                      (    demo/cube.asm):00208         ; ---------------------------------------------------------------------------
-                      (    demo/cube.asm):00209         
-                      (    demo/cube.asm):00210         ; Look up the four sines and cosines. Each lookup: X -> table, add the
-                      (    demo/cube.asm):00211         ; angle (unsigned, via ABX), read the byte. cos uses angle + 64.
-2059 308D0158         (    demo/cube.asm):00212         MATRIX          LEAX    SINTAB,PCR      ; SA = sin(ANG_A)
-205D D680             (    demo/cube.asm):00213                         LDB     <ANG_A
-205F 3A               (    demo/cube.asm):00214                         ABX
-2060 A684             (    demo/cube.asm):00215                         LDA     ,X
-2062 9782             (    demo/cube.asm):00216                         STA     <SA
-2064 308D014D         (    demo/cube.asm):00217                         LEAX    SINTAB,PCR      ; CA = cos(ANG_A) = sin(ANG_A + 64)
-2068 D680             (    demo/cube.asm):00218                         LDB     <ANG_A
-206A CB40             (    demo/cube.asm):00219                         ADDB    #64             ; (wraps round past 255 correctly)
-206C 3A               (    demo/cube.asm):00220                         ABX
-206D A684             (    demo/cube.asm):00221                         LDA     ,X
-206F 9783             (    demo/cube.asm):00222                         STA     <CA
-2071 308D0140         (    demo/cube.asm):00223                         LEAX    SINTAB,PCR      ; SB = sin(ANG_B)
-2075 D681             (    demo/cube.asm):00224                         LDB     <ANG_B
-2077 3A               (    demo/cube.asm):00225                         ABX
-2078 A684             (    demo/cube.asm):00226                         LDA     ,X
-207A 9784             (    demo/cube.asm):00227                         STA     <SB
-207C 308D0135         (    demo/cube.asm):00228                         LEAX    SINTAB,PCR      ; CB = cos(ANG_B)
-2080 D681             (    demo/cube.asm):00229                         LDB     <ANG_B
-2082 CB40             (    demo/cube.asm):00230                         ADDB    #64
-2084 3A               (    demo/cube.asm):00231                         ABX
-2085 A684             (    demo/cube.asm):00232                         LDA     ,X
-2087 9785             (    demo/cube.asm):00233                         STA     <CB
-                      (    demo/cube.asm):00234         
-                      (    demo/cube.asm):00235         ; Row x: TX = S * [ cb, 0, sb ]
-2089 9685             (    demo/cube.asm):00236                         LDA     <CB             ; TX+0 = cb * S
-208B D694             (    demo/cube.asm):00237                         LDB     <SIZE
-208D 8D4F             (    demo/cube.asm):00238                         BSR     MULS7
-208F 9786             (    demo/cube.asm):00239                         STA     <TX
-2091 0F87             (    demo/cube.asm):00240                         CLR     <TX+1           ; TX+1 = 0 (this entry is always 0)
-2093 9684             (    demo/cube.asm):00241                         LDA     <SB             ; TX+2 = sb * S
-2095 D694             (    demo/cube.asm):00242                         LDB     <SIZE
-2097 8D45             (    demo/cube.asm):00243                         BSR     MULS7
-2099 9788             (    demo/cube.asm):00244                         STA     <TX+2
-                      (    demo/cube.asm):00245         
-                      (    demo/cube.asm):00246         ; Row y: TY = S * [ sb*sa, ca, -cb*sa ]
-209B 9684             (    demo/cube.asm):00247                         LDA     <SB             ; TY+0 = (sb * sa) * S
-209D D682             (    demo/cube.asm):00248                         LDB     <SA
-209F 8D3D             (    demo/cube.asm):00249                         BSR     MULS7           ;  A = sb * sa
-20A1 D694             (    demo/cube.asm):00250                         LDB     <SIZE
-20A3 8D39             (    demo/cube.asm):00251                         BSR     MULS7           ;  A = that * S
-20A5 9789             (    demo/cube.asm):00252                         STA     <TY
-20A7 9683             (    demo/cube.asm):00253                         LDA     <CA             ; TY+1 = ca * S
-20A9 D694             (    demo/cube.asm):00254                         LDB     <SIZE
-20AB 8D31             (    demo/cube.asm):00255                         BSR     MULS7
-20AD 978A             (    demo/cube.asm):00256                         STA     <TY+1
-20AF 9685             (    demo/cube.asm):00257                         LDA     <CB             ; TY+2 = -(cb * sa) * S
-20B1 D682             (    demo/cube.asm):00258                         LDB     <SA
-20B3 8D29             (    demo/cube.asm):00259                         BSR     MULS7
-20B5 40               (    demo/cube.asm):00260                         NEGA
-20B6 D694             (    demo/cube.asm):00261                         LDB     <SIZE
-20B8 8D24             (    demo/cube.asm):00262                         BSR     MULS7
-20BA 978B             (    demo/cube.asm):00263                         STA     <TY+2
-                      (    demo/cube.asm):00264         
-                      (    demo/cube.asm):00265         ; Row z: TZ = S * [ -sb*ca, sa, cb*ca ]
-20BC 9684             (    demo/cube.asm):00266                         LDA     <SB             ; TZ+0 = -(sb * ca) * S
-20BE D683             (    demo/cube.asm):00267                         LDB     <CA
-20C0 8D1C             (    demo/cube.asm):00268                         BSR     MULS7
-20C2 40               (    demo/cube.asm):00269                         NEGA
-20C3 D694             (    demo/cube.asm):00270                         LDB     <SIZE
-20C5 8D17             (    demo/cube.asm):00271                         BSR     MULS7
-20C7 978C             (    demo/cube.asm):00272                         STA     <TZ
-20C9 9682             (    demo/cube.asm):00273                         LDA     <SA             ; TZ+1 = sa * S
-20CB D694             (    demo/cube.asm):00274                         LDB     <SIZE
-20CD 8D0F             (    demo/cube.asm):00275                         BSR     MULS7
-20CF 978D             (    demo/cube.asm):00276                         STA     <TZ+1
-20D1 9685             (    demo/cube.asm):00277                         LDA     <CB             ; TZ+2 = (cb * ca) * S
-20D3 D683             (    demo/cube.asm):00278                         LDB     <CA
-20D5 8D07             (    demo/cube.asm):00279                         BSR     MULS7
-20D7 D694             (    demo/cube.asm):00280                         LDB     <SIZE
-20D9 8D03             (    demo/cube.asm):00281                         BSR     MULS7
-20DB 978E             (    demo/cube.asm):00282                         STA     <TZ+2
-20DD 39               (    demo/cube.asm):00283                         RTS
-                      (    demo/cube.asm):00284         
-                      (    demo/cube.asm):00285         ; ---------------------------------------------------------------------------
-                      (    demo/cube.asm):00286         ; MULS7 - signed multiply, scaled: A = (A * B) / 128
-                      (    demo/cube.asm):00287         ;   Entry: A, B signed (-127..127)
-                      (    demo/cube.asm):00288         ;   Exit:  A = result. B corrupted.
-                      (    demo/cube.asm):00289         ;
-                      (    demo/cube.asm):00290         ;   The 6809's MUL only does unsigned A * B -> D. So: remember the signs,
-                      (    demo/cube.asm):00291         ;   multiply the sizes (absolute values), then put the sign back.
-                      (    demo/cube.asm):00292         ;   The result's sign is negative when exactly one input is negative,
-                      (    demo/cube.asm):00293         ;   which is what the top bit of (A EOR B) tells us.
-                      (    demo/cube.asm):00294         ;
-                      (    demo/cube.asm):00295         ;   Dividing D by 128: shifting D left once (ASLB then ROLA, which carries
-                      (    demo/cube.asm):00296         ;   B's top bit into A) gives D * 2, and the high byte of D * 2 is D / 128.
-                      (    demo/cube.asm):00297         ;   So after the shift the answer is simply in A.
-                      (    demo/cube.asm):00298         ; ---------------------------------------------------------------------------
-20DE 3406             (    demo/cube.asm):00299         MULS7           PSHS    D               ; save the originals: 0,S = A, 1,S = B
-20E0 4D               (    demo/cube.asm):00300                         TSTA                    ; make A positive
-20E1 2A01             (    demo/cube.asm):00301                         BPL     MS_1
-20E3 40               (    demo/cube.asm):00302                         NEGA
-20E4 5D               (    demo/cube.asm):00303         MS_1            TSTB                    ; make B positive
-20E5 2A01             (    demo/cube.asm):00304                         BPL     MS_2
-20E7 50               (    demo/cube.asm):00305                         NEGB
-20E8 3D               (    demo/cube.asm):00306         MS_2            MUL                     ; D = |A| * |B|
-20E9 58               (    demo/cube.asm):00307                         ASLB                    ; D * 2 ...
-20EA 49               (    demo/cube.asm):00308                         ROLA                    ; ... so A = D / 128
-20EB 3402             (    demo/cube.asm):00309                         PSHS    A               ; keep the result. The originals are
-                      (    demo/cube.asm):00310                                                 ;  now at 1,S (A) and 2,S (B)
-20ED A661             (    demo/cube.asm):00311                         LDA     1,S             ; sign of result = top bit of A EOR B
-20EF A862             (    demo/cube.asm):00312                         EORA    2,S             ;  (sets N flag)
-20F1 3502             (    demo/cube.asm):00313                         PULS    A               ; result back in A. PULS doesn't
-                      (    demo/cube.asm):00314                                                 ;  change the flags, so N survives
-20F3 2A01             (    demo/cube.asm):00315                         BPL     MS_3            ; positive: done
-20F5 40               (    demo/cube.asm):00316                         NEGA                    ; negative: negate the result
-20F6 3262             (    demo/cube.asm):00317         MS_3            LEAS    2,S             ; discard the saved originals
-20F8 39               (    demo/cube.asm):00318                         RTS
-                      (    demo/cube.asm):00319         
-                      (    demo/cube.asm):00320         ; ---------------------------------------------------------------------------
-                      (    demo/cube.asm):00321         ; CORNERS - rotate and project all 8 corners into PX/PY
-                      (    demo/cube.asm):00322         ;
-                      (    demo/cube.asm):00323         ;   For each corner number VI (0-7):
-                      (    demo/cube.asm):00324         ;     rotated x = signed sum of the TX terms       (VSUM)
-                      (    demo/cube.asm):00325         ;     rotated z = signed sum of the TZ terms, turned into a table index
-                      (    demo/cube.asm):00326         ;     rotated y = signed sum of the TY terms
-                      (    demo/cube.asm):00327         ;     screen y  = CY + y * RYTAB[z] / 128         (PMUL)
-                      (    demo/cube.asm):00328         ;     screen x  = CX + x * RXTAB[z] / 128
-                      (    demo/cube.asm):00329         ; ---------------------------------------------------------------------------
-20F9 0F8F             (    demo/cube.asm):00330         CORNERS         CLR     <VI             ; start with corner 0
-20FB D68F             (    demo/cube.asm):00331         CN_LOOP         LDB     <VI             ; B = corner number, used by VSUM
-20FD CE0086           (    demo/cube.asm):00332                         LDU     #TX             ;  to pick + or - for each term
-2100 8D45             (    demo/cube.asm):00333                         BSR     VSUM
-2102 9790             (    demo/cube.asm):00334                         STA     <VX             ; rotated x
-2104 CE008C           (    demo/cube.asm):00335                         LDU     #TZ             ; (B is preserved by VSUM)
-2107 8D3E             (    demo/cube.asm):00336                         BSR     VSUM            ; rotated z, range about -60..60
-2109 8B40             (    demo/cube.asm):00337                         ADDA    #64             ; shift to 0..127 to index the tables
-210B 9791             (    demo/cube.asm):00338                         STA     <ZI
-210D CE0089           (    demo/cube.asm):00339                         LDU     #TY
-2110 8D35             (    demo/cube.asm):00340                         BSR     VSUM            ; rotated y, left in A
-                      (    demo/cube.asm):00341         
-                      (    demo/cube.asm):00342         ; screen y = CY + y * RYTAB[z] / 128
-2112 308D021F         (    demo/cube.asm):00343                         LEAX    RYTAB,PCR       ; B = RYTAB[ZI]
-2116 D691             (    demo/cube.asm):00344                         LDB     <ZI
-2118 3A               (    demo/cube.asm):00345                         ABX
-2119 E684             (    demo/cube.asm):00346                         LDB     ,X
-211B 8D49             (    demo/cube.asm):00347                         BSR     PMUL            ; A = y * RYTAB[z] / 128
-211D 8B24             (    demo/cube.asm):00348                         ADDA    #CY
-211F 8E00A8           (    demo/cube.asm):00349                         LDX     #PY             ; store at PY + VI
-2122 D68F             (    demo/cube.asm):00350                         LDB     <VI
-2124 3A               (    demo/cube.asm):00351                         ABX
-2125 A784             (    demo/cube.asm):00352                         STA     ,X
-                      (    demo/cube.asm):00353         
-                      (    demo/cube.asm):00354         ; screen x = CX + x * RXTAB[z] / 128
-2127 308D018A         (    demo/cube.asm):00355                         LEAX    RXTAB,PCR       ; B = RXTAB[ZI]
-212B D691             (    demo/cube.asm):00356                         LDB     <ZI
-212D 3A               (    demo/cube.asm):00357                         ABX
-212E E684             (    demo/cube.asm):00358                         LDB     ,X
-2130 9690             (    demo/cube.asm):00359                         LDA     <VX             ; A = rotated x
-2132 8D32             (    demo/cube.asm):00360                         BSR     PMUL
-2134 8B27             (    demo/cube.asm):00361                         ADDA    #CX
-2136 8E00A0           (    demo/cube.asm):00362                         LDX     #PX             ; store at PX + VI
-2139 D68F             (    demo/cube.asm):00363                         LDB     <VI
-213B 3A               (    demo/cube.asm):00364                         ABX
-213C A784             (    demo/cube.asm):00365                         STA     ,X
-                      (    demo/cube.asm):00366         
-213E 0C8F             (    demo/cube.asm):00367                         INC     <VI             ; next corner, until all 8 done
-2140 968F             (    demo/cube.asm):00368                         LDA     <VI
-2142 8108             (    demo/cube.asm):00369                         CMPA    #8
-2144 26B5             (    demo/cube.asm):00370                         BNE     CN_LOOP
-2146 39               (    demo/cube.asm):00371                         RTS
-                      (    demo/cube.asm):00372         
-                      (    demo/cube.asm):00373         ; ---------------------------------------------------------------------------
-                      (    demo/cube.asm):00374         ; VSUM - one rotated coordinate of one corner
-                      (    demo/cube.asm):00375         ;   Entry: U -> the three terms for this coordinate (TX, TY or TZ)
-                      (    demo/cube.asm):00376         ;          B = corner number: bit 0 set means x = +S, clear means x = -S;
-                      (    demo/cube.asm):00377         ;              bit 1 likewise for y, bit 2 for z
-                      (    demo/cube.asm):00378         ;   Exit:  A = term0 * (+/-1) + term1 * (+/-1) + term2 * (+/-1)
-                      (    demo/cube.asm):00379         ;          B preserved (so the caller can reuse it for the next coordinate)
-                      (    demo/cube.asm):00380         ; ---------------------------------------------------------------------------
-2147 4F               (    demo/cube.asm):00381         VSUM            CLRA                    ; running total
-2148 C501             (    demo/cube.asm):00382                         BITB    #1              ; x sign: add or subtract term 0
-214A 2704             (    demo/cube.asm):00383                         BEQ     VS_1
-214C ABC4             (    demo/cube.asm):00384                         ADDA    ,U
-214E 2002             (    demo/cube.asm):00385                         BRA     VS_2
-2150 A0C4             (    demo/cube.asm):00386         VS_1            SUBA    ,U
-2152 C502             (    demo/cube.asm):00387         VS_2            BITB    #2              ; y sign: term 1
-2154 2704             (    demo/cube.asm):00388                         BEQ     VS_3
-2156 AB41             (    demo/cube.asm):00389                         ADDA    1,U
-2158 2002             (    demo/cube.asm):00390                         BRA     VS_4
-215A A041             (    demo/cube.asm):00391         VS_3            SUBA    1,U
-215C C504             (    demo/cube.asm):00392         VS_4            BITB    #4              ; z sign: term 2
-215E 2703             (    demo/cube.asm):00393                         BEQ     VS_5
-2160 AB42             (    demo/cube.asm):00394                         ADDA    2,U
-2162 39               (    demo/cube.asm):00395                         RTS
-2163 A042             (    demo/cube.asm):00396         VS_5            SUBA    2,U
-2165 39               (    demo/cube.asm):00397                         RTS
-                      (    demo/cube.asm):00398         
-                      (    demo/cube.asm):00399         ; ---------------------------------------------------------------------------
-                      (    demo/cube.asm):00400         ; PMUL - projection multiply: A = (A * B) / 128
-                      (    demo/cube.asm):00401         ;   Entry: A = coordinate (signed), B = scale from RXTAB/RYTAB (unsigned)
-                      (    demo/cube.asm):00402         ;   Exit:  A = result. B corrupted.
-                      (    demo/cube.asm):00403         ;
-                      (    demo/cube.asm):00404         ;   Like MULS7, but only A can be negative, so: make A positive, MUL,
-                      (    demo/cube.asm):00405         ;   divide by 128 the same way (ASLB/ROLA leaves D/128 in A), and negate
-                      (    demo/cube.asm):00406         ;   the answer if A was negative.
+                      (    demo/cube.asm):00180         ; ZOOMSZ - set SIZE from the zoom phase
+                      (    demo/cube.asm):00181         ;
+                      (    demo/cube.asm):00182         ;   SIZE = SIZE_MID + sin(ZOOM)/8, which swings smoothly between 5 and 36
+                      (    demo/cube.asm):00183         ;   as ZOOM goes round. From about 26 upwards the cube overhangs the screen
+                      (    demo/cube.asm):00184         ;   and TGL_LINEC clips it. Don't go above 36: beyond that the depth no
+                      (    demo/cube.asm):00185         ;   longer fits the projection tables (-64..63), and projected points no
+                      (    demo/cube.asm):00186         ;   longer fit the signed -128..127 that TGL_LINEC accepts.
+                      (    demo/cube.asm):00187         ; ---------------------------------------------------------------------------
+204D 308D0169         (    demo/cube.asm):00188         ZOOMSZ          LEAX    SINTAB,PCR      ; X -> sine table
+2051 D695             (    demo/cube.asm):00189                         LDB     <ZOOM           ; X -> sin(ZOOM). ABX adds B as an
+2053 3A               (    demo/cube.asm):00190                         ABX                     ;  UNSIGNED byte (0-255). "LDA B,X"
+                      (    demo/cube.asm):00191                                                 ;  would treat B as signed and read
+                      (    demo/cube.asm):00192                                                 ;  before the table for B >= 128
+2054 A684             (    demo/cube.asm):00193                         LDA     ,X              ; A = sin(ZOOM), -127..127
+2056 47               (    demo/cube.asm):00194                         ASRA                    ; divide by 8. ASR keeps the sign bit,
+2057 47               (    demo/cube.asm):00195                         ASRA                    ;  so negative numbers stay negative:
+2058 47               (    demo/cube.asm):00196                         ASRA                    ;  -127..127 becomes -16..15
+2059 8B15             (    demo/cube.asm):00197                         ADDA    #SIZE_MID       ; 5..36
+205B 9794             (    demo/cube.asm):00198                         STA     <SIZE
+205D 39               (    demo/cube.asm):00199                         RTS
+                      (    demo/cube.asm):00200         
+                      (    demo/cube.asm):00201         ; ---------------------------------------------------------------------------
+                      (    demo/cube.asm):00202         ; MATRIX - work out this frame's nine terms
+                      (    demo/cube.asm):00203         ;
+                      (    demo/cube.asm):00204         ;   The cube is turned first about the y axis (angle B), then about the x
+                      (    demo/cube.asm):00205         ;   axis (angle A). Multiplying those two rotations together gives this
+                      (    demo/cube.asm):00206         ;   matrix (each entry scaled so 127 = 1.0):
+                      (    demo/cube.asm):00207         ;
+                      (    demo/cube.asm):00208         ;               x part      y part     z part
+                      (    demo/cube.asm):00209         ;     row x: [  cb,         0,         sb       ]
+                      (    demo/cube.asm):00210         ;     row y: [  sb*sa,      ca,       -cb*sa    ]
+                      (    demo/cube.asm):00211         ;     row z: [ -sb*ca,      sa,        cb*ca    ]
+                      (    demo/cube.asm):00212         ;
+                      (    demo/cube.asm):00213         ;   Each entry is then multiplied by SIZE to give the terms, e.g.
+                      (    demo/cube.asm):00214         ;   TX = [ cb*S, 0, sb*S ]. Two-factor entries like sb*sa need two
+                      (    demo/cube.asm):00215         ;   multiplies: first sb*sa, then that result * S.
+                      (    demo/cube.asm):00216         ; ---------------------------------------------------------------------------
+                      (    demo/cube.asm):00217         
+                      (    demo/cube.asm):00218         ; Look up the four sines and cosines. Each lookup: X -> table, add the
+                      (    demo/cube.asm):00219         ; angle (unsigned, via ABX), read the byte. cos uses angle + 64.
+205E 308D0158         (    demo/cube.asm):00220         MATRIX          LEAX    SINTAB,PCR      ; SA = sin(ANG_A)
+2062 D680             (    demo/cube.asm):00221                         LDB     <ANG_A
+2064 3A               (    demo/cube.asm):00222                         ABX
+2065 A684             (    demo/cube.asm):00223                         LDA     ,X
+2067 9782             (    demo/cube.asm):00224                         STA     <SA
+2069 308D014D         (    demo/cube.asm):00225                         LEAX    SINTAB,PCR      ; CA = cos(ANG_A) = sin(ANG_A + 64)
+206D D680             (    demo/cube.asm):00226                         LDB     <ANG_A
+206F CB40             (    demo/cube.asm):00227                         ADDB    #64             ; (wraps round past 255 correctly)
+2071 3A               (    demo/cube.asm):00228                         ABX
+2072 A684             (    demo/cube.asm):00229                         LDA     ,X
+2074 9783             (    demo/cube.asm):00230                         STA     <CA
+2076 308D0140         (    demo/cube.asm):00231                         LEAX    SINTAB,PCR      ; SB = sin(ANG_B)
+207A D681             (    demo/cube.asm):00232                         LDB     <ANG_B
+207C 3A               (    demo/cube.asm):00233                         ABX
+207D A684             (    demo/cube.asm):00234                         LDA     ,X
+207F 9784             (    demo/cube.asm):00235                         STA     <SB
+2081 308D0135         (    demo/cube.asm):00236                         LEAX    SINTAB,PCR      ; CB = cos(ANG_B)
+2085 D681             (    demo/cube.asm):00237                         LDB     <ANG_B
+2087 CB40             (    demo/cube.asm):00238                         ADDB    #64
+2089 3A               (    demo/cube.asm):00239                         ABX
+208A A684             (    demo/cube.asm):00240                         LDA     ,X
+208C 9785             (    demo/cube.asm):00241                         STA     <CB
+                      (    demo/cube.asm):00242         
+                      (    demo/cube.asm):00243         ; Row x: TX = S * [ cb, 0, sb ]
+208E 9685             (    demo/cube.asm):00244                         LDA     <CB             ; TX+0 = cb * S
+2090 D694             (    demo/cube.asm):00245                         LDB     <SIZE
+2092 8D4F             (    demo/cube.asm):00246                         BSR     MULS7
+2094 9786             (    demo/cube.asm):00247                         STA     <TX
+2096 0F87             (    demo/cube.asm):00248                         CLR     <TX+1           ; TX+1 = 0 (this entry is always 0)
+2098 9684             (    demo/cube.asm):00249                         LDA     <SB             ; TX+2 = sb * S
+209A D694             (    demo/cube.asm):00250                         LDB     <SIZE
+209C 8D45             (    demo/cube.asm):00251                         BSR     MULS7
+209E 9788             (    demo/cube.asm):00252                         STA     <TX+2
+                      (    demo/cube.asm):00253         
+                      (    demo/cube.asm):00254         ; Row y: TY = S * [ sb*sa, ca, -cb*sa ]
+20A0 9684             (    demo/cube.asm):00255                         LDA     <SB             ; TY+0 = (sb * sa) * S
+20A2 D682             (    demo/cube.asm):00256                         LDB     <SA
+20A4 8D3D             (    demo/cube.asm):00257                         BSR     MULS7           ;  A = sb * sa
+20A6 D694             (    demo/cube.asm):00258                         LDB     <SIZE
+20A8 8D39             (    demo/cube.asm):00259                         BSR     MULS7           ;  A = that * S
+20AA 9789             (    demo/cube.asm):00260                         STA     <TY
+20AC 9683             (    demo/cube.asm):00261                         LDA     <CA             ; TY+1 = ca * S
+20AE D694             (    demo/cube.asm):00262                         LDB     <SIZE
+20B0 8D31             (    demo/cube.asm):00263                         BSR     MULS7
+20B2 978A             (    demo/cube.asm):00264                         STA     <TY+1
+20B4 9685             (    demo/cube.asm):00265                         LDA     <CB             ; TY+2 = -(cb * sa) * S
+20B6 D682             (    demo/cube.asm):00266                         LDB     <SA
+20B8 8D29             (    demo/cube.asm):00267                         BSR     MULS7
+20BA 40               (    demo/cube.asm):00268                         NEGA
+20BB D694             (    demo/cube.asm):00269                         LDB     <SIZE
+20BD 8D24             (    demo/cube.asm):00270                         BSR     MULS7
+20BF 978B             (    demo/cube.asm):00271                         STA     <TY+2
+                      (    demo/cube.asm):00272         
+                      (    demo/cube.asm):00273         ; Row z: TZ = S * [ -sb*ca, sa, cb*ca ]
+20C1 9684             (    demo/cube.asm):00274                         LDA     <SB             ; TZ+0 = -(sb * ca) * S
+20C3 D683             (    demo/cube.asm):00275                         LDB     <CA
+20C5 8D1C             (    demo/cube.asm):00276                         BSR     MULS7
+20C7 40               (    demo/cube.asm):00277                         NEGA
+20C8 D694             (    demo/cube.asm):00278                         LDB     <SIZE
+20CA 8D17             (    demo/cube.asm):00279                         BSR     MULS7
+20CC 978C             (    demo/cube.asm):00280                         STA     <TZ
+20CE 9682             (    demo/cube.asm):00281                         LDA     <SA             ; TZ+1 = sa * S
+20D0 D694             (    demo/cube.asm):00282                         LDB     <SIZE
+20D2 8D0F             (    demo/cube.asm):00283                         BSR     MULS7
+20D4 978D             (    demo/cube.asm):00284                         STA     <TZ+1
+20D6 9685             (    demo/cube.asm):00285                         LDA     <CB             ; TZ+2 = (cb * ca) * S
+20D8 D683             (    demo/cube.asm):00286                         LDB     <CA
+20DA 8D07             (    demo/cube.asm):00287                         BSR     MULS7
+20DC D694             (    demo/cube.asm):00288                         LDB     <SIZE
+20DE 8D03             (    demo/cube.asm):00289                         BSR     MULS7
+20E0 978E             (    demo/cube.asm):00290                         STA     <TZ+2
+20E2 39               (    demo/cube.asm):00291                         RTS
+                      (    demo/cube.asm):00292         
+                      (    demo/cube.asm):00293         ; ---------------------------------------------------------------------------
+                      (    demo/cube.asm):00294         ; MULS7 - signed multiply, scaled: A = (A * B) / 128
+                      (    demo/cube.asm):00295         ;   Entry: A, B signed (-127..127)
+                      (    demo/cube.asm):00296         ;   Exit:  A = result. B corrupted.
+                      (    demo/cube.asm):00297         ;
+                      (    demo/cube.asm):00298         ;   The 6809's MUL only does unsigned A * B -> D. So: remember the signs,
+                      (    demo/cube.asm):00299         ;   multiply the sizes (absolute values), then put the sign back.
+                      (    demo/cube.asm):00300         ;   The result's sign is negative when exactly one input is negative,
+                      (    demo/cube.asm):00301         ;   which is what the top bit of (A EOR B) tells us.
+                      (    demo/cube.asm):00302         ;
+                      (    demo/cube.asm):00303         ;   Dividing D by 128: shifting D left once (ASLB then ROLA, which carries
+                      (    demo/cube.asm):00304         ;   B's top bit into A) gives D * 2, and the high byte of D * 2 is D / 128.
+                      (    demo/cube.asm):00305         ;   So after the shift the answer is simply in A.
+                      (    demo/cube.asm):00306         ; ---------------------------------------------------------------------------
+20E3 3406             (    demo/cube.asm):00307         MULS7           PSHS    D               ; save the originals: 0,S = A, 1,S = B
+20E5 4D               (    demo/cube.asm):00308                         TSTA                    ; make A positive
+20E6 2A01             (    demo/cube.asm):00309                         BPL     MS_1
+20E8 40               (    demo/cube.asm):00310                         NEGA
+20E9 5D               (    demo/cube.asm):00311         MS_1            TSTB                    ; make B positive
+20EA 2A01             (    demo/cube.asm):00312                         BPL     MS_2
+20EC 50               (    demo/cube.asm):00313                         NEGB
+20ED 3D               (    demo/cube.asm):00314         MS_2            MUL                     ; D = |A| * |B|
+20EE 58               (    demo/cube.asm):00315                         ASLB                    ; D * 2 ...
+20EF 49               (    demo/cube.asm):00316                         ROLA                    ; ... so A = D / 128
+20F0 3402             (    demo/cube.asm):00317                         PSHS    A               ; keep the result. The originals are
+                      (    demo/cube.asm):00318                                                 ;  now at 1,S (A) and 2,S (B)
+20F2 A661             (    demo/cube.asm):00319                         LDA     1,S             ; sign of result = top bit of A EOR B
+20F4 A862             (    demo/cube.asm):00320                         EORA    2,S             ;  (sets N flag)
+20F6 3502             (    demo/cube.asm):00321                         PULS    A               ; result back in A. PULS doesn't
+                      (    demo/cube.asm):00322                                                 ;  change the flags, so N survives
+20F8 2A01             (    demo/cube.asm):00323                         BPL     MS_3            ; positive: done
+20FA 40               (    demo/cube.asm):00324                         NEGA                    ; negative: negate the result
+20FB 3262             (    demo/cube.asm):00325         MS_3            LEAS    2,S             ; discard the saved originals
+20FD 39               (    demo/cube.asm):00326                         RTS
+                      (    demo/cube.asm):00327         
+                      (    demo/cube.asm):00328         ; ---------------------------------------------------------------------------
+                      (    demo/cube.asm):00329         ; CORNERS - rotate and project all 8 corners into PX/PY
+                      (    demo/cube.asm):00330         ;
+                      (    demo/cube.asm):00331         ;   For each corner number VI (0-7):
+                      (    demo/cube.asm):00332         ;     rotated x = signed sum of the TX terms       (VSUM)
+                      (    demo/cube.asm):00333         ;     rotated z = signed sum of the TZ terms, turned into a table index
+                      (    demo/cube.asm):00334         ;     rotated y = signed sum of the TY terms
+                      (    demo/cube.asm):00335         ;     screen y  = CY + y * RYTAB[z] / 128         (PMUL)
+                      (    demo/cube.asm):00336         ;     screen x  = CX + x * RXTAB[z] / 128
+                      (    demo/cube.asm):00337         ; ---------------------------------------------------------------------------
+20FE 0F8F             (    demo/cube.asm):00338         CORNERS         CLR     <VI             ; start with corner 0
+2100 D68F             (    demo/cube.asm):00339         CN_LOOP         LDB     <VI             ; B = corner number, used by VSUM
+2102 CE0086           (    demo/cube.asm):00340                         LDU     #TX             ;  to pick + or - for each term
+2105 8D45             (    demo/cube.asm):00341                         BSR     VSUM
+2107 9790             (    demo/cube.asm):00342                         STA     <VX             ; rotated x
+2109 CE008C           (    demo/cube.asm):00343                         LDU     #TZ             ; (B is preserved by VSUM)
+210C 8D3E             (    demo/cube.asm):00344                         BSR     VSUM            ; rotated z, range about -60..60
+210E 8B40             (    demo/cube.asm):00345                         ADDA    #64             ; shift to 0..127 to index the tables
+2110 9791             (    demo/cube.asm):00346                         STA     <ZI
+2112 CE0089           (    demo/cube.asm):00347                         LDU     #TY
+2115 8D35             (    demo/cube.asm):00348                         BSR     VSUM            ; rotated y, left in A
+                      (    demo/cube.asm):00349         
+                      (    demo/cube.asm):00350         ; screen y = CY + y * RYTAB[z] / 128
+2117 308D021F         (    demo/cube.asm):00351                         LEAX    RYTAB,PCR       ; B = RYTAB[ZI]
+211B D691             (    demo/cube.asm):00352                         LDB     <ZI
+211D 3A               (    demo/cube.asm):00353                         ABX
+211E E684             (    demo/cube.asm):00354                         LDB     ,X
+2120 8D49             (    demo/cube.asm):00355                         BSR     PMUL            ; A = y * RYTAB[z] / 128
+2122 8B24             (    demo/cube.asm):00356                         ADDA    #CY
+2124 8E00A8           (    demo/cube.asm):00357                         LDX     #PY             ; store at PY + VI
+2127 D68F             (    demo/cube.asm):00358                         LDB     <VI
+2129 3A               (    demo/cube.asm):00359                         ABX
+212A A784             (    demo/cube.asm):00360                         STA     ,X
+                      (    demo/cube.asm):00361         
+                      (    demo/cube.asm):00362         ; screen x = CX + x * RXTAB[z] / 128
+212C 308D018A         (    demo/cube.asm):00363                         LEAX    RXTAB,PCR       ; B = RXTAB[ZI]
+2130 D691             (    demo/cube.asm):00364                         LDB     <ZI
+2132 3A               (    demo/cube.asm):00365                         ABX
+2133 E684             (    demo/cube.asm):00366                         LDB     ,X
+2135 9690             (    demo/cube.asm):00367                         LDA     <VX             ; A = rotated x
+2137 8D32             (    demo/cube.asm):00368                         BSR     PMUL
+2139 8B27             (    demo/cube.asm):00369                         ADDA    #CX
+213B 8E00A0           (    demo/cube.asm):00370                         LDX     #PX             ; store at PX + VI
+213E D68F             (    demo/cube.asm):00371                         LDB     <VI
+2140 3A               (    demo/cube.asm):00372                         ABX
+2141 A784             (    demo/cube.asm):00373                         STA     ,X
+                      (    demo/cube.asm):00374         
+2143 0C8F             (    demo/cube.asm):00375                         INC     <VI             ; next corner, until all 8 done
+2145 968F             (    demo/cube.asm):00376                         LDA     <VI
+2147 8108             (    demo/cube.asm):00377                         CMPA    #8
+2149 26B5             (    demo/cube.asm):00378                         BNE     CN_LOOP
+214B 39               (    demo/cube.asm):00379                         RTS
+                      (    demo/cube.asm):00380         
+                      (    demo/cube.asm):00381         ; ---------------------------------------------------------------------------
+                      (    demo/cube.asm):00382         ; VSUM - one rotated coordinate of one corner
+                      (    demo/cube.asm):00383         ;   Entry: U -> the three terms for this coordinate (TX, TY or TZ)
+                      (    demo/cube.asm):00384         ;          B = corner number: bit 0 set means x = +S, clear means x = -S;
+                      (    demo/cube.asm):00385         ;              bit 1 likewise for y, bit 2 for z
+                      (    demo/cube.asm):00386         ;   Exit:  A = term0 * (+/-1) + term1 * (+/-1) + term2 * (+/-1)
+                      (    demo/cube.asm):00387         ;          B preserved (so the caller can reuse it for the next coordinate)
+                      (    demo/cube.asm):00388         ; ---------------------------------------------------------------------------
+214C 4F               (    demo/cube.asm):00389         VSUM            CLRA                    ; running total
+214D C501             (    demo/cube.asm):00390                         BITB    #1              ; x sign: add or subtract term 0
+214F 2704             (    demo/cube.asm):00391                         BEQ     VS_1
+2151 ABC4             (    demo/cube.asm):00392                         ADDA    ,U
+2153 2002             (    demo/cube.asm):00393                         BRA     VS_2
+2155 A0C4             (    demo/cube.asm):00394         VS_1            SUBA    ,U
+2157 C502             (    demo/cube.asm):00395         VS_2            BITB    #2              ; y sign: term 1
+2159 2704             (    demo/cube.asm):00396                         BEQ     VS_3
+215B AB41             (    demo/cube.asm):00397                         ADDA    1,U
+215D 2002             (    demo/cube.asm):00398                         BRA     VS_4
+215F A041             (    demo/cube.asm):00399         VS_3            SUBA    1,U
+2161 C504             (    demo/cube.asm):00400         VS_4            BITB    #4              ; z sign: term 2
+2163 2703             (    demo/cube.asm):00401                         BEQ     VS_5
+2165 AB42             (    demo/cube.asm):00402                         ADDA    2,U
+2167 39               (    demo/cube.asm):00403                         RTS
+2168 A042             (    demo/cube.asm):00404         VS_5            SUBA    2,U
+216A 39               (    demo/cube.asm):00405                         RTS
+                      (    demo/cube.asm):00406         
                       (    demo/cube.asm):00407         ; ---------------------------------------------------------------------------
-2166 4D               (    demo/cube.asm):00408         PMUL            TSTA
-2167 2A06             (    demo/cube.asm):00409                         BPL     PM_1
-2169 40               (    demo/cube.asm):00410                         NEGA                    ; negative coordinate:
-216A 3D               (    demo/cube.asm):00411                         MUL                     ;  |A| * B
-216B 58               (    demo/cube.asm):00412                         ASLB                    ;  / 128
-216C 49               (    demo/cube.asm):00413                         ROLA
-216D 40               (    demo/cube.asm):00414                         NEGA                    ;  and make it negative again
-216E 39               (    demo/cube.asm):00415                         RTS
-216F 3D               (    demo/cube.asm):00416         PM_1            MUL                     ; positive coordinate: A * B
-2170 58               (    demo/cube.asm):00417                         ASLB                    ;  / 128
-2171 49               (    demo/cube.asm):00418                         ROLA
-2172 39               (    demo/cube.asm):00419                         RTS
-                      (    demo/cube.asm):00420         
-                      (    demo/cube.asm):00421         ; ---------------------------------------------------------------------------
-                      (    demo/cube.asm):00422         ; EDGES - draw the 12 edges
-                      (    demo/cube.asm):00423         ;
-                      (    demo/cube.asm):00424         ;   EDGETAB lists the 12 edges as pairs of corner numbers. For each pair,
-                      (    demo/cube.asm):00425         ;   look up both corners' screen positions in PX/PY and draw a line.
-                      (    demo/cube.asm):00426         ;   TGL_LINEC (the clipped line) is used because, when the cube is zoomed
-                      (    demo/cube.asm):00427         ;   right in, some corners land off the screen.
-                      (    demo/cube.asm):00428         ;
-                      (    demo/cube.asm):00429         ;   Y walks through EDGETAB two bytes at a time: 0,Y is the start corner,
-                      (    demo/cube.asm):00430         ;   1,Y the end corner.
-                      (    demo/cube.asm):00431         ; ---------------------------------------------------------------------------
-2173 318D0026         (    demo/cube.asm):00432         EDGES           LEAY    EDGETAB,PCR
-2177 860C             (    demo/cube.asm):00433                         LDA     #12             ; 12 edges to draw
-2179 9792             (    demo/cube.asm):00434                         STA     <EC
-217B 8E00A0           (    demo/cube.asm):00435         ED_LOOP         LDX     #PX             ; end corner's position -> U
-217E E621             (    demo/cube.asm):00436                         LDB     1,Y             ;  X -> PX + end corner
-2180 3A               (    demo/cube.asm):00437                         ABX
-2181 A684             (    demo/cube.asm):00438                         LDA     ,X              ;  A = its x
-2183 E608             (    demo/cube.asm):00439                         LDB     8,X             ;  B = its y (PY = PX + 8)
-2185 1F03             (    demo/cube.asm):00440                         TFR     D,U             ;  park x1:y1 in U for now
-2187 8E00A0           (    demo/cube.asm):00441                         LDX     #PX             ; start corner's position -> A, B
-218A E6A4             (    demo/cube.asm):00442                         LDB     ,Y
-218C 3A               (    demo/cube.asm):00443                         ABX
-218D A684             (    demo/cube.asm):00444                         LDA     ,X              ;  A = x0
-218F E608             (    demo/cube.asm):00445                         LDB     8,X             ;  B = y0
-2191 1F31             (    demo/cube.asm):00446                         TFR     U,X             ; X = x1:y1, the packed end point
-2193 BD1018           (    demo/cube.asm):00447                         JSR     TGL_LINEC
-2196 3122             (    demo/cube.asm):00448                         LEAY    2,Y             ; next pair
-2198 0A92             (    demo/cube.asm):00449                         DEC     <EC
-219A 26DF             (    demo/cube.asm):00450                         BNE     ED_LOOP
-219C 39               (    demo/cube.asm):00451                         RTS
-                      (    demo/cube.asm):00452         
-                      (    demo/cube.asm):00453         ; ---------------------------------------------------------------------------
-                      (    demo/cube.asm):00454         ; The 12 edges, as pairs of corner numbers. Corners differing only in bit 0
-                      (    demo/cube.asm):00455         ; are joined by an edge running along x; bit 1 along y; bit 2 along z.
-                      (    demo/cube.asm):00456         ; ---------------------------------------------------------------------------
-219D 0001020304050607 (    demo/cube.asm):00457         EDGETAB         FCB     0,1,2,3,4,5,6,7         ; edges along x
-21A5 0002010304060507 (    demo/cube.asm):00458                         FCB     0,2,1,3,4,6,5,7         ; edges along y
-21AD 0004010502060307 (    demo/cube.asm):00459                         FCB     0,4,1,5,2,6,3,7         ; edges along z
+                      (    demo/cube.asm):00408         ; PMUL - projection multiply: A = (A * B) / 128
+                      (    demo/cube.asm):00409         ;   Entry: A = coordinate (signed), B = scale from RXTAB/RYTAB (unsigned)
+                      (    demo/cube.asm):00410         ;   Exit:  A = result. B corrupted.
+                      (    demo/cube.asm):00411         ;
+                      (    demo/cube.asm):00412         ;   Like MULS7, but only A can be negative, so: make A positive, MUL,
+                      (    demo/cube.asm):00413         ;   divide by 128 the same way (ASLB/ROLA leaves D/128 in A), and negate
+                      (    demo/cube.asm):00414         ;   the answer if A was negative.
+                      (    demo/cube.asm):00415         ; ---------------------------------------------------------------------------
+216B 4D               (    demo/cube.asm):00416         PMUL            TSTA
+216C 2A06             (    demo/cube.asm):00417                         BPL     PM_1
+216E 40               (    demo/cube.asm):00418                         NEGA                    ; negative coordinate:
+216F 3D               (    demo/cube.asm):00419                         MUL                     ;  |A| * B
+2170 58               (    demo/cube.asm):00420                         ASLB                    ;  / 128
+2171 49               (    demo/cube.asm):00421                         ROLA
+2172 40               (    demo/cube.asm):00422                         NEGA                    ;  and make it negative again
+2173 39               (    demo/cube.asm):00423                         RTS
+2174 3D               (    demo/cube.asm):00424         PM_1            MUL                     ; positive coordinate: A * B
+2175 58               (    demo/cube.asm):00425                         ASLB                    ;  / 128
+2176 49               (    demo/cube.asm):00426                         ROLA
+2177 39               (    demo/cube.asm):00427                         RTS
+                      (    demo/cube.asm):00428         
+                      (    demo/cube.asm):00429         ; ---------------------------------------------------------------------------
+                      (    demo/cube.asm):00430         ; EDGES - draw the 12 edges
+                      (    demo/cube.asm):00431         ;
+                      (    demo/cube.asm):00432         ;   EDGETAB lists the 12 edges as pairs of corner numbers. For each pair,
+                      (    demo/cube.asm):00433         ;   look up both corners' screen positions in PX/PY and draw a line.
+                      (    demo/cube.asm):00434         ;   TGL_LINEC (the clipped line) is used because, when the cube is zoomed
+                      (    demo/cube.asm):00435         ;   right in, some corners land off the screen.
+                      (    demo/cube.asm):00436         ;
+                      (    demo/cube.asm):00437         ;   Y walks through EDGETAB two bytes at a time: 0,Y is the start corner,
+                      (    demo/cube.asm):00438         ;   1,Y the end corner.
+                      (    demo/cube.asm):00439         ; ---------------------------------------------------------------------------
+2178 318D0026         (    demo/cube.asm):00440         EDGES           LEAY    EDGETAB,PCR
+217C 860C             (    demo/cube.asm):00441                         LDA     #12             ; 12 edges to draw
+217E 9792             (    demo/cube.asm):00442                         STA     <EC
+2180 8E00A0           (    demo/cube.asm):00443         ED_LOOP         LDX     #PX             ; end corner's position -> U
+2183 E621             (    demo/cube.asm):00444                         LDB     1,Y             ;  X -> PX + end corner
+2185 3A               (    demo/cube.asm):00445                         ABX
+2186 A684             (    demo/cube.asm):00446                         LDA     ,X              ;  A = its x
+2188 E608             (    demo/cube.asm):00447                         LDB     8,X             ;  B = its y (PY = PX + 8)
+218A 1F03             (    demo/cube.asm):00448                         TFR     D,U             ;  park x1:y1 in U for now
+218C 8E00A0           (    demo/cube.asm):00449                         LDX     #PX             ; start corner's position -> A, B
+218F E6A4             (    demo/cube.asm):00450                         LDB     ,Y
+2191 3A               (    demo/cube.asm):00451                         ABX
+2192 A684             (    demo/cube.asm):00452                         LDA     ,X              ;  A = x0
+2194 E608             (    demo/cube.asm):00453                         LDB     8,X             ;  B = y0
+2196 1F31             (    demo/cube.asm):00454                         TFR     U,X             ; X = x1:y1, the packed end point
+2198 BD1018           (    demo/cube.asm):00455                         JSR     TGL_LINEC
+219B 3122             (    demo/cube.asm):00456                         LEAY    2,Y             ; next pair
+219D 0A92             (    demo/cube.asm):00457                         DEC     <EC
+219F 26DF             (    demo/cube.asm):00458                         BNE     ED_LOOP
+21A1 39               (    demo/cube.asm):00459                         RTS
                       (    demo/cube.asm):00460         
-                      (    demo/cube.asm):00461         ; Sine table and perspective tables, generated by tools/gen_cube_tables.py
-                      (    demo/cube.asm):00462                         INCLUDE "cube_tables.asm"
+                      (    demo/cube.asm):00461         ; ---------------------------------------------------------------------------
+                      (    demo/cube.asm):00462         ; The 12 edges, as pairs of corner numbers. Corners differing only in bit 0
+                      (    demo/cube.asm):00463         ; are joined by an edge running along x; bit 1 along y; bit 2 along z.
+                      (    demo/cube.asm):00464         ; ---------------------------------------------------------------------------
+21A2 0001020304050607 (    demo/cube.asm):00465         EDGETAB         FCB     0,1,2,3,4,5,6,7         ; edges along x
+21AA 0002010304060507 (    demo/cube.asm):00466                         FCB     0,2,1,3,4,6,5,7         ; edges along y
+21B2 0004010502060307 (    demo/cube.asm):00467                         FCB     0,4,1,5,2,6,3,7         ; edges along z
+                      (    demo/cube.asm):00468         
+                      (    demo/cube.asm):00469         ; Sine table and perspective tables, generated by tools/gen_cube_tables.py
+                      (    demo/cube.asm):00470                         INCLUDE "cube_tables.asm"
                       (  cube_tables.asm):00001         ; Generated tables (see tools/gen_cube_tables.py)
                       (  cube_tables.asm):00002         
                       (  cube_tables.asm):00003         ; SINTAB: 127*sin(2*pi*i/256), signed
-21B5 000306090C101316 (  cube_tables.asm):00004         SINTAB          FCB     $00,$03,$06,$09,$0C,$10,$13,$16,$19,$1C,$1F,$22,$25,$28,$2B,$2E
+21BA 000306090C101316 (  cube_tables.asm):00004         SINTAB          FCB     $00,$03,$06,$09,$0C,$10,$13,$16,$19,$1C,$1F,$22,$25,$28,$2B,$2E
      191C1F2225282B2E
-21C5 313336393C3F4144 (  cube_tables.asm):00005                         FCB     $31,$33,$36,$39,$3C,$3F,$41,$44,$47,$49,$4C,$4E,$51,$53,$55,$58
+21CA 313336393C3F4144 (  cube_tables.asm):00005                         FCB     $31,$33,$36,$39,$3C,$3F,$41,$44,$47,$49,$4C,$4E,$51,$53,$55,$58
      47494C4E51535558
-21D5 5A5C5E6062646668 (  cube_tables.asm):00006                         FCB     $5A,$5C,$5E,$60,$62,$64,$66,$68,$6A,$6B,$6D,$6F,$70,$71,$73,$74
+21DA 5A5C5E6062646668 (  cube_tables.asm):00006                         FCB     $5A,$5C,$5E,$60,$62,$64,$66,$68,$6A,$6B,$6D,$6F,$70,$71,$73,$74
      6A6B6D6F70717374
-21E5 757678797A7A7B7C (  cube_tables.asm):00007                         FCB     $75,$76,$78,$79,$7A,$7A,$7B,$7C,$7D,$7D,$7E,$7E,$7E,$7F,$7F,$7F
+21EA 757678797A7A7B7C (  cube_tables.asm):00007                         FCB     $75,$76,$78,$79,$7A,$7A,$7B,$7C,$7D,$7D,$7E,$7E,$7E,$7F,$7F,$7F
      7D7D7E7E7E7F7F7F
-21F5 7F7F7F7F7E7E7E7D (  cube_tables.asm):00008                         FCB     $7F,$7F,$7F,$7F,$7E,$7E,$7E,$7D,$7D,$7C,$7B,$7A,$7A,$79,$78,$76
+21FA 7F7F7F7F7E7E7E7D (  cube_tables.asm):00008                         FCB     $7F,$7F,$7F,$7F,$7E,$7E,$7E,$7D,$7D,$7C,$7B,$7A,$7A,$79,$78,$76
      7D7C7B7A7A797876
-2205 75747371706F6D6B (  cube_tables.asm):00009                         FCB     $75,$74,$73,$71,$70,$6F,$6D,$6B,$6A,$68,$66,$64,$62,$60,$5E,$5C
+220A 75747371706F6D6B (  cube_tables.asm):00009                         FCB     $75,$74,$73,$71,$70,$6F,$6D,$6B,$6A,$68,$66,$64,$62,$60,$5E,$5C
      6A68666462605E5C
-2215 5A585553514E4C49 (  cube_tables.asm):00010                         FCB     $5A,$58,$55,$53,$51,$4E,$4C,$49,$47,$44,$41,$3F,$3C,$39,$36,$33
+221A 5A585553514E4C49 (  cube_tables.asm):00010                         FCB     $5A,$58,$55,$53,$51,$4E,$4C,$49,$47,$44,$41,$3F,$3C,$39,$36,$33
      4744413F3C393633
-2225 312E2B2825221F1C (  cube_tables.asm):00011                         FCB     $31,$2E,$2B,$28,$25,$22,$1F,$1C,$19,$16,$13,$10,$0C,$09,$06,$03
+222A 312E2B2825221F1C (  cube_tables.asm):00011                         FCB     $31,$2E,$2B,$28,$25,$22,$1F,$1C,$19,$16,$13,$10,$0C,$09,$06,$03
      191613100C090603
-2235 00FDFAF7F4F0EDEA (  cube_tables.asm):00012                         FCB     $00,$FD,$FA,$F7,$F4,$F0,$ED,$EA,$E7,$E4,$E1,$DE,$DB,$D8,$D5,$D2
+223A 00FDFAF7F4F0EDEA (  cube_tables.asm):00012                         FCB     $00,$FD,$FA,$F7,$F4,$F0,$ED,$EA,$E7,$E4,$E1,$DE,$DB,$D8,$D5,$D2
      E7E4E1DEDBD8D5D2
-2245 CFCDCAC7C4C1BFBC (  cube_tables.asm):00013                         FCB     $CF,$CD,$CA,$C7,$C4,$C1,$BF,$BC,$B9,$B7,$B4,$B2,$AF,$AD,$AB,$A8
+224A CFCDCAC7C4C1BFBC (  cube_tables.asm):00013                         FCB     $CF,$CD,$CA,$C7,$C4,$C1,$BF,$BC,$B9,$B7,$B4,$B2,$AF,$AD,$AB,$A8
      B9B7B4B2AFADABA8
-2255 A6A4A2A09E9C9A98 (  cube_tables.asm):00014                         FCB     $A6,$A4,$A2,$A0,$9E,$9C,$9A,$98,$96,$95,$93,$91,$90,$8F,$8D,$8C
+225A A6A4A2A09E9C9A98 (  cube_tables.asm):00014                         FCB     $A6,$A4,$A2,$A0,$9E,$9C,$9A,$98,$96,$95,$93,$91,$90,$8F,$8D,$8C
      96959391908F8D8C
-2265 8B8A888786868584 (  cube_tables.asm):00015                         FCB     $8B,$8A,$88,$87,$86,$86,$85,$84,$83,$83,$82,$82,$82,$81,$81,$81
+226A 8B8A888786868584 (  cube_tables.asm):00015                         FCB     $8B,$8A,$88,$87,$86,$86,$85,$84,$83,$83,$82,$82,$82,$81,$81,$81
      8383828282818181
-2275 8181818182828283 (  cube_tables.asm):00016                         FCB     $81,$81,$81,$81,$82,$82,$82,$83,$83,$84,$85,$86,$86,$87,$88,$8A
+227A 8181818182828283 (  cube_tables.asm):00016                         FCB     $81,$81,$81,$81,$82,$82,$82,$83,$83,$84,$85,$86,$86,$87,$88,$8A
      838485868687888A
-2285 8B8C8D8F90919395 (  cube_tables.asm):00017                         FCB     $8B,$8C,$8D,$8F,$90,$91,$93,$95,$96,$98,$9A,$9C,$9E,$A0,$A2,$A4
+228A 8B8C8D8F90919395 (  cube_tables.asm):00017                         FCB     $8B,$8C,$8D,$8F,$90,$91,$93,$95,$96,$98,$9A,$9C,$9E,$A0,$A2,$A4
      96989A9C9EA0A2A4
-2295 A6A8ABADAFB2B4B7 (  cube_tables.asm):00018                         FCB     $A6,$A8,$AB,$AD,$AF,$B2,$B4,$B7,$B9,$BC,$BF,$C1,$C4,$C7,$CA,$CD
+229A A6A8ABADAFB2B4B7 (  cube_tables.asm):00018                         FCB     $A6,$A8,$AB,$AD,$AF,$B2,$B4,$B7,$B9,$BC,$BF,$C1,$C4,$C7,$CA,$CD
      B9BCBFC1C4C7CACD
-22A5 CFD2D5D8DBDEE1E4 (  cube_tables.asm):00019                         FCB     $CF,$D2,$D5,$D8,$DB,$DE,$E1,$E4,$E7,$EA,$ED,$F0,$F4,$F7,$FA,$FD
+22AA CFD2D5D8DBDEE1E4 (  cube_tables.asm):00019                         FCB     $CF,$D2,$D5,$D8,$DB,$DE,$E1,$E4,$E7,$EA,$ED,$F0,$F4,$F7,$FA,$FD
      E7EAEDF0F4F7FAFD
                       (  cube_tables.asm):00020         
                       (  cube_tables.asm):00021         ; RXTAB/RYTAB: projection scale for depth z, indexed by z+64
                       (  cube_tables.asm):00022         ;   RX = 57*128/(100+z)  (x scale includes ~0.8 aspect correction)
                       (  cube_tables.asm):00023         ;   RY = 70*128/(100+z)
-22B5 CBC5C0BBB6B2AEAA (  cube_tables.asm):00024         RXTAB           FCB     $CB,$C5,$C0,$BB,$B6,$B2,$AE,$AA,$A6,$A2,$9F,$9B,$98,$95,$92,$8F
+22BA CBC5C0BBB6B2AEAA (  cube_tables.asm):00024         RXTAB           FCB     $CB,$C5,$C0,$BB,$B6,$B2,$AE,$AA,$A6,$A2,$9F,$9B,$98,$95,$92,$8F
      A6A29F9B9895928F
-22C5 8C8A878582807E7C (  cube_tables.asm):00025                         FCB     $8C,$8A,$87,$85,$82,$80,$7E,$7C,$7A,$78,$76,$74,$72,$70,$6F,$6D
+22CA 8C8A878582807E7C (  cube_tables.asm):00025                         FCB     $8C,$8A,$87,$85,$82,$80,$7E,$7C,$7A,$78,$76,$74,$72,$70,$6F,$6D
      7A78767472706F6D
-22D5 6B6A686765646361 (  cube_tables.asm):00026                         FCB     $6B,$6A,$68,$67,$65,$64,$63,$61,$60,$5F,$5E,$5C,$5B,$5A,$59,$58
+22DA 6B6A686765646361 (  cube_tables.asm):00026                         FCB     $6B,$6A,$68,$67,$65,$64,$63,$61,$60,$5F,$5E,$5C,$5B,$5A,$59,$58
      605F5E5C5B5A5958
-22E5 5756555453525150 (  cube_tables.asm):00027                         FCB     $57,$56,$55,$54,$53,$52,$51,$50,$4F,$4E,$4E,$4D,$4C,$4B,$4A,$4A
+22EA 5756555453525150 (  cube_tables.asm):00027                         FCB     $57,$56,$55,$54,$53,$52,$51,$50,$4F,$4E,$4E,$4D,$4C,$4B,$4A,$4A
      4F4E4E4D4C4B4A4A
-22F5 4948484746454544 (  cube_tables.asm):00028                         FCB     $49,$48,$48,$47,$46,$45,$45,$44,$44,$43,$42,$42,$41,$41,$40,$3F
+22FA 4948484746454544 (  cube_tables.asm):00028                         FCB     $49,$48,$48,$47,$46,$45,$45,$44,$44,$43,$42,$42,$41,$41,$40,$3F
      444342424141403F
-2305 3F3E3E3D3D3C3C3B (  cube_tables.asm):00029                         FCB     $3F,$3E,$3E,$3D,$3D,$3C,$3C,$3B,$3B,$3A,$3A,$39,$39,$39,$38,$38
+230A 3F3E3E3D3D3C3C3B (  cube_tables.asm):00029                         FCB     $3F,$3E,$3E,$3D,$3D,$3C,$3C,$3B,$3B,$3A,$3A,$39,$39,$39,$38,$38
      3B3A3A3939393838
-2315 3737363636353534 (  cube_tables.asm):00030                         FCB     $37,$37,$36,$36,$36,$35,$35,$34,$34,$34,$33,$33,$33,$32,$32,$32
+231A 3737363636353534 (  cube_tables.asm):00030                         FCB     $37,$37,$36,$36,$36,$35,$35,$34,$34,$34,$33,$33,$33,$32,$32,$32
      3434333333323232
-2325 3131313030302F2F (  cube_tables.asm):00031                         FCB     $31,$31,$31,$30,$30,$30,$2F,$2F,$2F,$2E,$2E,$2E,$2E,$2D,$2D,$2D
+232A 3131313030302F2F (  cube_tables.asm):00031                         FCB     $31,$31,$31,$30,$30,$30,$2F,$2F,$2F,$2E,$2E,$2E,$2E,$2D,$2D,$2D
      2F2E2E2E2E2D2D2D
-2335 F9F2ECE6E0DBD5D0 (  cube_tables.asm):00032         RYTAB           FCB     $F9,$F2,$EC,$E6,$E0,$DB,$D5,$D0,$CC,$C7,$C3,$BF,$BB,$B7,$B3,$B0
+233A F9F2ECE6E0DBD5D0 (  cube_tables.asm):00032         RYTAB           FCB     $F9,$F2,$EC,$E6,$E0,$DB,$D5,$D0,$CC,$C7,$C3,$BF,$BB,$B7,$B3,$B0
      CCC7C3BFBBB7B3B0
-2345 ACA9A6A3A09D9A98 (  cube_tables.asm):00033                         FCB     $AC,$A9,$A6,$A3,$A0,$9D,$9A,$98,$95,$93,$91,$8E,$8C,$8A,$88,$86
+234A ACA9A6A3A09D9A98 (  cube_tables.asm):00033                         FCB     $AC,$A9,$A6,$A3,$A0,$9D,$9A,$98,$95,$93,$91,$8E,$8C,$8A,$88,$86
      9593918E8C8A8886
-2355 8482807E7C7B7977 (  cube_tables.asm):00034                         FCB     $84,$82,$80,$7E,$7C,$7B,$79,$77,$76,$74,$73,$71,$70,$6F,$6D,$6C
+235A 8482807E7C7B7977 (  cube_tables.asm):00034                         FCB     $84,$82,$80,$7E,$7C,$7B,$79,$77,$76,$74,$73,$71,$70,$6F,$6D,$6C
      76747371706F6D6C
-2365 6B69686766656462 (  cube_tables.asm):00035                         FCB     $6B,$69,$68,$67,$66,$65,$64,$62,$61,$60,$5F,$5E,$5D,$5C,$5B,$5B
+236A 6B69686766656462 (  cube_tables.asm):00035                         FCB     $6B,$69,$68,$67,$66,$65,$64,$62,$61,$60,$5F,$5E,$5D,$5C,$5B,$5B
      61605F5E5D5C5B5B
-2375 5A59585756555554 (  cube_tables.asm):00036                         FCB     $5A,$59,$58,$57,$56,$55,$55,$54,$53,$52,$51,$51,$50,$4F,$4F,$4E
+237A 5A59585756555554 (  cube_tables.asm):00036                         FCB     $5A,$59,$58,$57,$56,$55,$55,$54,$53,$52,$51,$51,$50,$4F,$4F,$4E
      53525151504F4F4E
-2385 4D4D4C4B4B4A4949 (  cube_tables.asm):00037                         FCB     $4D,$4D,$4C,$4B,$4B,$4A,$49,$49,$48,$48,$47,$47,$46,$45,$45,$44
+238A 4D4D4C4B4B4A4949 (  cube_tables.asm):00037                         FCB     $4D,$4D,$4C,$4B,$4B,$4A,$49,$49,$48,$48,$47,$47,$46,$45,$45,$44
      4848474746454544
-2395 4443434242414140 (  cube_tables.asm):00038                         FCB     $44,$43,$43,$42,$42,$41,$41,$40,$40,$40,$3F,$3F,$3E,$3E,$3D,$3D
+239A 4443434242414140 (  cube_tables.asm):00038                         FCB     $44,$43,$43,$42,$42,$41,$41,$40,$40,$40,$3F,$3F,$3E,$3E,$3D,$3D
      40403F3F3E3E3D3D
-23A5 3D3C3C3B3B3B3A3A (  cube_tables.asm):00039                         FCB     $3D,$3C,$3C,$3B,$3B,$3B,$3A,$3A,$39,$39,$39,$38,$38,$38,$37,$37
+23AA 3D3C3C3B3B3B3A3A (  cube_tables.asm):00039                         FCB     $3D,$3C,$3C,$3B,$3B,$3B,$3A,$3A,$39,$39,$39,$38,$38,$38,$37,$37
      3939393838383737
 
 Symbol Table:
@@ -580,31 +589,32 @@ Symbol Table:
 [ G] BUFFER                           3000
 [ G] CA                               0083
 [ G] CB                               0085
-[ G] CN_LOOP                          20FB
-[ G] CORNERS                          20F9
+[ G] CN_LOOP                          2100
+[ G] CORNERS                          20FE
 [ G] CX                               0027
 [ G] CY                               0024
-[ G] DONE                             2046
+[ G] DONE                             204B
 [ G] EC                               0092
-[ G] ED_LOOP                          217B
-[ G] EDGES                            2173
-[ G] EDGETAB                          219D
+[ G] ED_LOOP                          2180
+[ G] EDGES                            2178
+[ G] EDGETAB                          21A2
 [ G] FRAME                            201A
 [ G] FRAMES                           0093
-[ G] MATRIX                           2059
-[ G] MS_1                             20E4
-[ G] MS_2                             20E8
-[ G] MS_3                             20F6
-[ G] MULS7                            20DE
-[ G] PM_1                             216F
-[ G] PMUL                             2166
+[ G] MATRIX                           205E
+[ G] MS_1                             20E9
+[ G] MS_2                             20ED
+[ G] MS_3                             20FB
+[ G] MULS7                            20E3
+[ G] PACE_TICKS                       0002
+[ G] PM_1                             2174
+[ G] PMUL                             216B
 [ G] PX                               00A0
 [ G] PY                               00A8
-[ G] RXTAB                            22B5
-[ G] RYTAB                            2335
+[ G] RXTAB                            22BA
+[ G] RYTAB                            233A
 [ G] SA                               0082
 [ G] SB                               0084
-[ G] SINTAB                           21B5
+[ G] SINTAB                           21BA
 [ G] SIZE                             0094
 [ G] SIZE_MID                         0015
 [ G] STACK_TOP                        0200
@@ -632,6 +642,7 @@ Symbol Table:
 [ G] TGL_MODE_CLEAR                   0001
 [ G] TGL_MODE_SET                     0000
 [ G] TGL_MODE_XOR                     0002
+[ G] TGL_PACE                         103C
 [ G] TGL_PLOT                         100C
 [ G] TGL_PLOTC                        1015
 [ G] TGL_RECT                         1024
@@ -648,13 +659,13 @@ Symbol Table:
 [ G] TY                               0089
 [ G] TZ                               008C
 [ G] VI                               008F
-[ G] VS_1                             2150
-[ G] VS_2                             2152
-[ G] VS_3                             215A
-[ G] VS_4                             215C
-[ G] VS_5                             2163
-[ G] VSUM                             2147
+[ G] VS_1                             2155
+[ G] VS_2                             2157
+[ G] VS_3                             215F
+[ G] VS_4                             2161
+[ G] VS_5                             2168
+[ G] VSUM                             214C
 [ G] VX                               0090
 [ G] ZI                               0091
 [ G] ZOOM                             0095
-[ G] ZOOMSZ                           2048
+[ G] ZOOMSZ                           204D

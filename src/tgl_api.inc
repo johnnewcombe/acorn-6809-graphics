@@ -26,6 +26,7 @@ TGL_TEXT        EQU     TGL_BASE+48     ; status row text: A = column, X -> stri
 TGL_TCLR        EQU     TGL_BASE+51     ; clear the status row
 TGL_TNUM        EQU     TGL_BASE+54     ; status row number: A = column, X = value
 TGL_COLOUR      EQU     TGL_BASE+57     ; row colour: A,B = first,last row, X = colour
+TGL_PACE        EQU     TGL_BASE+60     ; steady frame rate: A = 50Hz ticks (1-3)
 
 TGL_BUFSIZE     EQU     960
 TGL_MODE_SET    EQU     0
