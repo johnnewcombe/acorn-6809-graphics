@@ -90,3 +90,9 @@ MODETAB         FCB     $12,$AA         ; MODE_SET:   NOP,  ORA  ,X
 MASKREAL        FCB     0,$01,$02,0,$04,0,0,0,$08,0,0,0,0,0,0,0
                 FCB     $10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
                 FCB     $40
+
+; LTAB / RTAB: sixel masks covering sixel rows top..bottom of a cell, for
+; the left / right pixel column. Index = top*3 + bottom (only top <= bottom
+; is used).
+LTAB            FCB     $01,$05,$15,$00,$04,$14,$00,$00,$10
+RTAB            FCB     $02,$0A,$4A,$00,$08,$48,$00,$00,$40

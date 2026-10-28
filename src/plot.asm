@@ -1,8 +1,8 @@
 ; ---------------------------------------------------------------------------
 ; T_SETMODE - select plot mode
-;   Patches the pre-op and operation bytes in T_PLOT and the four T_LINE
-;   loops, so pixel writes never test the mode. Out-of-range modes are
-;   ignored.
+;   Patches the pre-op and operation bytes in T_PLOT, the four T_LINE
+;   loops and the rectangle fill, so pixel writes never test the mode.
+;   Out-of-range modes are ignored.
 ;   Entry: A = MODE_SET, MODE_CLEAR or MODE_XOR, DP = $00
 ;   Exit:  all registers preserved
 ; ---------------------------------------------------------------------------
@@ -23,6 +23,9 @@ T_SETMODE       CMPA    #MODE_XOR
                 STB     LYR_OP,PCR
                 STA     LYL_PRE,PCR
                 STB     LYL_OP,PCR
+                STA     FS_PRE,PCR      ; rectangle fill: the same pre-op,
+                SUBB    #$10            ;  but its operation uses direct
+                STB     FS_OP,PCR       ;  addressing (opcode $10 lower)
                 PULS    D,X
 SETM_X          RTS
 

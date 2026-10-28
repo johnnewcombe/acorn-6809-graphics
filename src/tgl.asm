@@ -41,6 +41,8 @@ J_LINEC         LBRA    T_LINEC         ; +24
 J_DONE          LBRA    T_DONE          ; +27
 J_INKEY         LBRA    T_INKEY         ; +30
 J_EXIT          LBRA    T_EXIT          ; +33
+J_RECT          LBRA    T_RECT          ; +36
+J_RECTF         LBRA    T_RECTF         ; +39
 
 ; Check the table against the published interface
 TGL_BASE        EQU     TGL_START
@@ -57,6 +59,9 @@ TGL_BASE        EQU     TGL_START
                 IFNE    (J_DONE-TGL_DONE)|(J_INKEY-TGL_INKEY)|(J_EXIT-TGL_EXIT)
                 ERROR   "Jump table does not match tgl_api.inc"
                 ENDC
+                IFNE    (J_RECT-TGL_RECT)|(J_RECTF-TGL_RECTF)
+                ERROR   "Jump table does not match tgl_api.inc"
+                ENDC
 
 ; ---------------------------------------------------------------------------
 ; Modules
@@ -67,6 +72,7 @@ TGL_BASE        EQU     TGL_START
                 INCLUDE "line.asm"
                 INCLUDE "blit.asm"
                 INCLUDE "clip.asm"
+                INCLUDE "rect.asm"
                 INCLUDE "system.asm"
                 INCLUDE "tables.asm"
 

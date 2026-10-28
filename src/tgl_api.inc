@@ -18,6 +18,8 @@ TGL_LINEC       EQU     TGL_BASE+24     ; clipped line: signed coordinates
 TGL_DONE        EQU     TGL_BASE+27     ; restore text display (clears screen)
 TGL_INKEY       EQU     TGL_BASE+30     ; key waiting? Z set: none; else A = key
 TGL_EXIT        EQU     TGL_BASE+33     ; restore display, back to FLEX/monitor
+TGL_RECT        EQU     TGL_BASE+36     ; outline rectangle: corners as TGL_LINEC
+TGL_RECTF       EQU     TGL_BASE+39     ; filled rectangle: corners as TGL_LINEC
 
 TGL_BUFSIZE     EQU     960
 TGL_MODE_SET    EQU     0

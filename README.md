@@ -1,11 +1,11 @@
 # Acorn System 3 6809 Teletext Graphics Library
 
-The libray follows the Bitshifters' teletextr routines (Kieran Connell and
+The library follows the Bitshifters' teletextr routines (Kieran Connell and
 Simon Morris, adapted from Bresenham routines by Rich Talbot-Watkins) see _Credits_ and uses
 the Sixel graphics of the Acorn teletext VDU (6845 + SAA5050) on 6809-based
 Acorn System machines. It is currently designed for Assembler calls only. It was built with _lwasm_.
 
-The _build_ folder contains binaries for Linux (AMD63), for other platforms see _Building_ below. alongside 
+The _build_ folder contains binaries for Linux (AMD64); for other platforms see _Building_ below.
 
 Mame was used for testing and within the _mame_ folder is a bootable Acorn System 6809 Flex9 disk along with a disk 
 containing the graphics library and demo binaries. Assuming Flex9 is booted to disk 0 and the `TGL.dsk` disk is 
@@ -24,14 +24,15 @@ inserted in disk 1, the following commands will load the graphics library and de
     make demo       # starburst demo only
     make cube       # rotating cube demo only
     make ship       # spaceship demo only
+    make boxes      # rectangles demo only
     make SAFE=1     # range-checked build (see below)
     make test       # build, put the FLEX library and demos on TGL.dsk,
                     #  and start MAME
     make clean      # remove the build directory
 
 Output is raw binary: `build/sys3/tgl.bin`, `build/flex/tgl.bin`,
-`build/demo.bin`, `build/cube.bin` and `build/ship.bin`, with listings
-alongside.
+`build/demo.bin`, `build/cube.bin`, `build/ship.bin` and `build/boxes.bin`,
+with listings alongside.
 
 ### Safe builds
 
@@ -70,6 +71,11 @@ __Image of a rotating cube which runs at about 25 frames per second.__
 __Image of a rotating space ship which runs at about 16 frames per second.__
 ![ship-with-visible-plots-only.png](demo/ship-with-visible-plots-only.png)
 
+- `boxes.bin` - four filled boxes drift and bounce in XOR mode, so their
+  overlaps cancel out, sliding partly off the screen edges to show the
+  clipping, with two outline frames (also XOR) on top. About 66,000
+  cycles per frame (roughly 15 frames per second at 1MHz).
+
 ## Using the library
 
 The binary is position-independent: load it anywhere. Define `TGL_BASE`
@@ -105,12 +111,23 @@ the binaries differ, so position independence can't silently break.
 | TGL_DONE    | +27    | Restore the text display (clears the screen) |
 | TGL_INKEY   | +30    | Key waiting? Z set: none; Z clear: key in A |
 | TGL_EXIT    | +33    | Restore the display, return to FLEX / the monitor |
+| TGL_RECT    | +36    | Outline rectangle: corners as TGL_LINEC |
+| TGL_RECTF   | +39    | Filled rectangle: corners as TGL_LINEC |
 
 `TGL_PLOT` and `TGL_LINE` do not range-check, for speed. `TGL_PLOTC` and
 `TGL_LINEC` accept signed coordinates and draw only what is on screen;
 `TGL_LINEC` trims lines to the screen edges (Cohen-Sutherland, rounded to
 the nearest pixel) and then draws with `TGL_LINE`. Trimmed lines stay
 within one pixel of the path the unclipped line would take.
+
+`TGL_RECT` and `TGL_RECTF` take two opposite corners (A,B = x0,y0;
+X = x1:y1) in any order, accept signed coordinates and clip to the screen.
+Both use the current plot mode. `TGL_RECTF` fills whole character cells
+at a time, six pixels per write, with only the edge cells handled pixel by
+pixel: a full-screen fill takes about 36,000 cycles. `TGL_RECT` draws the
+outline as four thin fills that never overlap, so every pixel is drawn
+exactly once (in XOR mode, drawing a rectangle twice removes it); a
+full-screen outline takes about 19,000 cycles.
 
 ## System routines
 

@@ -26,4 +26,22 @@ I_SGN           EQU     WS+20           ; 1  clip: sign of the result offset
 I_DU            EQU     WS+21           ; 1  clip: |u1-u0|
 I_DV            EQU     WS+22           ; 1  clip: |v1-v0| (divisor)
 I_CNT           EQU     WS+23           ; 1  clip: divide loop counter
-WS_SIZE         EQU     24
+R_X0            EQU     WS+24           ; 1  rectangle corners, sorted so
+R_Y0            EQU     WS+25           ; 1   R_X0 <= R_X1 and R_Y0 <= R_Y1
+R_X1            EQU     WS+26           ; 1   (R_X0/R_Y0 and R_X1/R_Y1 are
+R_Y1            EQU     WS+27           ; 1    used as 16-bit pairs)
+F_CX0           EQU     WS+28           ; 1  fill: first cell column
+F_CX1           EQU     WS+29           ; 1  fill: last cell column
+F_PL            EQU     WS+30           ; 1  fill: first cell is right pixel only
+F_PR            EQU     WS+31           ; 1  fill: last cell is left pixel only
+F_SGL           EQU     WS+32           ; 1  fill: whole width is one cell
+F_RS            EQU     WS+33           ; 1  fill: first full-width cell
+F_RN            EQU     WS+34           ; 1  fill: number of full-width cells
+F_TOP           EQU     WS+35           ; 1  fill: top sixel row in this cell row
+F_BOTL          EQU     WS+36           ; 1  fill: bottom sixel row of last row
+F_ML            EQU     WS+37           ; 1  fill: left-pixel mask for this row
+F_MR            EQU     WS+38           ; 1  fill: right-pixel mask for this row
+W_FM            EQU     WS+39           ; 1  fill: mask being applied
+F_ROW           EQU     WS+40           ; 2  fill: address of this cell row
+F_LAST          EQU     WS+42           ; 2  fill: address of the last cell row
+WS_SIZE         EQU     44
