@@ -112,11 +112,9 @@ DONE            BRA     DONE
 
 ; Status row help. $83 yellow, $87 white, $86 cyan text codes.
 KEYHELP         FCB     $83
-                FCC     "SPACE"
-                FCB     $87
-                FCC     "WIREFRAME"
+                FCC     "CUBE DEMO"
                 FCB     $86
-                FCC     "OTHER KEY EXITS"
+                FCC     "WIREFRAME"
                 FCB     0
 
                 INCLUDE "cube_core.asm"

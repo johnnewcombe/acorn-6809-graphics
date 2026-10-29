@@ -100,10 +100,10 @@ FACEPAT         FCB     TGL_PAT_SOLID           ; +x
                 FCB     TGL_PAT_75              ; -z
 
 ; Status row title. $86 cyan, $83 yellow text codes.
-TITLE           FCB     $86
-                FCC     "PATTERNED CUBE"
-                FCB     $83
-                FCC     "ANY KEY EXITS"
+TITLE           FCB     $83
+                FCC     "CUBE DEMO"
+                FCB     $86
+                FCC     "PATTERNS"
                 FCB     0
 
                 INCLUDE "cube_fill.asm"

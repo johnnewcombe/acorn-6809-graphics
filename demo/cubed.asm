@@ -288,10 +288,10 @@ PIPTAB          FCB     1,0,0,0,0,0,0,0,0,0,0,0,0                       ; +x: 1
                 FCB     4,-1,-1,1,-1,-1,1,1,1,0,0,0,0                   ; -z: 4
 
 ; Status row title. $87 white, $83 yellow text codes.
-TITLE           FCB     $87
+TITLE           FCB     $83
+                FCC     "CUBE DEMO"
+                FCB     $86
                 FCC     "DIE"
-                FCB     $83
-                FCC     "ANY KEY EXITS"
                 FCB     0
 
                 INCLUDE "cube_fill.asm"
