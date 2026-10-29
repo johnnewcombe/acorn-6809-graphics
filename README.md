@@ -81,7 +81,8 @@ exit (in `cube.bin`, any key except space).
   filled versions run at roughly 6-10 frames per second, depending on how
   much of the screen the cube covers.
 
-__Image of a rotating cube which runs at about 25 frames per second.__
+__Rotating Cube Demo.__
+
 ![cube-with-clipping.png](demo/cube-demo.gif)
 
 - `ship.bin` - an original spaceship design, the "Kestrel" courier,
@@ -91,20 +92,30 @@ __Image of a rotating cube which runs at about 25 frames per second.__
   convex and fits the projection tables, then writes `demo/ship_model.asm`.
   Edit the definition there to design your own ships.
 
-__Image of a rotating space ship which runs at about 16 frames per second.__
-![ship-with-visible-plots-only.png](demo/ship-with-visible-plots-only.png)
+__Rotating Space Ship Demo.__
+
+![ship-with-visible-plots-only.png](demo/ship-demo.gif)
 
 - `boxes.bin` - four filled boxes drift and bounce in XOR mode, so their
   overlaps cancel out, sliding partly off the screen edges to show the
   clipping, with two outline frames (also XOR) on top, and a coloured
   title and frame counter on the status row. About 66,000 cycles per frame
   (roughly 15 frames per second at 1MHz).
+
+__Boxes Demo__
+
+![ship-with-visible-plots-only.png](demo/boxes-demo.gif)
+
 - `circles.bin` - a filled ball bounces around, partly off the edges,
   while rings ripple outwards from the centre, all in XOR so the rings
   invert where they cross the ball. Six rainbow colour bands scroll slowly
   down the screen, with a coloured title on the status row.
 
-## Using the library
+__Cirlcles Demo__
+
+![ship-with-visible-plots-only.png](demo/circles-demo.gif)
+
+## Using the Library
 
 The binary is position-independent: load it anywhere. Define `TGL_BASE`
 as the load address and `INCLUDE "tgl_api.inc"`; entry points are fixed
@@ -233,7 +244,7 @@ testing, which adds a cycle for every memory read on top of each
 instruction's normal count, so its figures run high. Frame rates measured
 in MAME suggest real costs are around 15-20% lower.
 
-## System routines
+## System Routines
 
 `TGL_DONE`, `TGL_INKEY` and `TGL_EXIT` use the monitor's RAM vectors, so
 they work with any monitor version. `TGL_DONE` sends a form feed through
