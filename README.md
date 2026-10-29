@@ -82,7 +82,7 @@ exit (in `cube.bin`, any key except space).
   much of the screen the cube covers.
 
 __Image of a rotating cube which runs at about 25 frames per second.__
-![cube-with-clipping.png](demo/cube-with-clipping.png)
+![cube-with-clipping.png](demo/cube-demo.gif)
 
 - `ship.bin` - an original spaceship design, the "Kestrel" courier,
   tumbling in perspective with hidden lines removed so it looks solid.
