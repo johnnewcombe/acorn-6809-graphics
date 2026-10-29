@@ -6,7 +6,7 @@
 ;   surface, so they turn, tilt and bunch up with the faces in perspective.
 ;   Opposite faces add up to seven, as on a real die. Press any key to exit.
 ;
-;   Loading: tgl.bin at $1000, cubed.bin at $2000. Run from START ($2000).
+;   Loading: tgl.bin at $1000, cubed.bin at $2800. Run from START ($2800).
 ;
 ;   Shares its code with cube.asm (see there for the list): the face
 ;   filling is in cube_fill.asm, the rest in cube_core.asm. The spots are
@@ -50,7 +50,7 @@ PIPSZ           EQU     $D9             ; spot size in pixels (1-3)
 PCX             EQU     $DA             ; spot centre on screen
 PCY             EQU     $DB
 
-                ORG     $2000
+                ORG     $2800
 
 ; ---------------------------------------------------------------------------
 ; Set up
@@ -62,7 +62,7 @@ START           LDS     #STACK_TOP
                 ANDCC   #$EF            ; enable IRQs: the keyboard is read
                                         ;  under interrupt
                 JSR     TGL_INIT        ; reset CRTC start, hide cursor
-                LDX     #BUFFER         ; draw into our buffer at $3000
+                LDX     #BUFFER         ; draw into our buffer at $3800
                 JSR     TGL_SETBUF
                 CLR     <ANG_A          ; start square-on, mid zoom
                 CLR     <ANG_B
@@ -288,10 +288,10 @@ PIPTAB          FCB     1,0,0,0,0,0,0,0,0,0,0,0,0                       ; +x: 1
                 FCB     4,-1,-1,1,-1,-1,1,1,1,0,0,0,0                   ; -z: 4
 
 ; Status row title. $87 white, $83 yellow text codes.
-TITLE           FCB     $83
-                FCC     "CUBE DEMO"
-                FCB     $86
+TITLE           FCB     $87
                 FCC     "DIE"
+                FCB     $83
+                FCC     "ANY KEY EXITS"
                 FCB     0
 
                 INCLUDE "cube_fill.asm"

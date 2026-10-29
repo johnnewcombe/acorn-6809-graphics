@@ -29,6 +29,7 @@ TGL_COLOUR      EQU     TGL_BASE+57     ; row colour: A,B = first,last row, X = 
 TGL_PACE        EQU     TGL_BASE+60     ; steady frame rate: A = 50Hz ticks (1-3)
 TGL_POLYF       EQU     TGL_BASE+63     ; filled convex polygon: X -> n, x0,y0, ...
 TGL_SETPAT      EQU     TGL_BASE+66     ; fill pattern: A = 0-15 (2x2 pixels)
+TGL_FLIPH       EQU     TGL_BASE+69     ; card-turn flip: A = ticks per frame
 
 TGL_BUFSIZE     EQU     960
 TGL_MODE_SET    EQU     0

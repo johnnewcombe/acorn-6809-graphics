@@ -6,8 +6,8 @@
                       (    demo/ship.asm):00006         ;   wireframe with hidden lines removed, so it looks solid.
                       (    demo/ship.asm):00007         ;   Press any key to exit.
                       (    demo/ship.asm):00008         ;
-                      (    demo/ship.asm):00009         ;   Loading: tgl.bin at $1000 (TGL_BASE below), ship.bin at $2000 (its ORG).
-                      (    demo/ship.asm):00010         ;   Run from START ($2000). Works with either machine's library build.
+                      (    demo/ship.asm):00009         ;   Loading: tgl.bin at $1000 (TGL_BASE below), ship.bin at $2800 (its ORG).
+                      (    demo/ship.asm):00010         ;   Run from START ($2800). Works with either machine's library build.
                       (    demo/ship.asm):00011         ;
                       (    demo/ship.asm):00012         ;   Each frame:
                       (    demo/ship.asm):00013         ;     1. clear the off-screen buffer                       (TGL_CLS)
@@ -94,36 +94,37 @@
      103C             (      tgl_api.inc):00029         TGL_PACE        EQU     TGL_BASE+60     ; steady frame rate: A = 50Hz ticks (1-3)
      103F             (      tgl_api.inc):00030         TGL_POLYF       EQU     TGL_BASE+63     ; filled convex polygon: X -> n, x0,y0, ...
      1042             (      tgl_api.inc):00031         TGL_SETPAT      EQU     TGL_BASE+66     ; fill pattern: A = 0-15 (2x2 pixels)
-                      (      tgl_api.inc):00032         
-     03C0             (      tgl_api.inc):00033         TGL_BUFSIZE     EQU     960
-     0000             (      tgl_api.inc):00034         TGL_MODE_SET    EQU     0
-     0001             (      tgl_api.inc):00035         TGL_MODE_CLEAR  EQU     1
-     0002             (      tgl_api.inc):00036         TGL_MODE_XOR    EQU     2
-                      (      tgl_api.inc):00037         
-                      (      tgl_api.inc):00038         ; Colours for TGL_COLOUR
-     0001             (      tgl_api.inc):00039         TGL_RED         EQU     1
-     0002             (      tgl_api.inc):00040         TGL_GREEN       EQU     2
-     0003             (      tgl_api.inc):00041         TGL_YELLOW      EQU     3
-     0004             (      tgl_api.inc):00042         TGL_BLUE        EQU     4
-     0005             (      tgl_api.inc):00043         TGL_MAGENTA     EQU     5
-     0006             (      tgl_api.inc):00044         TGL_CYAN        EQU     6
-     0007             (      tgl_api.inc):00045         TGL_WHITE       EQU     7
-                      (      tgl_api.inc):00046         
-                      (      tgl_api.inc):00047         ; Fill patterns for TGL_SETPAT: a 2x2 block of pixels repeated across the
-                      (      tgl_api.inc):00048         ; screen. Bit 0: even x, even y; bit 1: odd x, even y; bit 2: even x,
-                      (      tgl_api.inc):00049         ; odd y; bit 3: odd x, odd y.
-     0000             (      tgl_api.inc):00050         TGL_PAT_EMPTY   EQU     0
-     0001             (      tgl_api.inc):00051         TGL_PAT_25      EQU     %0001           ; one pixel in four
-     0009             (      tgl_api.inc):00052         TGL_PAT_50      EQU     %1001           ; checkerboard
-     000B             (      tgl_api.inc):00053         TGL_PAT_75      EQU     %1011           ; three pixels in four
-     000F             (      tgl_api.inc):00054         TGL_PAT_SOLID   EQU     %1111
-     0003             (      tgl_api.inc):00055         TGL_PAT_HLINES  EQU     %0011           ; horizontal stripes
-     0005             (      tgl_api.inc):00056         TGL_PAT_VLINES  EQU     %0101           ; vertical stripes
+     1045             (      tgl_api.inc):00032         TGL_FLIPH       EQU     TGL_BASE+69     ; card-turn flip: A = ticks per frame
+                      (      tgl_api.inc):00033         
+     03C0             (      tgl_api.inc):00034         TGL_BUFSIZE     EQU     960
+     0000             (      tgl_api.inc):00035         TGL_MODE_SET    EQU     0
+     0001             (      tgl_api.inc):00036         TGL_MODE_CLEAR  EQU     1
+     0002             (      tgl_api.inc):00037         TGL_MODE_XOR    EQU     2
+                      (      tgl_api.inc):00038         
+                      (      tgl_api.inc):00039         ; Colours for TGL_COLOUR
+     0001             (      tgl_api.inc):00040         TGL_RED         EQU     1
+     0002             (      tgl_api.inc):00041         TGL_GREEN       EQU     2
+     0003             (      tgl_api.inc):00042         TGL_YELLOW      EQU     3
+     0004             (      tgl_api.inc):00043         TGL_BLUE        EQU     4
+     0005             (      tgl_api.inc):00044         TGL_MAGENTA     EQU     5
+     0006             (      tgl_api.inc):00045         TGL_CYAN        EQU     6
+     0007             (      tgl_api.inc):00046         TGL_WHITE       EQU     7
+                      (      tgl_api.inc):00047         
+                      (      tgl_api.inc):00048         ; Fill patterns for TGL_SETPAT: a 2x2 block of pixels repeated across the
+                      (      tgl_api.inc):00049         ; screen. Bit 0: even x, even y; bit 1: odd x, even y; bit 2: even x,
+                      (      tgl_api.inc):00050         ; odd y; bit 3: odd x, odd y.
+     0000             (      tgl_api.inc):00051         TGL_PAT_EMPTY   EQU     0
+     0001             (      tgl_api.inc):00052         TGL_PAT_25      EQU     %0001           ; one pixel in four
+     0009             (      tgl_api.inc):00053         TGL_PAT_50      EQU     %1001           ; checkerboard
+     000B             (      tgl_api.inc):00054         TGL_PAT_75      EQU     %1011           ; three pixels in four
+     000F             (      tgl_api.inc):00055         TGL_PAT_SOLID   EQU     %1111
+     0003             (      tgl_api.inc):00056         TGL_PAT_HLINES  EQU     %0011           ; horizontal stripes
+     0005             (      tgl_api.inc):00057         TGL_PAT_VLINES  EQU     %0101           ; vertical stripes
                       (    demo/ship.asm):00066         
                       (    demo/ship.asm):00067         ; ---------------------------------------------------------------------------
                       (    demo/ship.asm):00068         ; Memory
                       (    demo/ship.asm):00069         ; ---------------------------------------------------------------------------
-     3000             (    demo/ship.asm):00070         BUFFER          EQU     $3000           ; off-screen buffer (960 bytes)
+     3800             (    demo/ship.asm):00070         BUFFER          EQU     $3800           ; off-screen buffer (960 bytes)
      0200             (    demo/ship.asm):00071         STACK_TOP       EQU     $0200           ; stack $0100-$01FF
                       (    demo/ship.asm):00072         
                       (    demo/ship.asm):00073         ; ---------------------------------------------------------------------------
@@ -168,48 +169,48 @@
      00E0             (    demo/ship.asm):00112         VIS             EQU     $E0             ; per face: $FF visible, 0 hidden
                       (    demo/ship.asm):00113                                                 ;  (16 bytes)
                       (    demo/ship.asm):00114         
-                      (    demo/ship.asm):00115                         ORG     $2000
+                      (    demo/ship.asm):00115                         ORG     $2800
                       (    demo/ship.asm):00116         
                       (    demo/ship.asm):00117         ; ---------------------------------------------------------------------------
                       (    demo/ship.asm):00118         ; Set up
                       (    demo/ship.asm):00119         ; ---------------------------------------------------------------------------
-2000 10CE0200         (    demo/ship.asm):00120         START           LDS     #STACK_TOP
-2004 4F               (    demo/ship.asm):00121                         CLRA                    ; DP = $00 for the library and for
-2005 1F8B             (    demo/ship.asm):00122                         TFR     A,DP            ;  our page-zero variables
+2800 10CE0200         (    demo/ship.asm):00120         START           LDS     #STACK_TOP
+2804 4F               (    demo/ship.asm):00121                         CLRA                    ; DP = $00 for the library and for
+2805 1F8B             (    demo/ship.asm):00122                         TFR     A,DP            ;  our page-zero variables
      00               (    demo/ship.asm):00123                         SETDP   $00
-2007 1CEF             (    demo/ship.asm):00124                         ANDCC   #$EF            ; IRQs on (keyboard)
-2009 BD1000           (    demo/ship.asm):00125                         JSR     TGL_INIT
-200C 8E3000           (    demo/ship.asm):00126                         LDX     #BUFFER
-200F BD1003           (    demo/ship.asm):00127                         JSR     TGL_SETBUF
-2012 0F80             (    demo/ship.asm):00128                         CLR     <ANG_A
-2014 0F81             (    demo/ship.asm):00129                         CLR     <ANG_B
-2016 0F9A             (    demo/ship.asm):00130                         CLR     <FRAMES
+2807 1CEF             (    demo/ship.asm):00124                         ANDCC   #$EF            ; IRQs on (keyboard)
+2809 BD1000           (    demo/ship.asm):00125                         JSR     TGL_INIT
+280C 8E3800           (    demo/ship.asm):00126                         LDX     #BUFFER
+280F BD1003           (    demo/ship.asm):00127                         JSR     TGL_SETBUF
+2812 0F80             (    demo/ship.asm):00128                         CLR     <ANG_A
+2814 0F81             (    demo/ship.asm):00129                         CLR     <ANG_B
+2816 0F9A             (    demo/ship.asm):00130                         CLR     <FRAMES
                       (    demo/ship.asm):00131         
                       (    demo/ship.asm):00132         ; ---------------------------------------------------------------------------
                       (    demo/ship.asm):00133         ; Main loop
                       (    demo/ship.asm):00134         ; ---------------------------------------------------------------------------
-2018 BD1006           (    demo/ship.asm):00135         FRAME           JSR     TGL_CLS
-201B 170023           (    demo/ship.asm):00136                         LBSR    MATRIX
-201E 170089           (    demo/ship.asm):00137                         LBSR    CORNERS
-2021 1700EA           (    demo/ship.asm):00138                         LBSR    FACES
-2024 17014C           (    demo/ship.asm):00139                         LBSR    EDGES
-2027 BD1012           (    demo/ship.asm):00140                         JSR     TGL_BLIT
-202A 9680             (    demo/ship.asm):00141                         LDA     <ANG_A          ; advance the angles (they wrap from
-202C 8B01             (    demo/ship.asm):00142                         ADDA    #STEP_A         ;  255 to 0 by themselves)
-202E 9780             (    demo/ship.asm):00143                         STA     <ANG_A
-2030 9681             (    demo/ship.asm):00144                         LDA     <ANG_B
-2032 8B02             (    demo/ship.asm):00145                         ADDA    #STEP_B
-2034 9781             (    demo/ship.asm):00146                         STA     <ANG_B
-2036 BD101E           (    demo/ship.asm):00147                         JSR     TGL_INKEY       ; any key exits
-2039 1026EFE4         (    demo/ship.asm):00148                         LBNE    TGL_EXIT
+2818 BD1006           (    demo/ship.asm):00135         FRAME           JSR     TGL_CLS
+281B 170023           (    demo/ship.asm):00136                         LBSR    MATRIX
+281E 170089           (    demo/ship.asm):00137                         LBSR    CORNERS
+2821 1700EA           (    demo/ship.asm):00138                         LBSR    FACES
+2824 17014C           (    demo/ship.asm):00139                         LBSR    EDGES
+2827 BD1012           (    demo/ship.asm):00140                         JSR     TGL_BLIT
+282A 9680             (    demo/ship.asm):00141                         LDA     <ANG_A          ; advance the angles (they wrap from
+282C 8B01             (    demo/ship.asm):00142                         ADDA    #STEP_A         ;  255 to 0 by themselves)
+282E 9780             (    demo/ship.asm):00143                         STA     <ANG_A
+2830 9681             (    demo/ship.asm):00144                         LDA     <ANG_B
+2832 8B02             (    demo/ship.asm):00145                         ADDA    #STEP_B
+2834 9781             (    demo/ship.asm):00146                         STA     <ANG_B
+2836 BD101E           (    demo/ship.asm):00147                         JSR     TGL_INKEY       ; any key exits
+2839 1026E7E4         (    demo/ship.asm):00148                         LBNE    TGL_EXIT
                       (    demo/ship.asm):00149                         IFDEF   TESTFRAMES
                       (    demo/ship.asm):00150                         INC     <FRAMES
                       (    demo/ship.asm):00151                         LDA     <FRAMES
                       (    demo/ship.asm):00152                         CMPA    #TESTFRAMES
                       (    demo/ship.asm):00153                         BEQ     DONE
                       (    demo/ship.asm):00154                         ENDC
-203D 20D9             (    demo/ship.asm):00155                         BRA     FRAME
-203F 20FE             (    demo/ship.asm):00156         DONE            BRA     DONE
+283D 20D9             (    demo/ship.asm):00155                         BRA     FRAME
+283F 20FE             (    demo/ship.asm):00156         DONE            BRA     DONE
                       (    demo/ship.asm):00157         
                       (    demo/ship.asm):00158         ; ---------------------------------------------------------------------------
                       (    demo/ship.asm):00159         ; MATRIX - rotation about y (yaw, angle B) then x (pitch, angle A)
@@ -221,59 +222,59 @@
                       (    demo/ship.asm):00165         ;     MROWY: [  sb*sa,   ca,  -cb*sa  ]
                       (    demo/ship.asm):00166         ;     MROWZ: [ -sb*ca,   sa,   cb*ca  ]
                       (    demo/ship.asm):00167         ; ---------------------------------------------------------------------------
-2041 308D02FE         (    demo/ship.asm):00168         MATRIX          LEAX    SINTAB,PCR      ; SA = sin(ANG_A)
-2045 D680             (    demo/ship.asm):00169                         LDB     <ANG_A          ;  (ABX: unsigned index 0-255)
-2047 3A               (    demo/ship.asm):00170                         ABX
-2048 A684             (    demo/ship.asm):00171                         LDA     ,X
-204A 9782             (    demo/ship.asm):00172                         STA     <SA
-204C 308D02F3         (    demo/ship.asm):00173                         LEAX    SINTAB,PCR      ; CA = cos(ANG_A) = sin(ANG_A + 64)
-2050 D680             (    demo/ship.asm):00174                         LDB     <ANG_A
-2052 CB40             (    demo/ship.asm):00175                         ADDB    #64
-2054 3A               (    demo/ship.asm):00176                         ABX
-2055 A684             (    demo/ship.asm):00177                         LDA     ,X
-2057 9783             (    demo/ship.asm):00178                         STA     <CA
-2059 308D02E6         (    demo/ship.asm):00179                         LEAX    SINTAB,PCR      ; SB = sin(ANG_B)
-205D D681             (    demo/ship.asm):00180                         LDB     <ANG_B
-205F 3A               (    demo/ship.asm):00181                         ABX
-2060 A684             (    demo/ship.asm):00182                         LDA     ,X
-2062 9784             (    demo/ship.asm):00183                         STA     <SB
-2064 308D02DB         (    demo/ship.asm):00184                         LEAX    SINTAB,PCR      ; CB = cos(ANG_B)
-2068 D681             (    demo/ship.asm):00185                         LDB     <ANG_B
-206A CB40             (    demo/ship.asm):00186                         ADDB    #64
-206C 3A               (    demo/ship.asm):00187                         ABX
-206D A684             (    demo/ship.asm):00188                         LDA     ,X
-206F 9785             (    demo/ship.asm):00189                         STA     <CB
+2841 308D02FE         (    demo/ship.asm):00168         MATRIX          LEAX    SINTAB,PCR      ; SA = sin(ANG_A)
+2845 D680             (    demo/ship.asm):00169                         LDB     <ANG_A          ;  (ABX: unsigned index 0-255)
+2847 3A               (    demo/ship.asm):00170                         ABX
+2848 A684             (    demo/ship.asm):00171                         LDA     ,X
+284A 9782             (    demo/ship.asm):00172                         STA     <SA
+284C 308D02F3         (    demo/ship.asm):00173                         LEAX    SINTAB,PCR      ; CA = cos(ANG_A) = sin(ANG_A + 64)
+2850 D680             (    demo/ship.asm):00174                         LDB     <ANG_A
+2852 CB40             (    demo/ship.asm):00175                         ADDB    #64
+2854 3A               (    demo/ship.asm):00176                         ABX
+2855 A684             (    demo/ship.asm):00177                         LDA     ,X
+2857 9783             (    demo/ship.asm):00178                         STA     <CA
+2859 308D02E6         (    demo/ship.asm):00179                         LEAX    SINTAB,PCR      ; SB = sin(ANG_B)
+285D D681             (    demo/ship.asm):00180                         LDB     <ANG_B
+285F 3A               (    demo/ship.asm):00181                         ABX
+2860 A684             (    demo/ship.asm):00182                         LDA     ,X
+2862 9784             (    demo/ship.asm):00183                         STA     <SB
+2864 308D02DB         (    demo/ship.asm):00184                         LEAX    SINTAB,PCR      ; CB = cos(ANG_B)
+2868 D681             (    demo/ship.asm):00185                         LDB     <ANG_B
+286A CB40             (    demo/ship.asm):00186                         ADDB    #64
+286C 3A               (    demo/ship.asm):00187                         ABX
+286D A684             (    demo/ship.asm):00188                         LDA     ,X
+286F 9785             (    demo/ship.asm):00189                         STA     <CB
                       (    demo/ship.asm):00190         
-2071 9685             (    demo/ship.asm):00191                         LDA     <CB             ; row x
-2073 9786             (    demo/ship.asm):00192                         STA     <MROWX
-2075 0F87             (    demo/ship.asm):00193                         CLR     <MROWX+1
-2077 9684             (    demo/ship.asm):00194                         LDA     <SB
-2079 9788             (    demo/ship.asm):00195                         STA     <MROWX+2
+2871 9685             (    demo/ship.asm):00191                         LDA     <CB             ; row x
+2873 9786             (    demo/ship.asm):00192                         STA     <MROWX
+2875 0F87             (    demo/ship.asm):00193                         CLR     <MROWX+1
+2877 9684             (    demo/ship.asm):00194                         LDA     <SB
+2879 9788             (    demo/ship.asm):00195                         STA     <MROWX+2
                       (    demo/ship.asm):00196         
-207B 9684             (    demo/ship.asm):00197                         LDA     <SB             ; row y
-207D D682             (    demo/ship.asm):00198                         LDB     <SA
-207F 170190           (    demo/ship.asm):00199                         LBSR    MULS7           ;  sb*sa
-2082 9789             (    demo/ship.asm):00200                         STA     <MROWY
-2084 9683             (    demo/ship.asm):00201                         LDA     <CA
-2086 978A             (    demo/ship.asm):00202                         STA     <MROWY+1
-2088 9685             (    demo/ship.asm):00203                         LDA     <CB
-208A D682             (    demo/ship.asm):00204                         LDB     <SA
-208C 170183           (    demo/ship.asm):00205                         LBSR    MULS7           ;  -cb*sa
-208F 40               (    demo/ship.asm):00206                         NEGA
-2090 978B             (    demo/ship.asm):00207                         STA     <MROWY+2
+287B 9684             (    demo/ship.asm):00197                         LDA     <SB             ; row y
+287D D682             (    demo/ship.asm):00198                         LDB     <SA
+287F 170190           (    demo/ship.asm):00199                         LBSR    MULS7           ;  sb*sa
+2882 9789             (    demo/ship.asm):00200                         STA     <MROWY
+2884 9683             (    demo/ship.asm):00201                         LDA     <CA
+2886 978A             (    demo/ship.asm):00202                         STA     <MROWY+1
+2888 9685             (    demo/ship.asm):00203                         LDA     <CB
+288A D682             (    demo/ship.asm):00204                         LDB     <SA
+288C 170183           (    demo/ship.asm):00205                         LBSR    MULS7           ;  -cb*sa
+288F 40               (    demo/ship.asm):00206                         NEGA
+2890 978B             (    demo/ship.asm):00207                         STA     <MROWY+2
                       (    demo/ship.asm):00208         
-2092 9684             (    demo/ship.asm):00209                         LDA     <SB             ; row z
-2094 D683             (    demo/ship.asm):00210                         LDB     <CA
-2096 170179           (    demo/ship.asm):00211                         LBSR    MULS7           ;  -sb*ca
-2099 40               (    demo/ship.asm):00212                         NEGA
-209A 978C             (    demo/ship.asm):00213                         STA     <MROWZ
-209C 9682             (    demo/ship.asm):00214                         LDA     <SA
-209E 978D             (    demo/ship.asm):00215                         STA     <MROWZ+1
-20A0 9685             (    demo/ship.asm):00216                         LDA     <CB
-20A2 D683             (    demo/ship.asm):00217                         LDB     <CA
-20A4 17016B           (    demo/ship.asm):00218                         LBSR    MULS7           ;  cb*ca
-20A7 978E             (    demo/ship.asm):00219                         STA     <MROWZ+2
-20A9 39               (    demo/ship.asm):00220                         RTS
+2892 9684             (    demo/ship.asm):00209                         LDA     <SB             ; row z
+2894 D683             (    demo/ship.asm):00210                         LDB     <CA
+2896 170179           (    demo/ship.asm):00211                         LBSR    MULS7           ;  -sb*ca
+2899 40               (    demo/ship.asm):00212                         NEGA
+289A 978C             (    demo/ship.asm):00213                         STA     <MROWZ
+289C 9682             (    demo/ship.asm):00214                         LDA     <SA
+289E 978D             (    demo/ship.asm):00215                         STA     <MROWZ+1
+28A0 9685             (    demo/ship.asm):00216                         LDA     <CB
+28A2 D683             (    demo/ship.asm):00217                         LDB     <CA
+28A4 17016B           (    demo/ship.asm):00218                         LBSR    MULS7           ;  cb*ca
+28A7 978E             (    demo/ship.asm):00219                         STA     <MROWZ+2
+28A9 39               (    demo/ship.asm):00220                         RTS
                       (    demo/ship.asm):00221         
                       (    demo/ship.asm):00222         ; ---------------------------------------------------------------------------
                       (    demo/ship.asm):00223         ; CORNERS - rotate and project every corner
@@ -284,52 +285,52 @@
                       (    demo/ship.asm):00228         ;     screen x = CX + x * RXTAB[z+64] / 128
                       (    demo/ship.asm):00229         ;     screen y = CY + y * RYTAB[z+64] / 128
                       (    demo/ship.asm):00230         ; ---------------------------------------------------------------------------
-20AA 318D0177         (    demo/ship.asm):00231         CORNERS         LEAY    SHIP_V,PCR      ; Y -> first corner's x, y, z
-20AE 0F96             (    demo/ship.asm):00232                         CLR     <VI
-20B0 ECA4             (    demo/ship.asm):00233         CN_LOOP         LDD     ,Y              ; copy the corner into VEC
-20B2 DD8F             (    demo/ship.asm):00234                         STD     <VEC
-20B4 A622             (    demo/ship.asm):00235                         LDA     2,Y
-20B6 9791             (    demo/ship.asm):00236                         STA     <VEC+2
+28AA 318D0177         (    demo/ship.asm):00231         CORNERS         LEAY    SHIP_V,PCR      ; Y -> first corner's x, y, z
+28AE 0F96             (    demo/ship.asm):00232                         CLR     <VI
+28B0 ECA4             (    demo/ship.asm):00233         CN_LOOP         LDD     ,Y              ; copy the corner into VEC
+28B2 DD8F             (    demo/ship.asm):00234                         STD     <VEC
+28B4 A622             (    demo/ship.asm):00235                         LDA     2,Y
+28B6 9791             (    demo/ship.asm):00236                         STA     <VEC+2
                       (    demo/ship.asm):00237         
-20B8 CE0086           (    demo/ship.asm):00238                         LDU     #MROWX          ; rotated x
-20BB 1700F5           (    demo/ship.asm):00239                         LBSR    ROWDOT
-20BE 979E             (    demo/ship.asm):00240                         STA     <TMPX
-20C0 CE008C           (    demo/ship.asm):00241                         LDU     #MROWZ          ; rotated z
-20C3 1700ED           (    demo/ship.asm):00242                         LBSR    ROWDOT
-20C6 8B40             (    demo/ship.asm):00243                         ADDA    #64             ; depth -> projection table index
-20C8 9797             (    demo/ship.asm):00244                         STA     <ZI
-20CA CE0089           (    demo/ship.asm):00245                         LDU     #MROWY          ; rotated y, left in A
-20CD 1700E3           (    demo/ship.asm):00246                         LBSR    ROWDOT
+28B8 CE0086           (    demo/ship.asm):00238                         LDU     #MROWX          ; rotated x
+28BB 1700F5           (    demo/ship.asm):00239                         LBSR    ROWDOT
+28BE 979E             (    demo/ship.asm):00240                         STA     <TMPX
+28C0 CE008C           (    demo/ship.asm):00241                         LDU     #MROWZ          ; rotated z
+28C3 1700ED           (    demo/ship.asm):00242                         LBSR    ROWDOT
+28C6 8B40             (    demo/ship.asm):00243                         ADDA    #64             ; depth -> projection table index
+28C8 9797             (    demo/ship.asm):00244                         STA     <ZI
+28CA CE0089           (    demo/ship.asm):00245                         LDU     #MROWY          ; rotated y, left in A
+28CD 1700E3           (    demo/ship.asm):00246                         LBSR    ROWDOT
                       (    demo/ship.asm):00247         
-20D0 308D03EF         (    demo/ship.asm):00248                         LEAX    RYTAB,PCR       ; screen y (rotated y still in A)
-20D4 D697             (    demo/ship.asm):00249                         LDB     <ZI
-20D6 3A               (    demo/ship.asm):00250                         ABX
-20D7 E684             (    demo/ship.asm):00251                         LDB     ,X
-20D9 17013B           (    demo/ship.asm):00252                         LBSR    PMUL
-20DC 8B24             (    demo/ship.asm):00253                         ADDA    #CY
-20DE 8E00A0           (    demo/ship.asm):00254                         LDX     #PX             ; PY entry is at 32,X
-20E1 D696             (    demo/ship.asm):00255                         LDB     <VI
-20E3 3A               (    demo/ship.asm):00256                         ABX
-20E4 A78820           (    demo/ship.asm):00257                         STA     32,X
+28D0 308D03EF         (    demo/ship.asm):00248                         LEAX    RYTAB,PCR       ; screen y (rotated y still in A)
+28D4 D697             (    demo/ship.asm):00249                         LDB     <ZI
+28D6 3A               (    demo/ship.asm):00250                         ABX
+28D7 E684             (    demo/ship.asm):00251                         LDB     ,X
+28D9 17013B           (    demo/ship.asm):00252                         LBSR    PMUL
+28DC 8B24             (    demo/ship.asm):00253                         ADDA    #CY
+28DE 8E00A0           (    demo/ship.asm):00254                         LDX     #PX             ; PY entry is at 32,X
+28E1 D696             (    demo/ship.asm):00255                         LDB     <VI
+28E3 3A               (    demo/ship.asm):00256                         ABX
+28E4 A78820           (    demo/ship.asm):00257                         STA     32,X
                       (    demo/ship.asm):00258         
-20E7 308D0358         (    demo/ship.asm):00259                         LEAX    RXTAB,PCR       ; screen x
-20EB D697             (    demo/ship.asm):00260                         LDB     <ZI
-20ED 3A               (    demo/ship.asm):00261                         ABX
-20EE E684             (    demo/ship.asm):00262                         LDB     ,X
-20F0 969E             (    demo/ship.asm):00263                         LDA     <TMPX
-20F2 170122           (    demo/ship.asm):00264                         LBSR    PMUL
-20F5 8B27             (    demo/ship.asm):00265                         ADDA    #CX
-20F7 8E00A0           (    demo/ship.asm):00266                         LDX     #PX
-20FA D696             (    demo/ship.asm):00267                         LDB     <VI
-20FC 3A               (    demo/ship.asm):00268                         ABX
-20FD A784             (    demo/ship.asm):00269                         STA     ,X
+28E7 308D0358         (    demo/ship.asm):00259                         LEAX    RXTAB,PCR       ; screen x
+28EB D697             (    demo/ship.asm):00260                         LDB     <ZI
+28ED 3A               (    demo/ship.asm):00261                         ABX
+28EE E684             (    demo/ship.asm):00262                         LDB     ,X
+28F0 969E             (    demo/ship.asm):00263                         LDA     <TMPX
+28F2 170122           (    demo/ship.asm):00264                         LBSR    PMUL
+28F5 8B27             (    demo/ship.asm):00265                         ADDA    #CX
+28F7 8E00A0           (    demo/ship.asm):00266                         LDX     #PX
+28FA D696             (    demo/ship.asm):00267                         LDB     <VI
+28FC 3A               (    demo/ship.asm):00268                         ABX
+28FD A784             (    demo/ship.asm):00269                         STA     ,X
                       (    demo/ship.asm):00270         
-20FF 3123             (    demo/ship.asm):00271                         LEAY    3,Y             ; next corner
-2101 0C96             (    demo/ship.asm):00272                         INC     <VI
-2103 9696             (    demo/ship.asm):00273                         LDA     <VI
-2105 A18D011B         (    demo/ship.asm):00274                         CMPA    SHIP_NV,PCR
-2109 1026FFA3         (    demo/ship.asm):00275                         LBNE    CN_LOOP
-210D 39               (    demo/ship.asm):00276                         RTS
+28FF 3123             (    demo/ship.asm):00271                         LEAY    3,Y             ; next corner
+2901 0C96             (    demo/ship.asm):00272                         INC     <VI
+2903 9696             (    demo/ship.asm):00273                         LDA     <VI
+2905 A18D011B         (    demo/ship.asm):00274                         CMPA    SHIP_NV,PCR
+2909 1026FFA3         (    demo/ship.asm):00275                         LBNE    CN_LOOP
+290D 39               (    demo/ship.asm):00276                         RTS
                       (    demo/ship.asm):00277         
                       (    demo/ship.asm):00278         ; ---------------------------------------------------------------------------
                       (    demo/ship.asm):00279         ; FACES - decide which faces point towards the viewer
@@ -343,91 +344,91 @@
                       (    demo/ship.asm):00287         ;
                       (    demo/ship.asm):00288         ;       d = C - (nx*EX + ny*EY + nz*EZ)       visible if d < 0
                       (    demo/ship.asm):00289         ; ---------------------------------------------------------------------------
-210E 968C             (    demo/ship.asm):00290         FACES           LDA     <MROWZ          ; EX = MROWZ[0] * -EYE_K / 128
-2110 170055           (    demo/ship.asm):00291                         LBSR    EYEC
-2113 979B             (    demo/ship.asm):00292                         STA     <EX
-2115 968D             (    demo/ship.asm):00293                         LDA     <MROWZ+1        ; EY
-2117 17004E           (    demo/ship.asm):00294                         LBSR    EYEC
-211A 979C             (    demo/ship.asm):00295                         STA     <EY
-211C 968E             (    demo/ship.asm):00296                         LDA     <MROWZ+2        ; EZ
-211E 170047           (    demo/ship.asm):00297                         LBSR    EYEC
-2121 979D             (    demo/ship.asm):00298                         STA     <EZ
+290E 968C             (    demo/ship.asm):00290         FACES           LDA     <MROWZ          ; EX = MROWZ[0] * -EYE_K / 128
+2910 170055           (    demo/ship.asm):00291                         LBSR    EYEC
+2913 979B             (    demo/ship.asm):00292                         STA     <EX
+2915 968D             (    demo/ship.asm):00293                         LDA     <MROWZ+1        ; EY
+2917 17004E           (    demo/ship.asm):00294                         LBSR    EYEC
+291A 979C             (    demo/ship.asm):00295                         STA     <EY
+291C 968E             (    demo/ship.asm):00296                         LDA     <MROWZ+2        ; EZ
+291E 170047           (    demo/ship.asm):00297                         LBSR    EYEC
+2921 979D             (    demo/ship.asm):00298                         STA     <EZ
                       (    demo/ship.asm):00299         
-2123 318D014A         (    demo/ship.asm):00300                         LEAY    SHIP_F,PCR      ; Y -> C (2 bytes), nx, ny, nz
-2127 0F98             (    demo/ship.asm):00301                         CLR     <FI
-2129 A622             (    demo/ship.asm):00302         FC_LOOP         LDA     2,Y             ; n . eye
-212B D69B             (    demo/ship.asm):00303                         LDB     <EX
-212D 1700D0           (    demo/ship.asm):00304                         LBSR    SMUL16
-2130 DD92             (    demo/ship.asm):00305                         STD     <ACC
-2132 A623             (    demo/ship.asm):00306                         LDA     3,Y
-2134 D69C             (    demo/ship.asm):00307                         LDB     <EY
-2136 1700C7           (    demo/ship.asm):00308                         LBSR    SMUL16
-2139 D392             (    demo/ship.asm):00309                         ADDD    <ACC
-213B DD92             (    demo/ship.asm):00310                         STD     <ACC
-213D A624             (    demo/ship.asm):00311                         LDA     4,Y
-213F D69D             (    demo/ship.asm):00312                         LDB     <EZ
-2141 1700BC           (    demo/ship.asm):00313                         LBSR    SMUL16
-2144 D392             (    demo/ship.asm):00314                         ADDD    <ACC
-2146 DD92             (    demo/ship.asm):00315                         STD     <ACC
-2148 ECA4             (    demo/ship.asm):00316                         LDD     ,Y              ; d = C - n . eye
-214A 9392             (    demo/ship.asm):00317                         SUBD    <ACC            ; N flag = sign of d
-214C 2B03             (    demo/ship.asm):00318                         BMI     FC_VIS          ; negative: facing the viewer
-214E 4F               (    demo/ship.asm):00319                         CLRA                    ; hidden: VIS = 0
-214F 2002             (    demo/ship.asm):00320                         BRA     FC_SET
-2151 86FF             (    demo/ship.asm):00321         FC_VIS          LDA     #$FF            ; visible: VIS = $FF
-2153 8E00E0           (    demo/ship.asm):00322         FC_SET          LDX     #VIS            ; store at VIS + face number
-2156 D698             (    demo/ship.asm):00323                         LDB     <FI
-2158 3A               (    demo/ship.asm):00324                         ABX
-2159 A784             (    demo/ship.asm):00325                         STA     ,X
-215B 3125             (    demo/ship.asm):00326                         LEAY    5,Y             ; next face
-215D 0C98             (    demo/ship.asm):00327                         INC     <FI
-215F 9698             (    demo/ship.asm):00328                         LDA     <FI
-2161 A18D010B         (    demo/ship.asm):00329                         CMPA    SHIP_NF,PCR
-2165 26C2             (    demo/ship.asm):00330                         BNE     FC_LOOP
-2167 39               (    demo/ship.asm):00331                         RTS
+2923 318D014A         (    demo/ship.asm):00300                         LEAY    SHIP_F,PCR      ; Y -> C (2 bytes), nx, ny, nz
+2927 0F98             (    demo/ship.asm):00301                         CLR     <FI
+2929 A622             (    demo/ship.asm):00302         FC_LOOP         LDA     2,Y             ; n . eye
+292B D69B             (    demo/ship.asm):00303                         LDB     <EX
+292D 1700D0           (    demo/ship.asm):00304                         LBSR    SMUL16
+2930 DD92             (    demo/ship.asm):00305                         STD     <ACC
+2932 A623             (    demo/ship.asm):00306                         LDA     3,Y
+2934 D69C             (    demo/ship.asm):00307                         LDB     <EY
+2936 1700C7           (    demo/ship.asm):00308                         LBSR    SMUL16
+2939 D392             (    demo/ship.asm):00309                         ADDD    <ACC
+293B DD92             (    demo/ship.asm):00310                         STD     <ACC
+293D A624             (    demo/ship.asm):00311                         LDA     4,Y
+293F D69D             (    demo/ship.asm):00312                         LDB     <EZ
+2941 1700BC           (    demo/ship.asm):00313                         LBSR    SMUL16
+2944 D392             (    demo/ship.asm):00314                         ADDD    <ACC
+2946 DD92             (    demo/ship.asm):00315                         STD     <ACC
+2948 ECA4             (    demo/ship.asm):00316                         LDD     ,Y              ; d = C - n . eye
+294A 9392             (    demo/ship.asm):00317                         SUBD    <ACC            ; N flag = sign of d
+294C 2B03             (    demo/ship.asm):00318                         BMI     FC_VIS          ; negative: facing the viewer
+294E 4F               (    demo/ship.asm):00319                         CLRA                    ; hidden: VIS = 0
+294F 2002             (    demo/ship.asm):00320                         BRA     FC_SET
+2951 86FF             (    demo/ship.asm):00321         FC_VIS          LDA     #$FF            ; visible: VIS = $FF
+2953 8E00E0           (    demo/ship.asm):00322         FC_SET          LDX     #VIS            ; store at VIS + face number
+2956 D698             (    demo/ship.asm):00323                         LDB     <FI
+2958 3A               (    demo/ship.asm):00324                         ABX
+2959 A784             (    demo/ship.asm):00325                         STA     ,X
+295B 3125             (    demo/ship.asm):00326                         LEAY    5,Y             ; next face
+295D 0C98             (    demo/ship.asm):00327                         INC     <FI
+295F 9698             (    demo/ship.asm):00328                         LDA     <FI
+2961 A18D010B         (    demo/ship.asm):00329                         CMPA    SHIP_NF,PCR
+2965 26C2             (    demo/ship.asm):00330                         BNE     FC_LOOP
+2967 39               (    demo/ship.asm):00331                         RTS
                       (    demo/ship.asm):00332         
                       (    demo/ship.asm):00333         ; EYEC - one coordinate of the eye: A = (A * -EYE_K) / 128, rounded
-2168 C69B             (    demo/ship.asm):00334         EYEC            LDB     #-EYE_K
-216A 170093           (    demo/ship.asm):00335                         LBSR    SMUL16
-216D C30040           (    demo/ship.asm):00336                         ADDD    #64             ; round
-2170 58               (    demo/ship.asm):00337                         ASLB                    ; A = D / 128
-2171 49               (    demo/ship.asm):00338                         ROLA
-2172 39               (    demo/ship.asm):00339                         RTS
+2968 C69B             (    demo/ship.asm):00334         EYEC            LDB     #-EYE_K
+296A 170093           (    demo/ship.asm):00335                         LBSR    SMUL16
+296D C30040           (    demo/ship.asm):00336                         ADDD    #64             ; round
+2970 58               (    demo/ship.asm):00337                         ASLB                    ; A = D / 128
+2971 49               (    demo/ship.asm):00338                         ROLA
+2972 39               (    demo/ship.asm):00339                         RTS
                       (    demo/ship.asm):00340         
                       (    demo/ship.asm):00341         ; ---------------------------------------------------------------------------
                       (    demo/ship.asm):00342         ; EDGES - draw every edge that borders a visible face
                       (    demo/ship.asm):00343         ;   Each edge: corner, corner, face, face. The generator's range check keeps
                       (    demo/ship.asm):00344         ;   the ship on screen, so the faster unclipped TGL_LINE is safe here.
                       (    demo/ship.asm):00345         ; ---------------------------------------------------------------------------
-2173 318D013C         (    demo/ship.asm):00346         EDGES           LEAY    SHIP_E,PCR
-2177 A68D0137         (    demo/ship.asm):00347                         LDA     SHIP_NE,PCR
-217B 9799             (    demo/ship.asm):00348                         STA     <EC
-217D 8E00E0           (    demo/ship.asm):00349         ED_LOOP         LDX     #VIS            ; visible if either face is
-2180 E622             (    demo/ship.asm):00350                         LDB     2,Y
-2182 3A               (    demo/ship.asm):00351                         ABX
-2183 A684             (    demo/ship.asm):00352                         LDA     ,X
-2185 8E00E0           (    demo/ship.asm):00353                         LDX     #VIS
-2188 E623             (    demo/ship.asm):00354                         LDB     3,Y
-218A 3A               (    demo/ship.asm):00355                         ABX
-218B AA84             (    demo/ship.asm):00356                         ORA     ,X
-218D 271D             (    demo/ship.asm):00357                         BEQ     ED_NEXT
-218F 8E00A0           (    demo/ship.asm):00358                         LDX     #PX             ; end corner -> U
-2192 E621             (    demo/ship.asm):00359                         LDB     1,Y
-2194 3A               (    demo/ship.asm):00360                         ABX
-2195 A684             (    demo/ship.asm):00361                         LDA     ,X
-2197 E68820           (    demo/ship.asm):00362                         LDB     32,X
-219A 1F03             (    demo/ship.asm):00363                         TFR     D,U
-219C 8E00A0           (    demo/ship.asm):00364                         LDX     #PX             ; start corner -> A, B
-219F E6A4             (    demo/ship.asm):00365                         LDB     ,Y
-21A1 3A               (    demo/ship.asm):00366                         ABX
-21A2 A684             (    demo/ship.asm):00367                         LDA     ,X
-21A4 E68820           (    demo/ship.asm):00368                         LDB     32,X
-21A7 1F31             (    demo/ship.asm):00369                         TFR     U,X             ; X = x1:y1
-21A9 BD100F           (    demo/ship.asm):00370                         JSR     TGL_LINE
-21AC 3124             (    demo/ship.asm):00371         ED_NEXT         LEAY    4,Y
-21AE 0A99             (    demo/ship.asm):00372                         DEC     <EC
-21B0 26CB             (    demo/ship.asm):00373                         BNE     ED_LOOP
-21B2 39               (    demo/ship.asm):00374                         RTS
+2973 318D013C         (    demo/ship.asm):00346         EDGES           LEAY    SHIP_E,PCR
+2977 A68D0137         (    demo/ship.asm):00347                         LDA     SHIP_NE,PCR
+297B 9799             (    demo/ship.asm):00348                         STA     <EC
+297D 8E00E0           (    demo/ship.asm):00349         ED_LOOP         LDX     #VIS            ; visible if either face is
+2980 E622             (    demo/ship.asm):00350                         LDB     2,Y
+2982 3A               (    demo/ship.asm):00351                         ABX
+2983 A684             (    demo/ship.asm):00352                         LDA     ,X
+2985 8E00E0           (    demo/ship.asm):00353                         LDX     #VIS
+2988 E623             (    demo/ship.asm):00354                         LDB     3,Y
+298A 3A               (    demo/ship.asm):00355                         ABX
+298B AA84             (    demo/ship.asm):00356                         ORA     ,X
+298D 271D             (    demo/ship.asm):00357                         BEQ     ED_NEXT
+298F 8E00A0           (    demo/ship.asm):00358                         LDX     #PX             ; end corner -> U
+2992 E621             (    demo/ship.asm):00359                         LDB     1,Y
+2994 3A               (    demo/ship.asm):00360                         ABX
+2995 A684             (    demo/ship.asm):00361                         LDA     ,X
+2997 E68820           (    demo/ship.asm):00362                         LDB     32,X
+299A 1F03             (    demo/ship.asm):00363                         TFR     D,U
+299C 8E00A0           (    demo/ship.asm):00364                         LDX     #PX             ; start corner -> A, B
+299F E6A4             (    demo/ship.asm):00365                         LDB     ,Y
+29A1 3A               (    demo/ship.asm):00366                         ABX
+29A2 A684             (    demo/ship.asm):00367                         LDA     ,X
+29A4 E68820           (    demo/ship.asm):00368                         LDB     32,X
+29A7 1F31             (    demo/ship.asm):00369                         TFR     U,X             ; X = x1:y1
+29A9 BD100F           (    demo/ship.asm):00370                         JSR     TGL_LINE
+29AC 3124             (    demo/ship.asm):00371         ED_NEXT         LEAY    4,Y
+29AE 0A99             (    demo/ship.asm):00372                         DEC     <EC
+29B0 26CB             (    demo/ship.asm):00373                         BNE     ED_LOOP
+29B2 39               (    demo/ship.asm):00374                         RTS
                       (    demo/ship.asm):00375         
                       (    demo/ship.asm):00376         ; ---------------------------------------------------------------------------
                       (    demo/ship.asm):00377         ; SMULI - SMUL16 written out in place (a macro), for the inner loop
@@ -435,17 +436,17 @@
                       (    demo/ship.asm):00379         ;   which adds up over nine multiplies per corner. \1 makes the labels
                       (    demo/ship.asm):00380         ;   unique each time the macro is used.
                       (    demo/ship.asm):00381         ; ---------------------------------------------------------------------------
-21B3                  (    demo/ship.asm):00382         SMULI           MACRO
+29B3                  (    demo/ship.asm):00382         SMULI           MACRO
                       (    demo/ship.asm):00383                         STA     <MT_A
                       (    demo/ship.asm):00384                         STB     <MT_B
                       (    demo/ship.asm):00385                         MUL
                       (    demo/ship.asm):00386                         TST     <MT_A
                       (    demo/ship.asm):00387                         BPL     \1_1
                       (    demo/ship.asm):00388                         SUBA    <MT_B
-21B3                  (    demo/ship.asm):00389         \1_1            TST     <MT_B
+29B3                  (    demo/ship.asm):00389         \1_1            TST     <MT_B
                       (    demo/ship.asm):00390                         BPL     \1_2
                       (    demo/ship.asm):00391                         SUBA    <MT_A
-21B3                  (    demo/ship.asm):00392         \1_2
+29B3                  (    demo/ship.asm):00392         \1_2
                       (    demo/ship.asm):00393                         ENDM
                       (    demo/ship.asm):00394         
                       (    demo/ship.asm):00395         ; ---------------------------------------------------------------------------
@@ -455,53 +456,53 @@
                       (    demo/ship.asm):00399         ;   Adding 64 before dividing by 128 rounds to nearest instead of always
                       (    demo/ship.asm):00400         ;   rounding down. ASLB/ROLA doubles D, leaving D/128 in A.
                       (    demo/ship.asm):00401         ; ---------------------------------------------------------------------------
-21B3 A6C4             (    demo/ship.asm):00402         ROWDOT          LDA     ,U              ; row[0] * VEC[0]
-21B5 D68F             (    demo/ship.asm):00403                         LDB     <VEC
+29B3 A6C4             (    demo/ship.asm):00402         ROWDOT          LDA     ,U              ; row[0] * VEC[0]
+29B5 D68F             (    demo/ship.asm):00403                         LDB     <VEC
                       (    demo/ship.asm):00404                         SMULI   RD1
-21B7 9794             (            SMULI):00001                         STA     <MT_A
-21B9 D795             (            SMULI):00002                         STB     <MT_B
-21BB 3D               (            SMULI):00003                         MUL
-21BC 0D94             (            SMULI):00004                         TST     <MT_A
-21BE 2A02             (            SMULI):00005                         BPL     RD1_1
-21C0 9095             (            SMULI):00006                         SUBA    <MT_B
-21C2 0D95             (            SMULI):00007         RD1_1            TST     <MT_B
-21C4 2A02             (            SMULI):00008                         BPL     RD1_2
-21C6 9094             (            SMULI):00009                         SUBA    <MT_A
-21C8                  (            SMULI):00010         RD1_2
-21C8 DD92             (    demo/ship.asm):00405                         STD     <ACC
-21CA A641             (    demo/ship.asm):00406                         LDA     1,U             ; + row[1] * VEC[1]
-21CC D690             (    demo/ship.asm):00407                         LDB     <VEC+1
+29B7 9794             (            SMULI):00001                         STA     <MT_A
+29B9 D795             (            SMULI):00002                         STB     <MT_B
+29BB 3D               (            SMULI):00003                         MUL
+29BC 0D94             (            SMULI):00004                         TST     <MT_A
+29BE 2A02             (            SMULI):00005                         BPL     RD1_1
+29C0 9095             (            SMULI):00006                         SUBA    <MT_B
+29C2 0D95             (            SMULI):00007         RD1_1            TST     <MT_B
+29C4 2A02             (            SMULI):00008                         BPL     RD1_2
+29C6 9094             (            SMULI):00009                         SUBA    <MT_A
+29C8                  (            SMULI):00010         RD1_2
+29C8 DD92             (    demo/ship.asm):00405                         STD     <ACC
+29CA A641             (    demo/ship.asm):00406                         LDA     1,U             ; + row[1] * VEC[1]
+29CC D690             (    demo/ship.asm):00407                         LDB     <VEC+1
                       (    demo/ship.asm):00408                         SMULI   RD2
-21CE 9794             (            SMULI):00001                         STA     <MT_A
-21D0 D795             (            SMULI):00002                         STB     <MT_B
-21D2 3D               (            SMULI):00003                         MUL
-21D3 0D94             (            SMULI):00004                         TST     <MT_A
-21D5 2A02             (            SMULI):00005                         BPL     RD2_1
-21D7 9095             (            SMULI):00006                         SUBA    <MT_B
-21D9 0D95             (            SMULI):00007         RD2_1            TST     <MT_B
-21DB 2A02             (            SMULI):00008                         BPL     RD2_2
-21DD 9094             (            SMULI):00009                         SUBA    <MT_A
-21DF                  (            SMULI):00010         RD2_2
-21DF D392             (    demo/ship.asm):00409                         ADDD    <ACC
-21E1 DD92             (    demo/ship.asm):00410                         STD     <ACC
-21E3 A642             (    demo/ship.asm):00411                         LDA     2,U             ; + row[2] * VEC[2]
-21E5 D691             (    demo/ship.asm):00412                         LDB     <VEC+2
+29CE 9794             (            SMULI):00001                         STA     <MT_A
+29D0 D795             (            SMULI):00002                         STB     <MT_B
+29D2 3D               (            SMULI):00003                         MUL
+29D3 0D94             (            SMULI):00004                         TST     <MT_A
+29D5 2A02             (            SMULI):00005                         BPL     RD2_1
+29D7 9095             (            SMULI):00006                         SUBA    <MT_B
+29D9 0D95             (            SMULI):00007         RD2_1            TST     <MT_B
+29DB 2A02             (            SMULI):00008                         BPL     RD2_2
+29DD 9094             (            SMULI):00009                         SUBA    <MT_A
+29DF                  (            SMULI):00010         RD2_2
+29DF D392             (    demo/ship.asm):00409                         ADDD    <ACC
+29E1 DD92             (    demo/ship.asm):00410                         STD     <ACC
+29E3 A642             (    demo/ship.asm):00411                         LDA     2,U             ; + row[2] * VEC[2]
+29E5 D691             (    demo/ship.asm):00412                         LDB     <VEC+2
                       (    demo/ship.asm):00413                         SMULI   RD3
-21E7 9794             (            SMULI):00001                         STA     <MT_A
-21E9 D795             (            SMULI):00002                         STB     <MT_B
-21EB 3D               (            SMULI):00003                         MUL
-21EC 0D94             (            SMULI):00004                         TST     <MT_A
-21EE 2A02             (            SMULI):00005                         BPL     RD3_1
-21F0 9095             (            SMULI):00006                         SUBA    <MT_B
-21F2 0D95             (            SMULI):00007         RD3_1            TST     <MT_B
-21F4 2A02             (            SMULI):00008                         BPL     RD3_2
-21F6 9094             (            SMULI):00009                         SUBA    <MT_A
-21F8                  (            SMULI):00010         RD3_2
-21F8 D392             (    demo/ship.asm):00414                         ADDD    <ACC
-21FA C30040           (    demo/ship.asm):00415                         ADDD    #64             ; round
-21FD 58               (    demo/ship.asm):00416                         ASLB                    ; A = D / 128
-21FE 49               (    demo/ship.asm):00417                         ROLA
-21FF 39               (    demo/ship.asm):00418                         RTS
+29E7 9794             (            SMULI):00001                         STA     <MT_A
+29E9 D795             (            SMULI):00002                         STB     <MT_B
+29EB 3D               (            SMULI):00003                         MUL
+29EC 0D94             (            SMULI):00004                         TST     <MT_A
+29EE 2A02             (            SMULI):00005                         BPL     RD3_1
+29F0 9095             (            SMULI):00006                         SUBA    <MT_B
+29F2 0D95             (            SMULI):00007         RD3_1            TST     <MT_B
+29F4 2A02             (            SMULI):00008                         BPL     RD3_2
+29F6 9094             (            SMULI):00009                         SUBA    <MT_A
+29F8                  (            SMULI):00010         RD3_2
+29F8 D392             (    demo/ship.asm):00414                         ADDD    <ACC
+29FA C30040           (    demo/ship.asm):00415                         ADDD    #64             ; round
+29FD 58               (    demo/ship.asm):00416                         ASLB                    ; A = D / 128
+29FE 49               (    demo/ship.asm):00417                         ROLA
+29FF 39               (    demo/ship.asm):00418                         RTS
                       (    demo/ship.asm):00419         
                       (    demo/ship.asm):00420         ; ---------------------------------------------------------------------------
                       (    demo/ship.asm):00421         ; SMUL16 - full signed multiply: D = A * B
@@ -513,42 +514,42 @@
                       (    demo/ship.asm):00427         ;   negative input. Subtracting the other byte from the high byte (A) for
                       (    demo/ship.asm):00428         ;   each negative input corrects it exactly - no sign juggling needed.
                       (    demo/ship.asm):00429         ; ---------------------------------------------------------------------------
-2200 9794             (    demo/ship.asm):00430         SMUL16          STA     <MT_A           ; keep the original bytes
-2202 D795             (    demo/ship.asm):00431                         STB     <MT_B
-2204 3D               (    demo/ship.asm):00432                         MUL                     ; unsigned product
-2205 0D94             (    demo/ship.asm):00433                         TST     <MT_A           ; first input negative?
-2207 2A02             (    demo/ship.asm):00434                         BPL     SM_1
-2209 9095             (    demo/ship.asm):00435                         SUBA    <MT_B           ;  then subtract 256 * second
-220B 0D95             (    demo/ship.asm):00436         SM_1            TST     <MT_B           ; second input negative?
-220D 2A02             (    demo/ship.asm):00437                         BPL     SM_2
-220F 9094             (    demo/ship.asm):00438                         SUBA    <MT_A           ;  then subtract 256 * first
-2211 39               (    demo/ship.asm):00439         SM_2            RTS
+2A00 9794             (    demo/ship.asm):00430         SMUL16          STA     <MT_A           ; keep the original bytes
+2A02 D795             (    demo/ship.asm):00431                         STB     <MT_B
+2A04 3D               (    demo/ship.asm):00432                         MUL                     ; unsigned product
+2A05 0D94             (    demo/ship.asm):00433                         TST     <MT_A           ; first input negative?
+2A07 2A02             (    demo/ship.asm):00434                         BPL     SM_1
+2A09 9095             (    demo/ship.asm):00435                         SUBA    <MT_B           ;  then subtract 256 * second
+2A0B 0D95             (    demo/ship.asm):00436         SM_1            TST     <MT_B           ; second input negative?
+2A0D 2A02             (    demo/ship.asm):00437                         BPL     SM_2
+2A0F 9094             (    demo/ship.asm):00438                         SUBA    <MT_A           ;  then subtract 256 * first
+2A11 39               (    demo/ship.asm):00439         SM_2            RTS
                       (    demo/ship.asm):00440         
                       (    demo/ship.asm):00441         ; ---------------------------------------------------------------------------
                       (    demo/ship.asm):00442         ; MULS7 - signed multiply, scaled: A = (A * B) / 128
                       (    demo/ship.asm):00443         ;   Full product from SMUL16, then ASLB/ROLA leaves D/128 in A (rounded
                       (    demo/ship.asm):00444         ;   down, which is all the matrix needs).
                       (    demo/ship.asm):00445         ; ---------------------------------------------------------------------------
-2212 8DEC             (    demo/ship.asm):00446         MULS7           BSR     SMUL16
-2214 58               (    demo/ship.asm):00447                         ASLB
-2215 49               (    demo/ship.asm):00448                         ROLA
-2216 39               (    demo/ship.asm):00449                         RTS
+2A12 8DEC             (    demo/ship.asm):00446         MULS7           BSR     SMUL16
+2A14 58               (    demo/ship.asm):00447                         ASLB
+2A15 49               (    demo/ship.asm):00448                         ROLA
+2A16 39               (    demo/ship.asm):00449                         RTS
                       (    demo/ship.asm):00450         
                       (    demo/ship.asm):00451         ; ---------------------------------------------------------------------------
                       (    demo/ship.asm):00452         ; PMUL - projection multiply: A = (A * B) / 128, A signed, B unsigned
                       (    demo/ship.asm):00453         ; ---------------------------------------------------------------------------
-2217 4D               (    demo/ship.asm):00454         PMUL            TSTA
-2218 2A06             (    demo/ship.asm):00455                         BPL     PM_1
-221A 40               (    demo/ship.asm):00456                         NEGA
-221B 3D               (    demo/ship.asm):00457                         MUL
-221C 58               (    demo/ship.asm):00458                         ASLB
-221D 49               (    demo/ship.asm):00459                         ROLA
-221E 40               (    demo/ship.asm):00460                         NEGA
-221F 39               (    demo/ship.asm):00461                         RTS
-2220 3D               (    demo/ship.asm):00462         PM_1            MUL
-2221 58               (    demo/ship.asm):00463                         ASLB
-2222 49               (    demo/ship.asm):00464                         ROLA
-2223 39               (    demo/ship.asm):00465                         RTS
+2A17 4D               (    demo/ship.asm):00454         PMUL            TSTA
+2A18 2A06             (    demo/ship.asm):00455                         BPL     PM_1
+2A1A 40               (    demo/ship.asm):00456                         NEGA
+2A1B 3D               (    demo/ship.asm):00457                         MUL
+2A1C 58               (    demo/ship.asm):00458                         ASLB
+2A1D 49               (    demo/ship.asm):00459                         ROLA
+2A1E 40               (    demo/ship.asm):00460                         NEGA
+2A1F 39               (    demo/ship.asm):00461                         RTS
+2A20 3D               (    demo/ship.asm):00462         PM_1            MUL
+2A21 58               (    demo/ship.asm):00463                         ASLB
+2A22 49               (    demo/ship.asm):00464                         ROLA
+2A23 39               (    demo/ship.asm):00465                         RTS
                       (    demo/ship.asm):00466         
                       (    demo/ship.asm):00467         ; Ship model (generated) and the sine/projection tables shared with the cube
                       (    demo/ship.asm):00468                         INCLUDE "ship_model.asm"
@@ -564,236 +565,236 @@
                       (   ship_model.asm):00010         ;                    Drawn if either face is visible. Decal lines name
                       (   ship_model.asm):00011         ;                    the same face twice.
                       (   ship_model.asm):00012         
-2224 19               (   ship_model.asm):00013         SHIP_NV         FCB     25
-2225                  (   ship_model.asm):00014         SHIP_V
-2225 000028           (   ship_model.asm):00015                         FCB     0,0,40          ; 0
-2228 0E0008           (   ship_model.asm):00016                         FCB     14,0,8          ; 1
-222B 07F708           (   ship_model.asm):00017                         FCB     7,-9,8          ; 2
-222E F9F708           (   ship_model.asm):00018                         FCB     -7,-9,8         ; 3
-2231 F20008           (   ship_model.asm):00019                         FCB     -14,0,8         ; 4
-2234 F90908           (   ship_model.asm):00020                         FCB     -7,9,8          ; 5
-2237 070908           (   ship_model.asm):00021                         FCB     7,9,8           ; 6
-223A 1800E2           (   ship_model.asm):00022                         FCB     24,0,-30        ; 7
-223D 0CF2E2           (   ship_model.asm):00023                         FCB     12,-14,-30      ; 8
-2240 F4F2E2           (   ship_model.asm):00024                         FCB     -12,-14,-30     ; 9
-2243 E800E2           (   ship_model.asm):00025                         FCB     -24,0,-30       ; 10
-2246 F40EE2           (   ship_model.asm):00026                         FCB     -12,14,-30      ; 11
-2249 0C0EE2           (   ship_model.asm):00027                         FCB     12,14,-30       ; 12
-224C 05FCE2           (   ship_model.asm):00028                         FCB     5,-4,-30        ; 13
-224F 0FFCE2           (   ship_model.asm):00029                         FCB     15,-4,-30       ; 14
-2252 0F04E2           (   ship_model.asm):00030                         FCB     15,4,-30        ; 15
-2255 0504E2           (   ship_model.asm):00031                         FCB     5,4,-30         ; 16
-2258 FBFCE2           (   ship_model.asm):00032                         FCB     -5,-4,-30       ; 17
-225B F1FCE2           (   ship_model.asm):00033                         FCB     -15,-4,-30      ; 18
-225E F104E2           (   ship_model.asm):00034                         FCB     -15,4,-30       ; 19
-2261 FB04E2           (   ship_model.asm):00035                         FCB     -5,4,-30        ; 20
-2264 03FC1A           (   ship_model.asm):00036                         FCB     3,-4,26         ; 21
-2267 06F90E           (   ship_model.asm):00037                         FCB     6,-7,14         ; 22
-226A FAF90E           (   ship_model.asm):00038                         FCB     -6,-7,14        ; 23
-226D FDFC1A           (   ship_model.asm):00039                         FCB     -3,-4,26        ; 24
+2A24 19               (   ship_model.asm):00013         SHIP_NV         FCB     25
+2A25                  (   ship_model.asm):00014         SHIP_V
+2A25 000028           (   ship_model.asm):00015                         FCB     0,0,40          ; 0
+2A28 0E0008           (   ship_model.asm):00016                         FCB     14,0,8          ; 1
+2A2B 07F708           (   ship_model.asm):00017                         FCB     7,-9,8          ; 2
+2A2E F9F708           (   ship_model.asm):00018                         FCB     -7,-9,8         ; 3
+2A31 F20008           (   ship_model.asm):00019                         FCB     -14,0,8         ; 4
+2A34 F90908           (   ship_model.asm):00020                         FCB     -7,9,8          ; 5
+2A37 070908           (   ship_model.asm):00021                         FCB     7,9,8           ; 6
+2A3A 1800E2           (   ship_model.asm):00022                         FCB     24,0,-30        ; 7
+2A3D 0CF2E2           (   ship_model.asm):00023                         FCB     12,-14,-30      ; 8
+2A40 F4F2E2           (   ship_model.asm):00024                         FCB     -12,-14,-30     ; 9
+2A43 E800E2           (   ship_model.asm):00025                         FCB     -24,0,-30       ; 10
+2A46 F40EE2           (   ship_model.asm):00026                         FCB     -12,14,-30      ; 11
+2A49 0C0EE2           (   ship_model.asm):00027                         FCB     12,14,-30       ; 12
+2A4C 05FCE2           (   ship_model.asm):00028                         FCB     5,-4,-30        ; 13
+2A4F 0FFCE2           (   ship_model.asm):00029                         FCB     15,-4,-30       ; 14
+2A52 0F04E2           (   ship_model.asm):00030                         FCB     15,4,-30        ; 15
+2A55 0504E2           (   ship_model.asm):00031                         FCB     5,4,-30         ; 16
+2A58 FBFCE2           (   ship_model.asm):00032                         FCB     -5,-4,-30       ; 17
+2A5B F1FCE2           (   ship_model.asm):00033                         FCB     -15,-4,-30      ; 18
+2A5E F104E2           (   ship_model.asm):00034                         FCB     -15,4,-30       ; 19
+2A61 FB04E2           (   ship_model.asm):00035                         FCB     -5,4,-30        ; 20
+2A64 03FC1A           (   ship_model.asm):00036                         FCB     3,-4,26         ; 21
+2A67 06F90E           (   ship_model.asm):00037                         FCB     6,-7,14         ; 22
+2A6A FAF90E           (   ship_model.asm):00038                         FCB     -6,-7,14        ; 23
+2A6D FDFC1A           (   ship_model.asm):00039                         FCB     -3,-4,26        ; 24
                       (   ship_model.asm):00040         
-2270 0D               (   ship_model.asm):00041         SHIP_NF         FCB     13
-2271                  (   ship_model.asm):00042         SHIP_F
-2271 067B             (   ship_model.asm):00043                         FDB     1659            ; face 0: C
-2273 5FB629           (   ship_model.asm):00044                         FCB     95,-74,41       ;         normal
-2276 055A             (   ship_model.asm):00045                         FDB     1370            ; face 1: C
-2278 008622           (   ship_model.asm):00046                         FCB     0,-122,34       ;         normal
-227B 067A             (   ship_model.asm):00047                         FDB     1658            ; face 2: C
-227D A1B629           (   ship_model.asm):00048                         FCB     -95,-74,41      ;         normal
-2280 067B             (   ship_model.asm):00049                         FDB     1659            ; face 3: C
-2282 A14A29           (   ship_model.asm):00050                         FCB     -95,74,41       ;         normal
-2285 055A             (   ship_model.asm):00051                         FDB     1370            ; face 4: C
-2287 007A22           (   ship_model.asm):00052                         FCB     0,122,34        ;         normal
-228A 067A             (   ship_model.asm):00053                         FDB     1658            ; face 5: C
-228C 5F4A29           (   ship_model.asm):00054                         FCB     95,74,41        ;         normal
-228F 062A             (   ship_model.asm):00055                         FDB     1578            ; face 6: C
-2291 5FAF17           (   ship_model.asm):00056                         FCB     95,-81,23       ;         normal
-2294 04F6             (   ship_model.asm):00057                         FDB     1270            ; face 7: C
-2296 008211           (   ship_model.asm):00058                         FCB     0,-126,17       ;         normal
-2299 05FA             (   ship_model.asm):00059                         FDB     1530            ; face 8: C
-229B A1AF19           (   ship_model.asm):00060                         FCB     -95,-81,25      ;         normal
-229E 062A             (   ship_model.asm):00061                         FDB     1578            ; face 9: C
-22A0 A15117           (   ship_model.asm):00062                         FCB     -95,81,23       ;         normal
-22A3 04F6             (   ship_model.asm):00063                         FDB     1270            ; face 10: C
-22A5 007E11           (   ship_model.asm):00064                         FCB     0,126,17        ;         normal
-22A8 05FA             (   ship_model.asm):00065                         FDB     1530            ; face 11: C
-22AA 5F5119           (   ship_model.asm):00066                         FCB     95,81,25        ;         normal
-22AD 0EE2             (   ship_model.asm):00067                         FDB     3810            ; face 12: C
-22AF 000081           (   ship_model.asm):00068                         FCB     0,0,-127        ;         normal
+2A70 0D               (   ship_model.asm):00041         SHIP_NF         FCB     13
+2A71                  (   ship_model.asm):00042         SHIP_F
+2A71 067B             (   ship_model.asm):00043                         FDB     1659            ; face 0: C
+2A73 5FB629           (   ship_model.asm):00044                         FCB     95,-74,41       ;         normal
+2A76 055A             (   ship_model.asm):00045                         FDB     1370            ; face 1: C
+2A78 008622           (   ship_model.asm):00046                         FCB     0,-122,34       ;         normal
+2A7B 067A             (   ship_model.asm):00047                         FDB     1658            ; face 2: C
+2A7D A1B629           (   ship_model.asm):00048                         FCB     -95,-74,41      ;         normal
+2A80 067B             (   ship_model.asm):00049                         FDB     1659            ; face 3: C
+2A82 A14A29           (   ship_model.asm):00050                         FCB     -95,74,41       ;         normal
+2A85 055A             (   ship_model.asm):00051                         FDB     1370            ; face 4: C
+2A87 007A22           (   ship_model.asm):00052                         FCB     0,122,34        ;         normal
+2A8A 067A             (   ship_model.asm):00053                         FDB     1658            ; face 5: C
+2A8C 5F4A29           (   ship_model.asm):00054                         FCB     95,74,41        ;         normal
+2A8F 062A             (   ship_model.asm):00055                         FDB     1578            ; face 6: C
+2A91 5FAF17           (   ship_model.asm):00056                         FCB     95,-81,23       ;         normal
+2A94 04F6             (   ship_model.asm):00057                         FDB     1270            ; face 7: C
+2A96 008211           (   ship_model.asm):00058                         FCB     0,-126,17       ;         normal
+2A99 05FA             (   ship_model.asm):00059                         FDB     1530            ; face 8: C
+2A9B A1AF19           (   ship_model.asm):00060                         FCB     -95,-81,25      ;         normal
+2A9E 062A             (   ship_model.asm):00061                         FDB     1578            ; face 9: C
+2AA0 A15117           (   ship_model.asm):00062                         FCB     -95,81,23       ;         normal
+2AA3 04F6             (   ship_model.asm):00063                         FDB     1270            ; face 10: C
+2AA5 007E11           (   ship_model.asm):00064                         FCB     0,126,17        ;         normal
+2AA8 05FA             (   ship_model.asm):00065                         FDB     1530            ; face 11: C
+2AAA 5F5119           (   ship_model.asm):00066                         FCB     95,81,25        ;         normal
+2AAD 0EE2             (   ship_model.asm):00067                         FDB     3810            ; face 12: C
+2AAF 000081           (   ship_model.asm):00068                         FCB     0,0,-127        ;         normal
                       (   ship_model.asm):00069         
-22B2 24               (   ship_model.asm):00070         SHIP_NE         FCB     36
-22B3                  (   ship_model.asm):00071         SHIP_E
-22B3 01020006         (   ship_model.asm):00072                         FCB     1,2,0,6         ; faces 0,6
-22B7 00010005         (   ship_model.asm):00073                         FCB     0,1,0,5         ; faces 0,5
-22BB 00020001         (   ship_model.asm):00074                         FCB     0,2,0,1         ; faces 0,1
-22BF 02030107         (   ship_model.asm):00075                         FCB     2,3,1,7         ; faces 1,7
-22C3 00030102         (   ship_model.asm):00076                         FCB     0,3,1,2         ; faces 1,2
-22C7 03040208         (   ship_model.asm):00077                         FCB     3,4,2,8         ; faces 2,8
-22CB 00040203         (   ship_model.asm):00078                         FCB     0,4,2,3         ; faces 2,3
-22CF 04050309         (   ship_model.asm):00079                         FCB     4,5,3,9         ; faces 3,9
-22D3 00050304         (   ship_model.asm):00080                         FCB     0,5,3,4         ; faces 3,4
-22D7 0506040A         (   ship_model.asm):00081                         FCB     5,6,4,10        ; faces 4,10
-22DB 00060405         (   ship_model.asm):00082                         FCB     0,6,4,5         ; faces 4,5
-22DF 0106050B         (   ship_model.asm):00083                         FCB     1,6,5,11        ; faces 5,11
-22E3 02080607         (   ship_model.asm):00084                         FCB     2,8,6,7         ; faces 6,7
-22E7 0708060C         (   ship_model.asm):00085                         FCB     7,8,6,12        ; faces 6,12
-22EB 0107060B         (   ship_model.asm):00086                         FCB     1,7,6,11        ; faces 6,11
-22EF 03090708         (   ship_model.asm):00087                         FCB     3,9,7,8         ; faces 7,8
-22F3 0809070C         (   ship_model.asm):00088                         FCB     8,9,7,12        ; faces 7,12
-22F7 040A0809         (   ship_model.asm):00089                         FCB     4,10,8,9        ; faces 8,9
-22FB 090A080C         (   ship_model.asm):00090                         FCB     9,10,8,12       ; faces 8,12
-22FF 050B090A         (   ship_model.asm):00091                         FCB     5,11,9,10       ; faces 9,10
-2303 0A0B090C         (   ship_model.asm):00092                         FCB     10,11,9,12      ; faces 9,12
-2307 060C0A0B         (   ship_model.asm):00093                         FCB     6,12,10,11      ; faces 10,11
-230B 0B0C0A0C         (   ship_model.asm):00094                         FCB     11,12,10,12     ; faces 10,12
-230F 070C0B0C         (   ship_model.asm):00095                         FCB     7,12,11,12      ; faces 11,12
-2313 0D0E0C0C         (   ship_model.asm):00096                         FCB     13,14,12,12     ; decal on face 12
-2317 0E0F0C0C         (   ship_model.asm):00097                         FCB     14,15,12,12     ; decal on face 12
-231B 0F100C0C         (   ship_model.asm):00098                         FCB     15,16,12,12     ; decal on face 12
-231F 100D0C0C         (   ship_model.asm):00099                         FCB     16,13,12,12     ; decal on face 12
-2323 11120C0C         (   ship_model.asm):00100                         FCB     17,18,12,12     ; decal on face 12
-2327 12130C0C         (   ship_model.asm):00101                         FCB     18,19,12,12     ; decal on face 12
-232B 13140C0C         (   ship_model.asm):00102                         FCB     19,20,12,12     ; decal on face 12
-232F 14110C0C         (   ship_model.asm):00103                         FCB     20,17,12,12     ; decal on face 12
-2333 15160101         (   ship_model.asm):00104                         FCB     21,22,1,1       ; decal on face 1
-2337 16170101         (   ship_model.asm):00105                         FCB     22,23,1,1       ; decal on face 1
-233B 17180101         (   ship_model.asm):00106                         FCB     23,24,1,1       ; decal on face 1
-233F 18150101         (   ship_model.asm):00107                         FCB     24,21,1,1       ; decal on face 1
+2AB2 24               (   ship_model.asm):00070         SHIP_NE         FCB     36
+2AB3                  (   ship_model.asm):00071         SHIP_E
+2AB3 01020006         (   ship_model.asm):00072                         FCB     1,2,0,6         ; faces 0,6
+2AB7 00010005         (   ship_model.asm):00073                         FCB     0,1,0,5         ; faces 0,5
+2ABB 00020001         (   ship_model.asm):00074                         FCB     0,2,0,1         ; faces 0,1
+2ABF 02030107         (   ship_model.asm):00075                         FCB     2,3,1,7         ; faces 1,7
+2AC3 00030102         (   ship_model.asm):00076                         FCB     0,3,1,2         ; faces 1,2
+2AC7 03040208         (   ship_model.asm):00077                         FCB     3,4,2,8         ; faces 2,8
+2ACB 00040203         (   ship_model.asm):00078                         FCB     0,4,2,3         ; faces 2,3
+2ACF 04050309         (   ship_model.asm):00079                         FCB     4,5,3,9         ; faces 3,9
+2AD3 00050304         (   ship_model.asm):00080                         FCB     0,5,3,4         ; faces 3,4
+2AD7 0506040A         (   ship_model.asm):00081                         FCB     5,6,4,10        ; faces 4,10
+2ADB 00060405         (   ship_model.asm):00082                         FCB     0,6,4,5         ; faces 4,5
+2ADF 0106050B         (   ship_model.asm):00083                         FCB     1,6,5,11        ; faces 5,11
+2AE3 02080607         (   ship_model.asm):00084                         FCB     2,8,6,7         ; faces 6,7
+2AE7 0708060C         (   ship_model.asm):00085                         FCB     7,8,6,12        ; faces 6,12
+2AEB 0107060B         (   ship_model.asm):00086                         FCB     1,7,6,11        ; faces 6,11
+2AEF 03090708         (   ship_model.asm):00087                         FCB     3,9,7,8         ; faces 7,8
+2AF3 0809070C         (   ship_model.asm):00088                         FCB     8,9,7,12        ; faces 7,12
+2AF7 040A0809         (   ship_model.asm):00089                         FCB     4,10,8,9        ; faces 8,9
+2AFB 090A080C         (   ship_model.asm):00090                         FCB     9,10,8,12       ; faces 8,12
+2AFF 050B090A         (   ship_model.asm):00091                         FCB     5,11,9,10       ; faces 9,10
+2B03 0A0B090C         (   ship_model.asm):00092                         FCB     10,11,9,12      ; faces 9,12
+2B07 060C0A0B         (   ship_model.asm):00093                         FCB     6,12,10,11      ; faces 10,11
+2B0B 0B0C0A0C         (   ship_model.asm):00094                         FCB     11,12,10,12     ; faces 10,12
+2B0F 070C0B0C         (   ship_model.asm):00095                         FCB     7,12,11,12      ; faces 11,12
+2B13 0D0E0C0C         (   ship_model.asm):00096                         FCB     13,14,12,12     ; decal on face 12
+2B17 0E0F0C0C         (   ship_model.asm):00097                         FCB     14,15,12,12     ; decal on face 12
+2B1B 0F100C0C         (   ship_model.asm):00098                         FCB     15,16,12,12     ; decal on face 12
+2B1F 100D0C0C         (   ship_model.asm):00099                         FCB     16,13,12,12     ; decal on face 12
+2B23 11120C0C         (   ship_model.asm):00100                         FCB     17,18,12,12     ; decal on face 12
+2B27 12130C0C         (   ship_model.asm):00101                         FCB     18,19,12,12     ; decal on face 12
+2B2B 13140C0C         (   ship_model.asm):00102                         FCB     19,20,12,12     ; decal on face 12
+2B2F 14110C0C         (   ship_model.asm):00103                         FCB     20,17,12,12     ; decal on face 12
+2B33 15160101         (   ship_model.asm):00104                         FCB     21,22,1,1       ; decal on face 1
+2B37 16170101         (   ship_model.asm):00105                         FCB     22,23,1,1       ; decal on face 1
+2B3B 17180101         (   ship_model.asm):00106                         FCB     23,24,1,1       ; decal on face 1
+2B3F 18150101         (   ship_model.asm):00107                         FCB     24,21,1,1       ; decal on face 1
                       (    demo/ship.asm):00469                         INCLUDE "cube_tables.asm"
                       (  cube_tables.asm):00001         ; Generated tables (see tools/gen_cube_tables.py)
                       (  cube_tables.asm):00002         
                       (  cube_tables.asm):00003         ; SINTAB: 127*sin(2*pi*i/256), signed
-2343 000306090C101316 (  cube_tables.asm):00004         SINTAB          FCB     $00,$03,$06,$09,$0C,$10,$13,$16,$19,$1C,$1F,$22,$25,$28,$2B,$2E
+2B43 000306090C101316 (  cube_tables.asm):00004         SINTAB          FCB     $00,$03,$06,$09,$0C,$10,$13,$16,$19,$1C,$1F,$22,$25,$28,$2B,$2E
      191C1F2225282B2E
-2353 313336393C3F4144 (  cube_tables.asm):00005                         FCB     $31,$33,$36,$39,$3C,$3F,$41,$44,$47,$49,$4C,$4E,$51,$53,$55,$58
+2B53 313336393C3F4144 (  cube_tables.asm):00005                         FCB     $31,$33,$36,$39,$3C,$3F,$41,$44,$47,$49,$4C,$4E,$51,$53,$55,$58
      47494C4E51535558
-2363 5A5C5E6062646668 (  cube_tables.asm):00006                         FCB     $5A,$5C,$5E,$60,$62,$64,$66,$68,$6A,$6B,$6D,$6F,$70,$71,$73,$74
+2B63 5A5C5E6062646668 (  cube_tables.asm):00006                         FCB     $5A,$5C,$5E,$60,$62,$64,$66,$68,$6A,$6B,$6D,$6F,$70,$71,$73,$74
      6A6B6D6F70717374
-2373 757678797A7A7B7C (  cube_tables.asm):00007                         FCB     $75,$76,$78,$79,$7A,$7A,$7B,$7C,$7D,$7D,$7E,$7E,$7E,$7F,$7F,$7F
+2B73 757678797A7A7B7C (  cube_tables.asm):00007                         FCB     $75,$76,$78,$79,$7A,$7A,$7B,$7C,$7D,$7D,$7E,$7E,$7E,$7F,$7F,$7F
      7D7D7E7E7E7F7F7F
-2383 7F7F7F7F7E7E7E7D (  cube_tables.asm):00008                         FCB     $7F,$7F,$7F,$7F,$7E,$7E,$7E,$7D,$7D,$7C,$7B,$7A,$7A,$79,$78,$76
+2B83 7F7F7F7F7E7E7E7D (  cube_tables.asm):00008                         FCB     $7F,$7F,$7F,$7F,$7E,$7E,$7E,$7D,$7D,$7C,$7B,$7A,$7A,$79,$78,$76
      7D7C7B7A7A797876
-2393 75747371706F6D6B (  cube_tables.asm):00009                         FCB     $75,$74,$73,$71,$70,$6F,$6D,$6B,$6A,$68,$66,$64,$62,$60,$5E,$5C
+2B93 75747371706F6D6B (  cube_tables.asm):00009                         FCB     $75,$74,$73,$71,$70,$6F,$6D,$6B,$6A,$68,$66,$64,$62,$60,$5E,$5C
      6A68666462605E5C
-23A3 5A585553514E4C49 (  cube_tables.asm):00010                         FCB     $5A,$58,$55,$53,$51,$4E,$4C,$49,$47,$44,$41,$3F,$3C,$39,$36,$33
+2BA3 5A585553514E4C49 (  cube_tables.asm):00010                         FCB     $5A,$58,$55,$53,$51,$4E,$4C,$49,$47,$44,$41,$3F,$3C,$39,$36,$33
      4744413F3C393633
-23B3 312E2B2825221F1C (  cube_tables.asm):00011                         FCB     $31,$2E,$2B,$28,$25,$22,$1F,$1C,$19,$16,$13,$10,$0C,$09,$06,$03
+2BB3 312E2B2825221F1C (  cube_tables.asm):00011                         FCB     $31,$2E,$2B,$28,$25,$22,$1F,$1C,$19,$16,$13,$10,$0C,$09,$06,$03
      191613100C090603
-23C3 00FDFAF7F4F0EDEA (  cube_tables.asm):00012                         FCB     $00,$FD,$FA,$F7,$F4,$F0,$ED,$EA,$E7,$E4,$E1,$DE,$DB,$D8,$D5,$D2
+2BC3 00FDFAF7F4F0EDEA (  cube_tables.asm):00012                         FCB     $00,$FD,$FA,$F7,$F4,$F0,$ED,$EA,$E7,$E4,$E1,$DE,$DB,$D8,$D5,$D2
      E7E4E1DEDBD8D5D2
-23D3 CFCDCAC7C4C1BFBC (  cube_tables.asm):00013                         FCB     $CF,$CD,$CA,$C7,$C4,$C1,$BF,$BC,$B9,$B7,$B4,$B2,$AF,$AD,$AB,$A8
+2BD3 CFCDCAC7C4C1BFBC (  cube_tables.asm):00013                         FCB     $CF,$CD,$CA,$C7,$C4,$C1,$BF,$BC,$B9,$B7,$B4,$B2,$AF,$AD,$AB,$A8
      B9B7B4B2AFADABA8
-23E3 A6A4A2A09E9C9A98 (  cube_tables.asm):00014                         FCB     $A6,$A4,$A2,$A0,$9E,$9C,$9A,$98,$96,$95,$93,$91,$90,$8F,$8D,$8C
+2BE3 A6A4A2A09E9C9A98 (  cube_tables.asm):00014                         FCB     $A6,$A4,$A2,$A0,$9E,$9C,$9A,$98,$96,$95,$93,$91,$90,$8F,$8D,$8C
      96959391908F8D8C
-23F3 8B8A888786868584 (  cube_tables.asm):00015                         FCB     $8B,$8A,$88,$87,$86,$86,$85,$84,$83,$83,$82,$82,$82,$81,$81,$81
+2BF3 8B8A888786868584 (  cube_tables.asm):00015                         FCB     $8B,$8A,$88,$87,$86,$86,$85,$84,$83,$83,$82,$82,$82,$81,$81,$81
      8383828282818181
-2403 8181818182828283 (  cube_tables.asm):00016                         FCB     $81,$81,$81,$81,$82,$82,$82,$83,$83,$84,$85,$86,$86,$87,$88,$8A
+2C03 8181818182828283 (  cube_tables.asm):00016                         FCB     $81,$81,$81,$81,$82,$82,$82,$83,$83,$84,$85,$86,$86,$87,$88,$8A
      838485868687888A
-2413 8B8C8D8F90919395 (  cube_tables.asm):00017                         FCB     $8B,$8C,$8D,$8F,$90,$91,$93,$95,$96,$98,$9A,$9C,$9E,$A0,$A2,$A4
+2C13 8B8C8D8F90919395 (  cube_tables.asm):00017                         FCB     $8B,$8C,$8D,$8F,$90,$91,$93,$95,$96,$98,$9A,$9C,$9E,$A0,$A2,$A4
      96989A9C9EA0A2A4
-2423 A6A8ABADAFB2B4B7 (  cube_tables.asm):00018                         FCB     $A6,$A8,$AB,$AD,$AF,$B2,$B4,$B7,$B9,$BC,$BF,$C1,$C4,$C7,$CA,$CD
+2C23 A6A8ABADAFB2B4B7 (  cube_tables.asm):00018                         FCB     $A6,$A8,$AB,$AD,$AF,$B2,$B4,$B7,$B9,$BC,$BF,$C1,$C4,$C7,$CA,$CD
      B9BCBFC1C4C7CACD
-2433 CFD2D5D8DBDEE1E4 (  cube_tables.asm):00019                         FCB     $CF,$D2,$D5,$D8,$DB,$DE,$E1,$E4,$E7,$EA,$ED,$F0,$F4,$F7,$FA,$FD
+2C33 CFD2D5D8DBDEE1E4 (  cube_tables.asm):00019                         FCB     $CF,$D2,$D5,$D8,$DB,$DE,$E1,$E4,$E7,$EA,$ED,$F0,$F4,$F7,$FA,$FD
      E7EAEDF0F4F7FAFD
                       (  cube_tables.asm):00020         
                       (  cube_tables.asm):00021         ; RXTAB/RYTAB: projection scale for depth z, indexed by z+64
                       (  cube_tables.asm):00022         ;   RX = 57*128/(100+z)  (x scale includes ~0.8 aspect correction)
                       (  cube_tables.asm):00023         ;   RY = 70*128/(100+z)
-2443 CBC5C0BBB6B2AEAA (  cube_tables.asm):00024         RXTAB           FCB     $CB,$C5,$C0,$BB,$B6,$B2,$AE,$AA,$A6,$A2,$9F,$9B,$98,$95,$92,$8F
+2C43 CBC5C0BBB6B2AEAA (  cube_tables.asm):00024         RXTAB           FCB     $CB,$C5,$C0,$BB,$B6,$B2,$AE,$AA,$A6,$A2,$9F,$9B,$98,$95,$92,$8F
      A6A29F9B9895928F
-2453 8C8A878582807E7C (  cube_tables.asm):00025                         FCB     $8C,$8A,$87,$85,$82,$80,$7E,$7C,$7A,$78,$76,$74,$72,$70,$6F,$6D
+2C53 8C8A878582807E7C (  cube_tables.asm):00025                         FCB     $8C,$8A,$87,$85,$82,$80,$7E,$7C,$7A,$78,$76,$74,$72,$70,$6F,$6D
      7A78767472706F6D
-2463 6B6A686765646361 (  cube_tables.asm):00026                         FCB     $6B,$6A,$68,$67,$65,$64,$63,$61,$60,$5F,$5E,$5C,$5B,$5A,$59,$58
+2C63 6B6A686765646361 (  cube_tables.asm):00026                         FCB     $6B,$6A,$68,$67,$65,$64,$63,$61,$60,$5F,$5E,$5C,$5B,$5A,$59,$58
      605F5E5C5B5A5958
-2473 5756555453525150 (  cube_tables.asm):00027                         FCB     $57,$56,$55,$54,$53,$52,$51,$50,$4F,$4E,$4E,$4D,$4C,$4B,$4A,$4A
+2C73 5756555453525150 (  cube_tables.asm):00027                         FCB     $57,$56,$55,$54,$53,$52,$51,$50,$4F,$4E,$4E,$4D,$4C,$4B,$4A,$4A
      4F4E4E4D4C4B4A4A
-2483 4948484746454544 (  cube_tables.asm):00028                         FCB     $49,$48,$48,$47,$46,$45,$45,$44,$44,$43,$42,$42,$41,$41,$40,$3F
+2C83 4948484746454544 (  cube_tables.asm):00028                         FCB     $49,$48,$48,$47,$46,$45,$45,$44,$44,$43,$42,$42,$41,$41,$40,$3F
      444342424141403F
-2493 3F3E3E3D3D3C3C3B (  cube_tables.asm):00029                         FCB     $3F,$3E,$3E,$3D,$3D,$3C,$3C,$3B,$3B,$3A,$3A,$39,$39,$39,$38,$38
+2C93 3F3E3E3D3D3C3C3B (  cube_tables.asm):00029                         FCB     $3F,$3E,$3E,$3D,$3D,$3C,$3C,$3B,$3B,$3A,$3A,$39,$39,$39,$38,$38
      3B3A3A3939393838
-24A3 3737363636353534 (  cube_tables.asm):00030                         FCB     $37,$37,$36,$36,$36,$35,$35,$34,$34,$34,$33,$33,$33,$32,$32,$32
+2CA3 3737363636353534 (  cube_tables.asm):00030                         FCB     $37,$37,$36,$36,$36,$35,$35,$34,$34,$34,$33,$33,$33,$32,$32,$32
      3434333333323232
-24B3 3131313030302F2F (  cube_tables.asm):00031                         FCB     $31,$31,$31,$30,$30,$30,$2F,$2F,$2F,$2E,$2E,$2E,$2E,$2D,$2D,$2D
+2CB3 3131313030302F2F (  cube_tables.asm):00031                         FCB     $31,$31,$31,$30,$30,$30,$2F,$2F,$2F,$2E,$2E,$2E,$2E,$2D,$2D,$2D
      2F2E2E2E2E2D2D2D
-24C3 F9F2ECE6E0DBD5D0 (  cube_tables.asm):00032         RYTAB           FCB     $F9,$F2,$EC,$E6,$E0,$DB,$D5,$D0,$CC,$C7,$C3,$BF,$BB,$B7,$B3,$B0
+2CC3 F9F2ECE6E0DBD5D0 (  cube_tables.asm):00032         RYTAB           FCB     $F9,$F2,$EC,$E6,$E0,$DB,$D5,$D0,$CC,$C7,$C3,$BF,$BB,$B7,$B3,$B0
      CCC7C3BFBBB7B3B0
-24D3 ACA9A6A3A09D9A98 (  cube_tables.asm):00033                         FCB     $AC,$A9,$A6,$A3,$A0,$9D,$9A,$98,$95,$93,$91,$8E,$8C,$8A,$88,$86
+2CD3 ACA9A6A3A09D9A98 (  cube_tables.asm):00033                         FCB     $AC,$A9,$A6,$A3,$A0,$9D,$9A,$98,$95,$93,$91,$8E,$8C,$8A,$88,$86
      9593918E8C8A8886
-24E3 8482807E7C7B7977 (  cube_tables.asm):00034                         FCB     $84,$82,$80,$7E,$7C,$7B,$79,$77,$76,$74,$73,$71,$70,$6F,$6D,$6C
+2CE3 8482807E7C7B7977 (  cube_tables.asm):00034                         FCB     $84,$82,$80,$7E,$7C,$7B,$79,$77,$76,$74,$73,$71,$70,$6F,$6D,$6C
      76747371706F6D6C
-24F3 6B69686766656462 (  cube_tables.asm):00035                         FCB     $6B,$69,$68,$67,$66,$65,$64,$62,$61,$60,$5F,$5E,$5D,$5C,$5B,$5B
+2CF3 6B69686766656462 (  cube_tables.asm):00035                         FCB     $6B,$69,$68,$67,$66,$65,$64,$62,$61,$60,$5F,$5E,$5D,$5C,$5B,$5B
      61605F5E5D5C5B5B
-2503 5A59585756555554 (  cube_tables.asm):00036                         FCB     $5A,$59,$58,$57,$56,$55,$55,$54,$53,$52,$51,$51,$50,$4F,$4F,$4E
+2D03 5A59585756555554 (  cube_tables.asm):00036                         FCB     $5A,$59,$58,$57,$56,$55,$55,$54,$53,$52,$51,$51,$50,$4F,$4F,$4E
      53525151504F4F4E
-2513 4D4D4C4B4B4A4949 (  cube_tables.asm):00037                         FCB     $4D,$4D,$4C,$4B,$4B,$4A,$49,$49,$48,$48,$47,$47,$46,$45,$45,$44
+2D13 4D4D4C4B4B4A4949 (  cube_tables.asm):00037                         FCB     $4D,$4D,$4C,$4B,$4B,$4A,$49,$49,$48,$48,$47,$47,$46,$45,$45,$44
      4848474746454544
-2523 4443434242414140 (  cube_tables.asm):00038                         FCB     $44,$43,$43,$42,$42,$41,$41,$40,$40,$40,$3F,$3F,$3E,$3E,$3D,$3D
+2D23 4443434242414140 (  cube_tables.asm):00038                         FCB     $44,$43,$43,$42,$42,$41,$41,$40,$40,$40,$3F,$3F,$3E,$3E,$3D,$3D
      40403F3F3E3E3D3D
-2533 3D3C3C3B3B3B3A3A (  cube_tables.asm):00039                         FCB     $3D,$3C,$3C,$3B,$3B,$3B,$3A,$3A,$39,$39,$39,$38,$38,$38,$37,$37
+2D33 3D3C3C3B3B3B3A3A (  cube_tables.asm):00039                         FCB     $3D,$3C,$3C,$3B,$3B,$3B,$3A,$3A,$39,$39,$39,$38,$38,$38,$37,$37
      3939393838383737
 
 Symbol Table:
 [ G] ACC                              0092
 [ G] ANG_A                            0080
 [ G] ANG_B                            0081
-[ G] BUFFER                           3000
+[ G] BUFFER                           3800
 [ G] CA                               0083
 [ G] CB                               0085
-[ G] CN_LOOP                          20B0
-[ G] CORNERS                          20AA
+[ G] CN_LOOP                          28B0
+[ G] CORNERS                          28AA
 [ G] CX                               0027
 [ G] CY                               0024
-[ G] DONE                             203F
+[ G] DONE                             283F
 [ G] EC                               0099
-[ G] ED_LOOP                          217D
-[ G] ED_NEXT                          21AC
-[ G] EDGES                            2173
+[ G] ED_LOOP                          297D
+[ G] ED_NEXT                          29AC
+[ G] EDGES                            2973
 [ G] EX                               009B
 [ G] EY                               009C
 [ G] EYE_K                            0065
-[ G] EYEC                             2168
+[ G] EYEC                             2968
 [ G] EZ                               009D
-[ G] FACES                            210E
-[ G] FC_LOOP                          2129
-[ G] FC_SET                           2153
-[ G] FC_VIS                           2151
+[ G] FACES                            290E
+[ G] FC_LOOP                          2929
+[ G] FC_SET                           2953
+[ G] FC_VIS                           2951
 [ G] FI                               0098
-[ G] FRAME                            2018
+[ G] FRAME                            2818
 [ G] FRAMES                           009A
-[ G] MATRIX                           2041
+[ G] MATRIX                           2841
 [ G] MROWX                            0086
 [ G] MROWY                            0089
 [ G] MROWZ                            008C
 [ G] MT_A                             0094
 [ G] MT_B                             0095
-[ G] MULS7                            2212
-[ G] PM_1                             2220
-[ G] PMUL                             2217
+[ G] MULS7                            2A12
+[ G] PM_1                             2A20
+[ G] PMUL                             2A17
 [ G] PX                               00A0
 [ G] PY                               00C0
-[ G] RD1_1                            21C2
-[ G] RD1_2                            21C8
-[ G] RD2_1                            21D9
-[ G] RD2_2                            21DF
-[ G] RD3_1                            21F2
-[ G] RD3_2                            21F8
-[ G] ROWDOT                           21B3
-[ G] RXTAB                            2443
-[ G] RYTAB                            24C3
+[ G] RD1_1                            29C2
+[ G] RD1_2                            29C8
+[ G] RD2_1                            29D9
+[ G] RD2_2                            29DF
+[ G] RD3_1                            29F2
+[ G] RD3_2                            29F8
+[ G] ROWDOT                           29B3
+[ G] RXTAB                            2C43
+[ G] RYTAB                            2CC3
 [ G] SA                               0082
 [ G] SB                               0084
-[ G] SHIP_E                           22B3
-[ G] SHIP_F                           2271
-[ G] SHIP_NE                          22B2
-[ G] SHIP_NF                          2270
-[ G] SHIP_NV                          2224
-[ G] SHIP_V                           2225
-[ G] SINTAB                           2343
-[ G] SM_1                             220B
-[ G] SM_2                             2211
-[ G] SMUL16                           2200
+[ G] SHIP_E                           2AB3
+[ G] SHIP_F                           2A71
+[ G] SHIP_NE                          2AB2
+[ G] SHIP_NF                          2A70
+[ G] SHIP_NV                          2A24
+[ G] SHIP_V                           2A25
+[ G] SINTAB                           2B43
+[ G] SM_1                             2A0B
+[ G] SM_2                             2A11
+[ G] SMUL16                           2A00
 [ G] STACK_TOP                        0200
-[ G] START                            2000
+[ G] START                            2800
 [ G] STEP_A                           0001
 [ G] STEP_B                           0002
 [ G] TGL_BASE                         1000
@@ -807,6 +808,7 @@ Symbol Table:
 [ G] TGL_CYAN                         0006
 [ G] TGL_DONE                         101B
 [ G] TGL_EXIT                         1021
+[ G] TGL_FLIPH                        1045
 [ G] TGL_GREEN                        0002
 [ G] TGL_INIT                         1000
 [ G] TGL_INKEY                        101E

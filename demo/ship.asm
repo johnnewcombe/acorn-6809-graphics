@@ -6,8 +6,8 @@
 ;   wireframe with hidden lines removed, so it looks solid.
 ;   Press any key to exit.
 ;
-;   Loading: tgl.bin at $1000 (TGL_BASE below), ship.bin at $2000 (its ORG).
-;   Run from START ($2000). Works with either machine's library build.
+;   Loading: tgl.bin at $1000 (TGL_BASE below), ship.bin at $2800 (its ORG).
+;   Run from START ($2800). Works with either machine's library build.
 ;
 ;   Each frame:
 ;     1. clear the off-screen buffer                       (TGL_CLS)
@@ -67,7 +67,7 @@ TGL_BASE        EQU     $1000
 ; ---------------------------------------------------------------------------
 ; Memory
 ; ---------------------------------------------------------------------------
-BUFFER          EQU     $3000           ; off-screen buffer (960 bytes)
+BUFFER          EQU     $3800           ; off-screen buffer (960 bytes)
 STACK_TOP       EQU     $0200           ; stack $0100-$01FF
 
 ; ---------------------------------------------------------------------------
@@ -112,7 +112,7 @@ PY              EQU     $C0             ; screen y of corners: PX+32, so if X
 VIS             EQU     $E0             ; per face: $FF visible, 0 hidden
                                         ;  (16 bytes)
 
-                ORG     $2000
+                ORG     $2800
 
 ; ---------------------------------------------------------------------------
 ; Set up

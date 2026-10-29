@@ -17,8 +17,8 @@
 ;   than they are tall), so they look round on screen even though they are
 ;   narrower than they are tall in pixels.
 ;
-;   Loading: tgl.bin at $1000 (TGL_BASE below), circles.bin at $2000.
-;   Run from START ($2000). Works with either machine's library build.
+;   Loading: tgl.bin at $1000 (TGL_BASE below), circles.bin at $2800.
+;   Run from START ($2800). Works with either machine's library build.
 ;
 ;   Circle calls: A,B = centre x,y (signed), X = radius (0-127).
 ;
@@ -28,7 +28,7 @@
 TGL_BASE        EQU     $1000
                 INCLUDE "tgl_api.inc"
 
-BUFFER          EQU     $3000           ; off-screen buffer (960 bytes)
+BUFFER          EQU     $3800           ; off-screen buffer (960 bytes)
 STACK_TOP       EQU     $0200           ; stack $0100-$01FF
 
 CX              EQU     38              ; centre of the ripples
@@ -58,7 +58,7 @@ BAND            EQU     $89             ; band being coloured, 0-5
 NBANDS          EQU     6               ; six bands of four rows = 24 rows
 CYCLE           EQU     4               ; frames between rainbow moves
 
-                ORG     $2000
+                ORG     $2800
 
 START           LDS     #STACK_TOP
                 CLRA                    ; DP = $00 for the library

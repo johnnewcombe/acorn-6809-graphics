@@ -34,11 +34,11 @@ tgl, demo, vdu, done = sys.argv[1], sys.argv[2], int(sys.argv[3], 16), int(sys.a
 mem = Memory(Cfg({"verbosity": None, "trace": None}))
 cpu = CPU(mem, Cfg({"verbosity": None, "trace": None}))
 mem.load(0x1000, bytearray(open(tgl, "rb").read()))
-mem.load(0x2000, bytearray(open(demo, "rb").read()))
+mem.load(0x2800, bytearray(open(demo, "rb").read()))
 # There is no VIA here: hold Timer 2's "timed out" flag set so TGL_PACE
 # never waits (it would otherwise wait for ever)
 mem.load(0x0980 + 0xD, bytearray([0x20]))
-cpu.test_run(0x2000, done)
+cpu.test_run(0x2800, done)
 
 scr = [mem.read_byte(vdu + i) for i in range(960)]
 bits = [(0, 0x01), (1, 0x02), (0, 0x04), (1, 0x08), (0, 0x10), (1, 0x40)]

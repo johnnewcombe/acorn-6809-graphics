@@ -6,7 +6,7 @@
 ;   so you can follow the faces round as it turns, with the edges drawn on
 ;   top. Press any key to exit.
 ;
-;   Loading: tgl.bin at $1000, cubep.bin at $2000. Run from START ($2000).
+;   Loading: tgl.bin at $1000, cubep.bin at $2800. Run from START ($2800).
 ;
 ;   Shares its code with cube.asm (see there for the list): the face
 ;   filling is in cube_fill.asm, the rest in cube_core.asm.
@@ -26,7 +26,7 @@
 PACE_TICKS      EQU     3               ; frame length in 50Hz ticks: 3 =
                                         ;  about 17 frames per second
 
-                ORG     $2000
+                ORG     $2800
 
 ; ---------------------------------------------------------------------------
 ; Set up
@@ -38,7 +38,7 @@ START           LDS     #STACK_TOP
                 ANDCC   #$EF            ; enable IRQs: the keyboard is read
                                         ;  under interrupt
                 JSR     TGL_INIT        ; reset CRTC start, hide cursor
-                LDX     #BUFFER         ; draw into our buffer at $3000
+                LDX     #BUFFER         ; draw into our buffer at $3800
                 JSR     TGL_SETBUF
                 CLR     <ANG_A          ; start square-on, mid zoom
                 CLR     <ANG_B
@@ -100,10 +100,10 @@ FACEPAT         FCB     TGL_PAT_SOLID           ; +x
                 FCB     TGL_PAT_75              ; -z
 
 ; Status row title. $86 cyan, $83 yellow text codes.
-TITLE           FCB     $83
-                FCC     "CUBE DEMO"
-                FCB     $86
-                FCC     "PATTERNS"
+TITLE           FCB     $86
+                FCC     "PATTERNED CUBE"
+                FCB     $83
+                FCC     "ANY KEY EXITS"
                 FCB     0
 
                 INCLUDE "cube_fill.asm"

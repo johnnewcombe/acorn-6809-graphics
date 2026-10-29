@@ -1,5 +1,7 @@
 # Acorn System 3 6809 Teletext Graphics Library
 
+![Circles](demo/circles-demo.gif)
+
 The library follows the Bitshifters' teletextr routines (Kieran Connell and
 Simon Morris, adapted from Bresenham routines by Rich Talbot-Watkins) see _Credits_ and uses
 the Sixel graphics of the Acorn teletext VDU (6845 + SAA5050) on 6809-based
@@ -28,6 +30,7 @@ inserted in disk 1, the following commands will load the graphics library and de
     make ship       # spaceship demo only
     make boxes      # rectangles demo only
     make circles    # circles demo only
+    make flip       # flip-screen demo only
     make SAFE=1     # range-checked build (see below)
     make NOPACE=1   # TGL_PACE does nothing and never touches the VIA timer
     make test       # build, put the FLEX library and demos on TGL.dsk,
@@ -36,8 +39,8 @@ inserted in disk 1, the following commands will load the graphics library and de
 
 Output is raw binary: `build/sys3/tgl.bin`, `build/flex/tgl.bin`,
 `build/demo.bin`, `build/cube.bin`, `build/cubep.bin`, `build/cubed.bin`,
-`build/ship.bin`, `build/boxes.bin` and `build/circles.bin`, with listings
-alongside.
+`build/ship.bin`, `build/boxes.bin`, `build/circles.bin` and
+`build/flip.bin`, with listings alongside.
 
 ### Safe builds
 
@@ -58,9 +61,10 @@ an option has changed. When switching between build options, use
 
 ## Demos
 
-All the demos expect the library at $1000 and load at $2000, using a buffer
-at $3000. They work with either target's library build. Press any key to
-exit (in `cube.bin`, any key except space).
+All the demos expect the library at $1000 and load at $2800, using a buffer
+at $3800. (The library may grow to 6K, $1000-$27FF; the build stops with an
+error if it gets any larger.) They work with either target's library build.
+Press any key to exit (in `cube.bin`, any key except space).
 
 - `demo.bin` - border and starburst drawn with `TGL_LINE`
 - `cube.bin` - a tumbling, zooming cube with hidden lines removed, so it
@@ -83,7 +87,7 @@ exit (in `cube.bin`, any key except space).
 
 __Rotating Cube Demo.__
 
-![cube-with-clipping.png](demo/cube-demo.gif)
+![Cube](demo/cube-demo.gif)
 
 - `ship.bin` - an original spaceship design, the "Kestrel" courier,
   tumbling in perspective with hidden lines removed so it looks solid.
@@ -94,7 +98,7 @@ __Rotating Cube Demo.__
 
 __Rotating Space Ship Demo.__
 
-![ship-with-visible-plots-only.png](demo/ship-demo.gif)
+![Space Ship](demo/ship-demo.gif)
 
 - `boxes.bin` - four filled boxes drift and bounce in XOR mode, so their
   overlaps cancel out, sliding partly off the screen edges to show the
@@ -104,16 +108,30 @@ __Rotating Space Ship Demo.__
 
 __Boxes Demo__
 
-![ship-with-visible-plots-only.png](demo/boxes-demo.gif)
+![Boxes](demo/boxes-demo.gif)
 
 - `circles.bin` - a filled ball bounces around, partly off the edges,
   while rings ripple outwards from the centre, all in XOR so the rings
   invert where they cross the ball. Six rainbow colour bands scroll slowly
   down the screen, with a coloured title on the status row.
 
-__Cirlcles Demo__
+__Circles Demo__
 
-![ship-with-visible-plots-only.png](demo/circles-demo.gif)
+![Circles](demo/circles-demo.gif)
+
+- `flip.bin` - a lopsided picture (a letter F, an arrow and a ball) that
+  `TGL_FLIPH` turns over every couple of seconds, like a card: it narrows
+  to the centre line and opens out again mirror-reversed.
+
+__Horizontal Flip Demo__
+
+![Flip](demo/flip-demo.gif)
+
+- `flip.bin` - a lopsided picture (a letter F, an arrow and a ball) that
+  `TGL_FLIPH` turns over every couple of seconds, like a card: it narrows
+  to the centre line and opens out again mirror-reversed.
+
+![Circles](demo/flip-demo.gif)
 
 ## Using the Library
 
@@ -161,6 +179,7 @@ the binaries differ, so position independence can't silently break.
 | TGL_PACE    | +60    | Steady frame rate: A = frame length in 50Hz ticks (1-3) |
 | TGL_POLYF   | +63    | Filled convex polygon: X -> corner count, then x,y pairs (signed) |
 | TGL_SETPAT  | +66    | Fill pattern for TGL_POLYF and TGL_CIRCF: A = 0-15 (2x2 pixels) |
+| TGL_FLIPH   | +69    | Card-turn flip of the buffer, left to right: A = 50Hz ticks per frame (1-3) |
 
 `TGL_PLOT` and `TGL_LINE` do not range-check, for speed. `TGL_PLOTC` and
 `TGL_LINEC` accept signed coordinates and draw only what is on screen;
@@ -238,6 +257,19 @@ bit 1 odd x, even y; bit 2 even x, odd y; bit 3 odd x, odd y).
 `TGL_PAT_50` (checkerboard), `TGL_PAT_25`, `TGL_PAT_HLINES`,
 `TGL_PAT_VLINES` and `TGL_PAT_EMPTY`. Outlines, lines, plots and rectangles
 are always solid. `TGL_INIT` sets solid.
+
+`TGL_FLIPH` turns the picture in the buffer over left-to-right as an
+animated card turn, for splash screens and the like: the picture narrows
+towards the centre line (following a cosine curve, the way a turning card
+looks), goes edge-on, and opens out again mirror-reversed. It draws 15
+frames straight onto the screen, pixel-smooth, each paced with `TGL_PACE`:
+A is the frame length in 50Hz ticks, so 2 takes about 0.7 seconds and 3
+about 1 second (a `NOPACE` build runs it as fast as it can). Afterwards the
+buffer holds the mirror image and the screen shows it, so a second flip
+turns it back. Row colours are unchanged. It works on the library's own
+graphics: teletext text can't be mirrored (the SAA5050 has no reversed
+characters), and control codes part-way along a row would end up in the
+wrong place. It uses about 90 bytes of stack.
 
 Cycle figures in this README come from the Python emulator used for
 testing, which adds a cycle for every memory read on top of each

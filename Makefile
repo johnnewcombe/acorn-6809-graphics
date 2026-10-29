@@ -30,6 +30,7 @@ CUBED	 = ./build/cubed.bin
 SHIP	 = ./build/ship.bin
 BOXES	 = ./build/boxes.bin
 CIRCLES	 = ./build/circles.bin
+FLIP	 = ./build/flip.bin
 TGL 	 = ./build/flex/tgl.bin
 DESTDISK = ./mame/disks/TGL.dsk
 TOOLS	 = ./tools
@@ -38,9 +39,9 @@ TOOLS	 = ./tools
 PIC_A    = 0x1000
 PIC_B    = 0x2345
 
-.PHONY: all sys3 flex demo cube cubep cubed ship boxes circles test clean
+.PHONY: all sys3 flex demo cube cubep cubed ship boxes circles flip test clean
 
-all: sys3 flex demo cube cubep cubed ship boxes circles
+all: sys3 flex demo cube cubep cubed ship boxes circles flip
 
 sys3: build/sys3/tgl.bin
 flex: build/flex/tgl.bin
@@ -51,6 +52,7 @@ cubed: build/cubed.bin
 ship: build/ship.bin
 boxes: build/boxes.bin
 circles: build/circles.bin
+flip: build/flip.bin
 
 build/sys3/tgl.bin: $(SRC)
 	@mkdir -p $(@D)
@@ -90,6 +92,10 @@ build/cubed.bin: demo/cubed.asm demo/cube_fill.asm $(CUBE_SHARED)
 	@mkdir -p $(@D)
 	$(LWASM) $(LWFLAGS) -I demo --output=$@ --list=build/cubed.lst --symbols demo/cubed.asm
 
+build/flip.bin: demo/flip.asm src/tgl_api.inc
+	@mkdir -p $(@D)
+	$(LWASM) $(LWFLAGS) -I demo --output=$@ --list=build/flip.lst --symbols demo/flip.asm
+
 build/circles.bin: demo/circles.asm src/tgl_api.inc
 	@mkdir -p $(@D)
 	$(LWASM) $(LWFLAGS) -I demo --output=$@ --list=build/circles.lst --symbols demo/circles.asm
@@ -103,7 +109,7 @@ build/ship.bin: demo/ship.asm demo/ship_model.asm demo/cube_tables.asm src/tgl_a
 	$(LWASM) $(LWFLAGS) -I demo --output=$@ --list=build/ship.lst --symbols demo/ship.asm
 
 
-test: flex demo cube cubep cubed ship boxes circles
+test: flex demo cube cubep cubed ship boxes circles flip
 	# create a FLEX .dsk image
 	# delete any previous file
 	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(DEMO)
@@ -113,16 +119,18 @@ test: flex demo cube cubep cubed ship boxes circles
 	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(SHIP)
 	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(BOXES)
 	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(CIRCLES)
+	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(FLIP)
 	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(TGL)
 
 	# add the newly built file, this will be in raw binary format
-	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(DEMO) -l 0x2000 -t 0x2000
-	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(CUBE) -l 0x2000 -t 0x2000
-	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(CUBEP) -l 0x2000 -t 0x2000
-	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(CUBED) -l 0x2000 -t 0x2000
-	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(SHIP) -l 0x2000 -t 0x2000
-	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(BOXES) -l 0x2000 -t 0x2000
-	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(CIRCLES) -l 0x2000 -t 0x2000
+	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(DEMO) -l 0x2800 -t 0x2800
+	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(CUBE) -l 0x2800 -t 0x2800
+	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(CUBEP) -l 0x2800 -t 0x2800
+	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(CUBED) -l 0x2800 -t 0x2800
+	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(SHIP) -l 0x2800 -t 0x2800
+	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(BOXES) -l 0x2800 -t 0x2800
+	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(CIRCLES) -l 0x2800 -t 0x2800
+	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(FLIP) -l 0x2800 -t 0x2800
 	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(TGL) -l 0x1000 -t 0x1000
 
 	# validate the disk

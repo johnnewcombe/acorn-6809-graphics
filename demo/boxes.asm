@@ -9,8 +9,8 @@
 ;   wherever a box crosses them. The status row below the graphics shows a
 ;   coloured title and a frame counter. Press any key to exit.
 ;
-;   Loading: tgl.bin at $1000 (TGL_BASE below), boxes.bin at $2000.
-;   Run from START ($2000). Works with either machine's library build.
+;   Loading: tgl.bin at $1000 (TGL_BASE below), boxes.bin at $2800.
+;   Run from START ($2800). Works with either machine's library build.
 ;
 ;   Rectangle calls take two opposite corners: A,B = x0,y0 and
 ;   X = x1:y1 (x1 in the high byte), signed, in any order.
@@ -21,7 +21,7 @@
 TGL_BASE        EQU     $1000
                 INCLUDE "tgl_api.inc"
 
-BUFFER          EQU     $3000           ; off-screen buffer (960 bytes)
+BUFFER          EQU     $3800           ; off-screen buffer (960 bytes)
 STACK_TOP       EQU     $0200           ; stack $0100-$01FF
 
 ; How far beyond the screen the boxes may travel before bouncing
@@ -36,7 +36,7 @@ FRAMES          EQU     $81             ; frame counter (test builds)
 FCOUNT          EQU     $82             ; frame counter shown on the status
                                         ;  row (16 bits, $82-$83)
 
-                ORG     $2000
+                ORG     $2800
 
 START           LDS     #STACK_TOP
                 CLRA                    ; DP = $00 for the library

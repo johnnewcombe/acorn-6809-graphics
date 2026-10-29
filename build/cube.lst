@@ -7,7 +7,7 @@
                       (    demo/cube.asm):00007         ;   (to see the full wireframe); any other key exits.
                       (    demo/cube.asm):00008         ;
                       (    demo/cube.asm):00009         ;   Loading: tgl.bin at $1000 (TGL_BASE in cube_defs.inc), cube.bin at
-                      (    demo/cube.asm):00010         ;   $2000 (its ORG). Run from START ($2000). Works with either machine's
+                      (    demo/cube.asm):00010         ;   $2800 (its ORG). Run from START ($2800). Works with either machine's
                       (    demo/cube.asm):00011         ;   library build.
                       (    demo/cube.asm):00012         ;
                       (    demo/cube.asm):00013         ;   This is the simplest of three cube demos sharing the same code:
@@ -75,36 +75,37 @@
      103C             (      tgl_api.inc):00029         TGL_PACE        EQU     TGL_BASE+60     ; steady frame rate: A = 50Hz ticks (1-3)
      103F             (      tgl_api.inc):00030         TGL_POLYF       EQU     TGL_BASE+63     ; filled convex polygon: X -> n, x0,y0, ...
      1042             (      tgl_api.inc):00031         TGL_SETPAT      EQU     TGL_BASE+66     ; fill pattern: A = 0-15 (2x2 pixels)
-                      (      tgl_api.inc):00032         
-     03C0             (      tgl_api.inc):00033         TGL_BUFSIZE     EQU     960
-     0000             (      tgl_api.inc):00034         TGL_MODE_SET    EQU     0
-     0001             (      tgl_api.inc):00035         TGL_MODE_CLEAR  EQU     1
-     0002             (      tgl_api.inc):00036         TGL_MODE_XOR    EQU     2
-                      (      tgl_api.inc):00037         
-                      (      tgl_api.inc):00038         ; Colours for TGL_COLOUR
-     0001             (      tgl_api.inc):00039         TGL_RED         EQU     1
-     0002             (      tgl_api.inc):00040         TGL_GREEN       EQU     2
-     0003             (      tgl_api.inc):00041         TGL_YELLOW      EQU     3
-     0004             (      tgl_api.inc):00042         TGL_BLUE        EQU     4
-     0005             (      tgl_api.inc):00043         TGL_MAGENTA     EQU     5
-     0006             (      tgl_api.inc):00044         TGL_CYAN        EQU     6
-     0007             (      tgl_api.inc):00045         TGL_WHITE       EQU     7
-                      (      tgl_api.inc):00046         
-                      (      tgl_api.inc):00047         ; Fill patterns for TGL_SETPAT: a 2x2 block of pixels repeated across the
-                      (      tgl_api.inc):00048         ; screen. Bit 0: even x, even y; bit 1: odd x, even y; bit 2: even x,
-                      (      tgl_api.inc):00049         ; odd y; bit 3: odd x, odd y.
-     0000             (      tgl_api.inc):00050         TGL_PAT_EMPTY   EQU     0
-     0001             (      tgl_api.inc):00051         TGL_PAT_25      EQU     %0001           ; one pixel in four
-     0009             (      tgl_api.inc):00052         TGL_PAT_50      EQU     %1001           ; checkerboard
-     000B             (      tgl_api.inc):00053         TGL_PAT_75      EQU     %1011           ; three pixels in four
-     000F             (      tgl_api.inc):00054         TGL_PAT_SOLID   EQU     %1111
-     0003             (      tgl_api.inc):00055         TGL_PAT_HLINES  EQU     %0011           ; horizontal stripes
-     0005             (      tgl_api.inc):00056         TGL_PAT_VLINES  EQU     %0101           ; vertical stripes
+     1045             (      tgl_api.inc):00032         TGL_FLIPH       EQU     TGL_BASE+69     ; card-turn flip: A = ticks per frame
+                      (      tgl_api.inc):00033         
+     03C0             (      tgl_api.inc):00034         TGL_BUFSIZE     EQU     960
+     0000             (      tgl_api.inc):00035         TGL_MODE_SET    EQU     0
+     0001             (      tgl_api.inc):00036         TGL_MODE_CLEAR  EQU     1
+     0002             (      tgl_api.inc):00037         TGL_MODE_XOR    EQU     2
+                      (      tgl_api.inc):00038         
+                      (      tgl_api.inc):00039         ; Colours for TGL_COLOUR
+     0001             (      tgl_api.inc):00040         TGL_RED         EQU     1
+     0002             (      tgl_api.inc):00041         TGL_GREEN       EQU     2
+     0003             (      tgl_api.inc):00042         TGL_YELLOW      EQU     3
+     0004             (      tgl_api.inc):00043         TGL_BLUE        EQU     4
+     0005             (      tgl_api.inc):00044         TGL_MAGENTA     EQU     5
+     0006             (      tgl_api.inc):00045         TGL_CYAN        EQU     6
+     0007             (      tgl_api.inc):00046         TGL_WHITE       EQU     7
+                      (      tgl_api.inc):00047         
+                      (      tgl_api.inc):00048         ; Fill patterns for TGL_SETPAT: a 2x2 block of pixels repeated across the
+                      (      tgl_api.inc):00049         ; screen. Bit 0: even x, even y; bit 1: odd x, even y; bit 2: even x,
+                      (      tgl_api.inc):00050         ; odd y; bit 3: odd x, odd y.
+     0000             (      tgl_api.inc):00051         TGL_PAT_EMPTY   EQU     0
+     0001             (      tgl_api.inc):00052         TGL_PAT_25      EQU     %0001           ; one pixel in four
+     0009             (      tgl_api.inc):00053         TGL_PAT_50      EQU     %1001           ; checkerboard
+     000B             (      tgl_api.inc):00054         TGL_PAT_75      EQU     %1011           ; three pixels in four
+     000F             (      tgl_api.inc):00055         TGL_PAT_SOLID   EQU     %1111
+     0003             (      tgl_api.inc):00056         TGL_PAT_HLINES  EQU     %0011           ; horizontal stripes
+     0005             (      tgl_api.inc):00057         TGL_PAT_VLINES  EQU     %0101           ; vertical stripes
                       (    cube_defs.inc):00011         
                       (    cube_defs.inc):00012         ; ---------------------------------------------------------------------------
                       (    cube_defs.inc):00013         ; Memory
                       (    cube_defs.inc):00014         ; ---------------------------------------------------------------------------
-     3000             (    cube_defs.inc):00015         BUFFER          EQU     $3000           ; off-screen buffer (960 bytes)
+     3800             (    cube_defs.inc):00015         BUFFER          EQU     $3800           ; off-screen buffer (960 bytes)
      0200             (    cube_defs.inc):00016         STACK_TOP       EQU     $0200           ; stack $0100-$01FF
                       (    cube_defs.inc):00017         
                       (    cube_defs.inc):00018         ; ---------------------------------------------------------------------------
@@ -158,67 +159,67 @@
      0002             (    demo/cube.asm):00038         PACE_TICKS      EQU     2               ; frame length in 50Hz ticks: 2 = 25
                       (    demo/cube.asm):00039                                                 ;  frames per second
                       (    demo/cube.asm):00040         
-                      (    demo/cube.asm):00041                         ORG     $2000
+                      (    demo/cube.asm):00041                         ORG     $2800
                       (    demo/cube.asm):00042         
                       (    demo/cube.asm):00043         ; ---------------------------------------------------------------------------
                       (    demo/cube.asm):00044         ; Set up
                       (    demo/cube.asm):00045         ; ---------------------------------------------------------------------------
-2000 10CE0200         (    demo/cube.asm):00046         START           LDS     #STACK_TOP
-2004 4F               (    demo/cube.asm):00047                         CLRA                    ; DP = $00: the library (and our
-2005 1F8B             (    demo/cube.asm):00048                         TFR     A,DP            ;  variables) use direct addressing
+2800 10CE0200         (    demo/cube.asm):00046         START           LDS     #STACK_TOP
+2804 4F               (    demo/cube.asm):00047                         CLRA                    ; DP = $00: the library (and our
+2805 1F8B             (    demo/cube.asm):00048                         TFR     A,DP            ;  variables) use direct addressing
      00               (    demo/cube.asm):00049                         SETDP   $00             ;  in page zero
-2007 1CEF             (    demo/cube.asm):00050                         ANDCC   #$EF            ; enable IRQs: the keyboard is read
+2807 1CEF             (    demo/cube.asm):00050                         ANDCC   #$EF            ; enable IRQs: the keyboard is read
                       (    demo/cube.asm):00051                                                 ;  under interrupt
-2009 BD1000           (    demo/cube.asm):00052                         JSR     TGL_INIT        ; reset CRTC start, hide cursor
-200C 8E3000           (    demo/cube.asm):00053                         LDX     #BUFFER         ; draw into our buffer at $3000
-200F BD1003           (    demo/cube.asm):00054                         JSR     TGL_SETBUF
-2012 0F80             (    demo/cube.asm):00055                         CLR     <ANG_A          ; start square-on, mid zoom
-2014 0F81             (    demo/cube.asm):00056                         CLR     <ANG_B
-2016 0F93             (    demo/cube.asm):00057                         CLR     <FRAMES
-2018 0F95             (    demo/cube.asm):00058                         CLR     <ZOOM
+2809 BD1000           (    demo/cube.asm):00052                         JSR     TGL_INIT        ; reset CRTC start, hide cursor
+280C 8E3800           (    demo/cube.asm):00053                         LDX     #BUFFER         ; draw into our buffer at $3800
+280F BD1003           (    demo/cube.asm):00054                         JSR     TGL_SETBUF
+2812 0F80             (    demo/cube.asm):00055                         CLR     <ANG_A          ; start square-on, mid zoom
+2814 0F81             (    demo/cube.asm):00056                         CLR     <ANG_B
+2816 0F93             (    demo/cube.asm):00057                         CLR     <FRAMES
+2818 0F95             (    demo/cube.asm):00058                         CLR     <ZOOM
                       (    demo/cube.asm):00059                         IFDEF   WIREFRAME
                       (    demo/cube.asm):00060                         LDA     #$FF            ; start showing every edge
                       (    demo/cube.asm):00061                         ELSE
-201A 4F               (    demo/cube.asm):00062                         CLRA                    ; start with hidden lines removed
+281A 4F               (    demo/cube.asm):00062                         CLRA                    ; start with hidden lines removed
                       (    demo/cube.asm):00063                         ENDC
-201B 9799             (    demo/cube.asm):00064                         STA     <WIRE
-201D 4F               (    demo/cube.asm):00065                         CLRA                    ; status row: how to use the keys
-201E 8E2062           (    demo/cube.asm):00066                         LDX     #KEYHELP
-2021 BD1030           (    demo/cube.asm):00067                         JSR     TGL_TEXT
+281B 9799             (    demo/cube.asm):00064                         STA     <WIRE
+281D 4F               (    demo/cube.asm):00065                         CLRA                    ; status row: how to use the keys
+281E 8E2862           (    demo/cube.asm):00066                         LDX     #KEYHELP
+2821 BD1030           (    demo/cube.asm):00067                         JSR     TGL_TEXT
                       (    demo/cube.asm):00068         
                       (    demo/cube.asm):00069         ; ---------------------------------------------------------------------------
                       (    demo/cube.asm):00070         ; Main loop: one pass per frame
                       (    demo/cube.asm):00071         ; ---------------------------------------------------------------------------
-2024 BD1006           (    demo/cube.asm):00072         FRAME           JSR     TGL_CLS         ; blank the buffer
-2027 17004D           (    demo/cube.asm):00073                         LBSR    ZOOMSZ          ; SIZE for this frame
-202A 17005B           (    demo/cube.asm):00074                         LBSR    MATRIX          ; terms TX, TY, TZ for this frame
-202D 17013D           (    demo/cube.asm):00075                         LBSR    CORNERS         ; screen positions PX, PY
-2030 1700F5           (    demo/cube.asm):00076                         LBSR    FACES           ; which faces can be seen
-2033 1701B1           (    demo/cube.asm):00077                         LBSR    EDGES           ; draw into the buffer
-2036 8602             (    demo/cube.asm):00078                         LDA     #PACE_TICKS     ; wait for the frame period, so every
-2038 BD103C           (    demo/cube.asm):00079                         JSR     TGL_PACE        ;  frame takes the same time
-203B BD1012           (    demo/cube.asm):00080                         JSR     TGL_BLIT        ; show it
+2824 BD1006           (    demo/cube.asm):00072         FRAME           JSR     TGL_CLS         ; blank the buffer
+2827 170059           (    demo/cube.asm):00073                         LBSR    ZOOMSZ          ; SIZE for this frame
+282A 170067           (    demo/cube.asm):00074                         LBSR    MATRIX          ; terms TX, TY, TZ for this frame
+282D 170149           (    demo/cube.asm):00075                         LBSR    CORNERS         ; screen positions PX, PY
+2830 170101           (    demo/cube.asm):00076                         LBSR    FACES           ; which faces can be seen
+2833 1701BD           (    demo/cube.asm):00077                         LBSR    EDGES           ; draw into the buffer
+2836 8602             (    demo/cube.asm):00078                         LDA     #PACE_TICKS     ; wait for the frame period, so every
+2838 BD103C           (    demo/cube.asm):00079                         JSR     TGL_PACE        ;  frame takes the same time
+283B BD1012           (    demo/cube.asm):00080                         JSR     TGL_BLIT        ; show it
                       (    demo/cube.asm):00081         
                       (    demo/cube.asm):00082         ; Advance the angles and zoom phase. Being bytes, they wrap from 255 back
                       (    demo/cube.asm):00083         ; to 0 by themselves, which is exactly one full turn.
-203E 9680             (    demo/cube.asm):00084                         LDA     <ANG_A
-2040 8B02             (    demo/cube.asm):00085                         ADDA    #STEP_A
-2042 9780             (    demo/cube.asm):00086                         STA     <ANG_A
-2044 9681             (    demo/cube.asm):00087                         LDA     <ANG_B
-2046 8B03             (    demo/cube.asm):00088                         ADDA    #STEP_B
-2048 9781             (    demo/cube.asm):00089                         STA     <ANG_B
-204A 9695             (    demo/cube.asm):00090                         LDA     <ZOOM
-204C 8B01             (    demo/cube.asm):00091                         ADDA    #STEP_Z
-204E 9795             (    demo/cube.asm):00092                         STA     <ZOOM
+283E 9680             (    demo/cube.asm):00084                         LDA     <ANG_A
+2840 8B02             (    demo/cube.asm):00085                         ADDA    #STEP_A
+2842 9780             (    demo/cube.asm):00086                         STA     <ANG_A
+2844 9681             (    demo/cube.asm):00087                         LDA     <ANG_B
+2846 8B03             (    demo/cube.asm):00088                         ADDA    #STEP_B
+2848 9781             (    demo/cube.asm):00089                         STA     <ANG_B
+284A 9695             (    demo/cube.asm):00090                         LDA     <ZOOM
+284C 8B01             (    demo/cube.asm):00091                         ADDA    #STEP_Z
+284E 9795             (    demo/cube.asm):00092                         STA     <ZOOM
                       (    demo/cube.asm):00093         
                       (    demo/cube.asm):00094         ; Keys: space toggles hidden-line removal, anything else exits.
                       (    demo/cube.asm):00095         ; TGL_INKEY returns Z set if no key is waiting, else the key in A.
-2050 BD101E           (    demo/cube.asm):00096                         JSR     TGL_INKEY
-2053 2708             (    demo/cube.asm):00097                         BEQ     NOKEY
-2055 8120             (    demo/cube.asm):00098                         CMPA    #' '
-2057 1026EFC6         (    demo/cube.asm):00099                         LBNE    TGL_EXIT        ; not space: exit (never returns)
-205B 0399             (    demo/cube.asm):00100                         COM     <WIRE           ; space: 0 <-> $FF
-205D                  (    demo/cube.asm):00101         NOKEY
+2850 BD101E           (    demo/cube.asm):00096                         JSR     TGL_INKEY
+2853 2708             (    demo/cube.asm):00097                         BEQ     NOKEY
+2855 8120             (    demo/cube.asm):00098                         CMPA    #' '
+2857 1026E7C6         (    demo/cube.asm):00099                         LBNE    TGL_EXIT        ; not space: exit (never returns)
+285B 0399             (    demo/cube.asm):00100                         COM     <WIRE           ; space: 0 <-> $FF
+285D                  (    demo/cube.asm):00101         NOKEY
                       (    demo/cube.asm):00102         ; Test builds stop after TESTFRAMES frames so the emulator can inspect
                       (    demo/cube.asm):00103         ; the result. Normal builds skip this.
                       (    demo/cube.asm):00104                         IFDEF   TESTFRAMES
@@ -227,19 +228,21 @@
                       (    demo/cube.asm):00107                         CMPA    #TESTFRAMES
                       (    demo/cube.asm):00108                         BEQ     DONE
                       (    demo/cube.asm):00109                         ENDC
-205D 16FFC4           (    demo/cube.asm):00110                         LBRA    FRAME
-2060 20FE             (    demo/cube.asm):00111         DONE            BRA     DONE
+285D 16FFC4           (    demo/cube.asm):00110                         LBRA    FRAME
+2860 20FE             (    demo/cube.asm):00111         DONE            BRA     DONE
                       (    demo/cube.asm):00112         
                       (    demo/cube.asm):00113         ; Status row help. $83 yellow, $87 white, $86 cyan text codes.
-2062 83               (    demo/cube.asm):00114         KEYHELP         FCB     $83
-2063 435542452044454D (    demo/cube.asm):00115                         FCC     "CUBE DEMO"
-     4F
-206C 86               (    demo/cube.asm):00116                         FCB     $86
-206D 574952454652414D (    demo/cube.asm):00117                         FCC     "WIREFRAME"
+2862 83               (    demo/cube.asm):00114         KEYHELP         FCB     $83
+2863 5350414345       (    demo/cube.asm):00115                         FCC     "SPACE"
+2868 87               (    demo/cube.asm):00116                         FCB     $87
+2869 574952454652414D (    demo/cube.asm):00117                         FCC     "WIREFRAME"
      45
-2076 00               (    demo/cube.asm):00118                         FCB     0
-                      (    demo/cube.asm):00119         
-                      (    demo/cube.asm):00120                         INCLUDE "cube_core.asm"
+2872 86               (    demo/cube.asm):00118                         FCB     $86
+2873 4F54484552204B45 (    demo/cube.asm):00119                         FCC     "OTHER KEY EXITS"
+     59204558495453
+2882 00               (    demo/cube.asm):00120                         FCB     0
+                      (    demo/cube.asm):00121         
+                      (    demo/cube.asm):00122                         INCLUDE "cube_core.asm"
                       (    cube_core.asm):00001         ; ===========================================================================
                       (    cube_core.asm):00002         ; cube_core.asm - the routines and tables shared by the cube demos
                       (    cube_core.asm):00003         ;   (cube.asm, cubep.asm, cubed.asm): zoom, rotation, projection, which
@@ -306,18 +309,18 @@
                       (    cube_core.asm):00064         ;   longer fits the projection tables (-64..63), and projected points no
                       (    cube_core.asm):00065         ;   longer fit the signed -128..127 that TGL_LINEC accepts.
                       (    cube_core.asm):00066         ; ---------------------------------------------------------------------------
-2077 308D01DC         (    cube_core.asm):00067         ZOOMSZ          LEAX    SINTAB,PCR      ; X -> sine table
-207B D695             (    cube_core.asm):00068                         LDB     <ZOOM           ; X -> sin(ZOOM). ABX adds B as an
-207D 3A               (    cube_core.asm):00069                         ABX                     ;  UNSIGNED byte (0-255). "LDA B,X"
+2883 308D01DC         (    cube_core.asm):00067         ZOOMSZ          LEAX    SINTAB,PCR      ; X -> sine table
+2887 D695             (    cube_core.asm):00068                         LDB     <ZOOM           ; X -> sin(ZOOM). ABX adds B as an
+2889 3A               (    cube_core.asm):00069                         ABX                     ;  UNSIGNED byte (0-255). "LDA B,X"
                       (    cube_core.asm):00070                                                 ;  would treat B as signed and read
                       (    cube_core.asm):00071                                                 ;  before the table for B >= 128
-207E A684             (    cube_core.asm):00072                         LDA     ,X              ; A = sin(ZOOM), -127..127
-2080 47               (    cube_core.asm):00073                         ASRA                    ; divide by 8. ASR keeps the sign bit,
-2081 47               (    cube_core.asm):00074                         ASRA                    ;  so negative numbers stay negative:
-2082 47               (    cube_core.asm):00075                         ASRA                    ;  -127..127 becomes -16..15
-2083 8B15             (    cube_core.asm):00076                         ADDA    #SIZE_MID       ; 5..36
-2085 9794             (    cube_core.asm):00077                         STA     <SIZE
-2087 39               (    cube_core.asm):00078                         RTS
+288A A684             (    cube_core.asm):00072                         LDA     ,X              ; A = sin(ZOOM), -127..127
+288C 47               (    cube_core.asm):00073                         ASRA                    ; divide by 8. ASR keeps the sign bit,
+288D 47               (    cube_core.asm):00074                         ASRA                    ;  so negative numbers stay negative:
+288E 47               (    cube_core.asm):00075                         ASRA                    ;  -127..127 becomes -16..15
+288F 8B15             (    cube_core.asm):00076                         ADDA    #SIZE_MID       ; 5..36
+2891 9794             (    cube_core.asm):00077                         STA     <SIZE
+2893 39               (    cube_core.asm):00078                         RTS
                       (    cube_core.asm):00079         
                       (    cube_core.asm):00080         ; ---------------------------------------------------------------------------
                       (    cube_core.asm):00081         ; MATRIX - work out this frame's nine terms
@@ -338,78 +341,78 @@
                       (    cube_core.asm):00096         
                       (    cube_core.asm):00097         ; Look up the four sines and cosines. Each lookup: X -> table, add the
                       (    cube_core.asm):00098         ; angle (unsigned, via ABX), read the byte. cos uses angle + 64.
-2088 308D01CB         (    cube_core.asm):00099         MATRIX          LEAX    SINTAB,PCR      ; SA = sin(ANG_A)
-208C D680             (    cube_core.asm):00100                         LDB     <ANG_A
-208E 3A               (    cube_core.asm):00101                         ABX
-208F A684             (    cube_core.asm):00102                         LDA     ,X
-2091 9782             (    cube_core.asm):00103                         STA     <SA
-2093 308D01C0         (    cube_core.asm):00104                         LEAX    SINTAB,PCR      ; CA = cos(ANG_A) = sin(ANG_A + 64)
-2097 D680             (    cube_core.asm):00105                         LDB     <ANG_A
-2099 CB40             (    cube_core.asm):00106                         ADDB    #64             ; (wraps round past 255 correctly)
-209B 3A               (    cube_core.asm):00107                         ABX
-209C A684             (    cube_core.asm):00108                         LDA     ,X
-209E 9783             (    cube_core.asm):00109                         STA     <CA
-20A0 308D01B3         (    cube_core.asm):00110                         LEAX    SINTAB,PCR      ; SB = sin(ANG_B)
-20A4 D681             (    cube_core.asm):00111                         LDB     <ANG_B
-20A6 3A               (    cube_core.asm):00112                         ABX
-20A7 A684             (    cube_core.asm):00113                         LDA     ,X
-20A9 9784             (    cube_core.asm):00114                         STA     <SB
-20AB 308D01A8         (    cube_core.asm):00115                         LEAX    SINTAB,PCR      ; CB = cos(ANG_B)
-20AF D681             (    cube_core.asm):00116                         LDB     <ANG_B
-20B1 CB40             (    cube_core.asm):00117                         ADDB    #64
-20B3 3A               (    cube_core.asm):00118                         ABX
-20B4 A684             (    cube_core.asm):00119                         LDA     ,X
-20B6 9785             (    cube_core.asm):00120                         STA     <CB
+2894 308D01CB         (    cube_core.asm):00099         MATRIX          LEAX    SINTAB,PCR      ; SA = sin(ANG_A)
+2898 D680             (    cube_core.asm):00100                         LDB     <ANG_A
+289A 3A               (    cube_core.asm):00101                         ABX
+289B A684             (    cube_core.asm):00102                         LDA     ,X
+289D 9782             (    cube_core.asm):00103                         STA     <SA
+289F 308D01C0         (    cube_core.asm):00104                         LEAX    SINTAB,PCR      ; CA = cos(ANG_A) = sin(ANG_A + 64)
+28A3 D680             (    cube_core.asm):00105                         LDB     <ANG_A
+28A5 CB40             (    cube_core.asm):00106                         ADDB    #64             ; (wraps round past 255 correctly)
+28A7 3A               (    cube_core.asm):00107                         ABX
+28A8 A684             (    cube_core.asm):00108                         LDA     ,X
+28AA 9783             (    cube_core.asm):00109                         STA     <CA
+28AC 308D01B3         (    cube_core.asm):00110                         LEAX    SINTAB,PCR      ; SB = sin(ANG_B)
+28B0 D681             (    cube_core.asm):00111                         LDB     <ANG_B
+28B2 3A               (    cube_core.asm):00112                         ABX
+28B3 A684             (    cube_core.asm):00113                         LDA     ,X
+28B5 9784             (    cube_core.asm):00114                         STA     <SB
+28B7 308D01A8         (    cube_core.asm):00115                         LEAX    SINTAB,PCR      ; CB = cos(ANG_B)
+28BB D681             (    cube_core.asm):00116                         LDB     <ANG_B
+28BD CB40             (    cube_core.asm):00117                         ADDB    #64
+28BF 3A               (    cube_core.asm):00118                         ABX
+28C0 A684             (    cube_core.asm):00119                         LDA     ,X
+28C2 9785             (    cube_core.asm):00120                         STA     <CB
                       (    cube_core.asm):00121         
                       (    cube_core.asm):00122         ; Row x: TX = S * [ cb, 0, sb ]
-20B8 9685             (    cube_core.asm):00123                         LDA     <CB             ; TX+0 = cb * S
-20BA D694             (    cube_core.asm):00124                         LDB     <SIZE
-20BC 8D4F             (    cube_core.asm):00125                         BSR     MULS7
-20BE 9786             (    cube_core.asm):00126                         STA     <TX
-20C0 0F87             (    cube_core.asm):00127                         CLR     <TX+1           ; TX+1 = 0 (this entry is always 0)
-20C2 9684             (    cube_core.asm):00128                         LDA     <SB             ; TX+2 = sb * S
-20C4 D694             (    cube_core.asm):00129                         LDB     <SIZE
-20C6 8D45             (    cube_core.asm):00130                         BSR     MULS7
-20C8 9788             (    cube_core.asm):00131                         STA     <TX+2
+28C4 9685             (    cube_core.asm):00123                         LDA     <CB             ; TX+0 = cb * S
+28C6 D694             (    cube_core.asm):00124                         LDB     <SIZE
+28C8 8D4F             (    cube_core.asm):00125                         BSR     MULS7
+28CA 9786             (    cube_core.asm):00126                         STA     <TX
+28CC 0F87             (    cube_core.asm):00127                         CLR     <TX+1           ; TX+1 = 0 (this entry is always 0)
+28CE 9684             (    cube_core.asm):00128                         LDA     <SB             ; TX+2 = sb * S
+28D0 D694             (    cube_core.asm):00129                         LDB     <SIZE
+28D2 8D45             (    cube_core.asm):00130                         BSR     MULS7
+28D4 9788             (    cube_core.asm):00131                         STA     <TX+2
                       (    cube_core.asm):00132         
                       (    cube_core.asm):00133         ; Row y: TY = S * [ sb*sa, ca, -cb*sa ]
-20CA 9684             (    cube_core.asm):00134                         LDA     <SB             ; TY+0 = (sb * sa) * S
-20CC D682             (    cube_core.asm):00135                         LDB     <SA
-20CE 8D3D             (    cube_core.asm):00136                         BSR     MULS7           ;  A = sb * sa
-20D0 D694             (    cube_core.asm):00137                         LDB     <SIZE
-20D2 8D39             (    cube_core.asm):00138                         BSR     MULS7           ;  A = that * S
-20D4 9789             (    cube_core.asm):00139                         STA     <TY
-20D6 9683             (    cube_core.asm):00140                         LDA     <CA             ; TY+1 = ca * S
-20D8 D694             (    cube_core.asm):00141                         LDB     <SIZE
-20DA 8D31             (    cube_core.asm):00142                         BSR     MULS7
-20DC 978A             (    cube_core.asm):00143                         STA     <TY+1
-20DE 9685             (    cube_core.asm):00144                         LDA     <CB             ; TY+2 = -(cb * sa) * S
-20E0 D682             (    cube_core.asm):00145                         LDB     <SA
-20E2 8D29             (    cube_core.asm):00146                         BSR     MULS7
-20E4 40               (    cube_core.asm):00147                         NEGA
-20E5 D694             (    cube_core.asm):00148                         LDB     <SIZE
-20E7 8D24             (    cube_core.asm):00149                         BSR     MULS7
-20E9 978B             (    cube_core.asm):00150                         STA     <TY+2
+28D6 9684             (    cube_core.asm):00134                         LDA     <SB             ; TY+0 = (sb * sa) * S
+28D8 D682             (    cube_core.asm):00135                         LDB     <SA
+28DA 8D3D             (    cube_core.asm):00136                         BSR     MULS7           ;  A = sb * sa
+28DC D694             (    cube_core.asm):00137                         LDB     <SIZE
+28DE 8D39             (    cube_core.asm):00138                         BSR     MULS7           ;  A = that * S
+28E0 9789             (    cube_core.asm):00139                         STA     <TY
+28E2 9683             (    cube_core.asm):00140                         LDA     <CA             ; TY+1 = ca * S
+28E4 D694             (    cube_core.asm):00141                         LDB     <SIZE
+28E6 8D31             (    cube_core.asm):00142                         BSR     MULS7
+28E8 978A             (    cube_core.asm):00143                         STA     <TY+1
+28EA 9685             (    cube_core.asm):00144                         LDA     <CB             ; TY+2 = -(cb * sa) * S
+28EC D682             (    cube_core.asm):00145                         LDB     <SA
+28EE 8D29             (    cube_core.asm):00146                         BSR     MULS7
+28F0 40               (    cube_core.asm):00147                         NEGA
+28F1 D694             (    cube_core.asm):00148                         LDB     <SIZE
+28F3 8D24             (    cube_core.asm):00149                         BSR     MULS7
+28F5 978B             (    cube_core.asm):00150                         STA     <TY+2
                       (    cube_core.asm):00151         
                       (    cube_core.asm):00152         ; Row z: TZ = S * [ -sb*ca, sa, cb*ca ]
-20EB 9684             (    cube_core.asm):00153                         LDA     <SB             ; TZ+0 = -(sb * ca) * S
-20ED D683             (    cube_core.asm):00154                         LDB     <CA
-20EF 8D1C             (    cube_core.asm):00155                         BSR     MULS7
-20F1 40               (    cube_core.asm):00156                         NEGA
-20F2 D694             (    cube_core.asm):00157                         LDB     <SIZE
-20F4 8D17             (    cube_core.asm):00158                         BSR     MULS7
-20F6 978C             (    cube_core.asm):00159                         STA     <TZ
-20F8 9682             (    cube_core.asm):00160                         LDA     <SA             ; TZ+1 = sa * S
-20FA D694             (    cube_core.asm):00161                         LDB     <SIZE
-20FC 8D0F             (    cube_core.asm):00162                         BSR     MULS7
-20FE 978D             (    cube_core.asm):00163                         STA     <TZ+1
-2100 9685             (    cube_core.asm):00164                         LDA     <CB             ; TZ+2 = (cb * ca) * S
-2102 D683             (    cube_core.asm):00165                         LDB     <CA
-2104 8D07             (    cube_core.asm):00166                         BSR     MULS7
-2106 D694             (    cube_core.asm):00167                         LDB     <SIZE
-2108 8D03             (    cube_core.asm):00168                         BSR     MULS7
-210A 978E             (    cube_core.asm):00169                         STA     <TZ+2
-210C 39               (    cube_core.asm):00170                         RTS
+28F7 9684             (    cube_core.asm):00153                         LDA     <SB             ; TZ+0 = -(sb * ca) * S
+28F9 D683             (    cube_core.asm):00154                         LDB     <CA
+28FB 8D1C             (    cube_core.asm):00155                         BSR     MULS7
+28FD 40               (    cube_core.asm):00156                         NEGA
+28FE D694             (    cube_core.asm):00157                         LDB     <SIZE
+2900 8D17             (    cube_core.asm):00158                         BSR     MULS7
+2902 978C             (    cube_core.asm):00159                         STA     <TZ
+2904 9682             (    cube_core.asm):00160                         LDA     <SA             ; TZ+1 = sa * S
+2906 D694             (    cube_core.asm):00161                         LDB     <SIZE
+2908 8D0F             (    cube_core.asm):00162                         BSR     MULS7
+290A 978D             (    cube_core.asm):00163                         STA     <TZ+1
+290C 9685             (    cube_core.asm):00164                         LDA     <CB             ; TZ+2 = (cb * ca) * S
+290E D683             (    cube_core.asm):00165                         LDB     <CA
+2910 8D07             (    cube_core.asm):00166                         BSR     MULS7
+2912 D694             (    cube_core.asm):00167                         LDB     <SIZE
+2914 8D03             (    cube_core.asm):00168                         BSR     MULS7
+2916 978E             (    cube_core.asm):00169                         STA     <TZ+2
+2918 39               (    cube_core.asm):00170                         RTS
                       (    cube_core.asm):00171         
                       (    cube_core.asm):00172         ; ---------------------------------------------------------------------------
                       (    cube_core.asm):00173         ; MULS7 - signed multiply, scaled: A = (A * B) / 128
@@ -425,26 +428,26 @@
                       (    cube_core.asm):00183         ;   B's top bit into A) gives D * 2, and the high byte of D * 2 is D / 128.
                       (    cube_core.asm):00184         ;   So after the shift the answer is simply in A.
                       (    cube_core.asm):00185         ; ---------------------------------------------------------------------------
-210D 3406             (    cube_core.asm):00186         MULS7           PSHS    D               ; save the originals: 0,S = A, 1,S = B
-210F 4D               (    cube_core.asm):00187                         TSTA                    ; make A positive
-2110 2A01             (    cube_core.asm):00188                         BPL     MS_1
-2112 40               (    cube_core.asm):00189                         NEGA
-2113 5D               (    cube_core.asm):00190         MS_1            TSTB                    ; make B positive
-2114 2A01             (    cube_core.asm):00191                         BPL     MS_2
-2116 50               (    cube_core.asm):00192                         NEGB
-2117 3D               (    cube_core.asm):00193         MS_2            MUL                     ; D = |A| * |B|
-2118 58               (    cube_core.asm):00194                         ASLB                    ; D * 2 ...
-2119 49               (    cube_core.asm):00195                         ROLA                    ; ... so A = D / 128
-211A 3402             (    cube_core.asm):00196                         PSHS    A               ; keep the result. The originals are
+2919 3406             (    cube_core.asm):00186         MULS7           PSHS    D               ; save the originals: 0,S = A, 1,S = B
+291B 4D               (    cube_core.asm):00187                         TSTA                    ; make A positive
+291C 2A01             (    cube_core.asm):00188                         BPL     MS_1
+291E 40               (    cube_core.asm):00189                         NEGA
+291F 5D               (    cube_core.asm):00190         MS_1            TSTB                    ; make B positive
+2920 2A01             (    cube_core.asm):00191                         BPL     MS_2
+2922 50               (    cube_core.asm):00192                         NEGB
+2923 3D               (    cube_core.asm):00193         MS_2            MUL                     ; D = |A| * |B|
+2924 58               (    cube_core.asm):00194                         ASLB                    ; D * 2 ...
+2925 49               (    cube_core.asm):00195                         ROLA                    ; ... so A = D / 128
+2926 3402             (    cube_core.asm):00196                         PSHS    A               ; keep the result. The originals are
                       (    cube_core.asm):00197                                                 ;  now at 1,S (A) and 2,S (B)
-211C A661             (    cube_core.asm):00198                         LDA     1,S             ; sign of result = top bit of A EOR B
-211E A862             (    cube_core.asm):00199                         EORA    2,S             ;  (sets N flag)
-2120 3502             (    cube_core.asm):00200                         PULS    A               ; result back in A. PULS doesn't
+2928 A661             (    cube_core.asm):00198                         LDA     1,S             ; sign of result = top bit of A EOR B
+292A A862             (    cube_core.asm):00199                         EORA    2,S             ;  (sets N flag)
+292C 3502             (    cube_core.asm):00200                         PULS    A               ; result back in A. PULS doesn't
                       (    cube_core.asm):00201                                                 ;  change the flags, so N survives
-2122 2A01             (    cube_core.asm):00202                         BPL     MS_3            ; positive: done
-2124 40               (    cube_core.asm):00203                         NEGA                    ; negative: negate the result
-2125 3262             (    cube_core.asm):00204         MS_3            LEAS    2,S             ; discard the saved originals
-2127 39               (    cube_core.asm):00205                         RTS
+292E 2A01             (    cube_core.asm):00202                         BPL     MS_3            ; positive: done
+2930 40               (    cube_core.asm):00203                         NEGA                    ; negative: negate the result
+2931 3262             (    cube_core.asm):00204         MS_3            LEAS    2,S             ; discard the saved originals
+2933 39               (    cube_core.asm):00205                         RTS
                       (    cube_core.asm):00206         
                       (    cube_core.asm):00207         ; ---------------------------------------------------------------------------
                       (    cube_core.asm):00208         ; FACES - which of the six faces point towards the viewer
@@ -456,45 +459,45 @@
                       (    cube_core.asm):00214         ;   Then, for each axis, the + face is visible if the eye is beyond +S and
                       (    cube_core.asm):00215         ;   the - face if it is beyond -S.
                       (    cube_core.asm):00216         ; ---------------------------------------------------------------------------
-2128 9684             (    cube_core.asm):00217         FACES           LDA     <SB             ; EX = -100 * (-sb*ca)
-212A D683             (    cube_core.asm):00218                         LDB     <CA
-212C 17FFDE           (    cube_core.asm):00219                         LBSR    MULS7
-212F 40               (    cube_core.asm):00220                         NEGA
-2130 C69B             (    cube_core.asm):00221                         LDB     #-101
-2132 17FFD8           (    cube_core.asm):00222                         LBSR    MULS7
-2135 9796             (    cube_core.asm):00223                         STA     <EX
-2137 9682             (    cube_core.asm):00224                         LDA     <SA             ; EY = -100 * sa
-2139 C69B             (    cube_core.asm):00225                         LDB     #-101
-213B 17FFCF           (    cube_core.asm):00226                         LBSR    MULS7
-213E 9797             (    cube_core.asm):00227                         STA     <EY
-2140 9685             (    cube_core.asm):00228                         LDA     <CB             ; EZ = -100 * (cb*ca)
-2142 D683             (    cube_core.asm):00229                         LDB     <CA
-2144 17FFC6           (    cube_core.asm):00230                         LBSR    MULS7
-2147 C69B             (    cube_core.asm):00231                         LDB     #-101
-2149 17FFC1           (    cube_core.asm):00232                         LBSR    MULS7
-214C 9798             (    cube_core.asm):00233                         STA     <EZ
-214E CE00B0           (    cube_core.asm):00234                         LDU     #VIS            ; set VIS for the six faces
-2151 9696             (    cube_core.asm):00235                         LDA     <EX
-2153 8D06             (    cube_core.asm):00236                         BSR     FACEPAIR        ;  +x, -x
-2155 9697             (    cube_core.asm):00237                         LDA     <EY
-2157 8D02             (    cube_core.asm):00238                         BSR     FACEPAIR        ;  +y, -y
-2159 9698             (    cube_core.asm):00239                         LDA     <EZ
+2934 9684             (    cube_core.asm):00217         FACES           LDA     <SB             ; EX = -100 * (-sb*ca)
+2936 D683             (    cube_core.asm):00218                         LDB     <CA
+2938 17FFDE           (    cube_core.asm):00219                         LBSR    MULS7
+293B 40               (    cube_core.asm):00220                         NEGA
+293C C69B             (    cube_core.asm):00221                         LDB     #-101
+293E 17FFD8           (    cube_core.asm):00222                         LBSR    MULS7
+2941 9796             (    cube_core.asm):00223                         STA     <EX
+2943 9682             (    cube_core.asm):00224                         LDA     <SA             ; EY = -100 * sa
+2945 C69B             (    cube_core.asm):00225                         LDB     #-101
+2947 17FFCF           (    cube_core.asm):00226                         LBSR    MULS7
+294A 9797             (    cube_core.asm):00227                         STA     <EY
+294C 9685             (    cube_core.asm):00228                         LDA     <CB             ; EZ = -100 * (cb*ca)
+294E D683             (    cube_core.asm):00229                         LDB     <CA
+2950 17FFC6           (    cube_core.asm):00230                         LBSR    MULS7
+2953 C69B             (    cube_core.asm):00231                         LDB     #-101
+2955 17FFC1           (    cube_core.asm):00232                         LBSR    MULS7
+2958 9798             (    cube_core.asm):00233                         STA     <EZ
+295A CE00B0           (    cube_core.asm):00234                         LDU     #VIS            ; set VIS for the six faces
+295D 9696             (    cube_core.asm):00235                         LDA     <EX
+295F 8D06             (    cube_core.asm):00236                         BSR     FACEPAIR        ;  +x, -x
+2961 9697             (    cube_core.asm):00237                         LDA     <EY
+2963 8D02             (    cube_core.asm):00238                         BSR     FACEPAIR        ;  +y, -y
+2965 9698             (    cube_core.asm):00239                         LDA     <EZ
                       (    cube_core.asm):00240                         ; fall into FACEPAIR    ;  +z, -z
                       (    cube_core.asm):00241         
                       (    cube_core.asm):00242         ; FACEPAIR - Entry: A = one coordinate of the eye, U -> VIS slot for the
                       (    cube_core.asm):00243         ;   + face. Sets that slot and the next ($FF visible, 0 hidden), U += 2.
-215B 5F               (    cube_core.asm):00244         FACEPAIR        CLRB                    ; + face: visible if eye > S
-215C 9194             (    cube_core.asm):00245                         CMPA    <SIZE           ;  (signed compare)
-215E 2F01             (    cube_core.asm):00246                         BLE     FP_1
-2160 5A               (    cube_core.asm):00247                         DECB                    ;  B = $FF
-2161 E7C0             (    cube_core.asm):00248         FP_1            STB     ,U+
-2163 5F               (    cube_core.asm):00249                         CLRB                    ; - face: visible if eye < -S,
-2164 40               (    cube_core.asm):00250                         NEGA                    ;  i.e. -eye > S (the eye stays
-2165 9194             (    cube_core.asm):00251                         CMPA    <SIZE           ;  within +/-101, so NEGA can't
-2167 2F01             (    cube_core.asm):00252                         BLE     FP_2            ;  overflow)
-2169 5A               (    cube_core.asm):00253                         DECB
-216A E7C0             (    cube_core.asm):00254         FP_2            STB     ,U+
-216C 39               (    cube_core.asm):00255                         RTS
+2967 5F               (    cube_core.asm):00244         FACEPAIR        CLRB                    ; + face: visible if eye > S
+2968 9194             (    cube_core.asm):00245                         CMPA    <SIZE           ;  (signed compare)
+296A 2F01             (    cube_core.asm):00246                         BLE     FP_1
+296C 5A               (    cube_core.asm):00247                         DECB                    ;  B = $FF
+296D E7C0             (    cube_core.asm):00248         FP_1            STB     ,U+
+296F 5F               (    cube_core.asm):00249                         CLRB                    ; - face: visible if eye < -S,
+2970 40               (    cube_core.asm):00250                         NEGA                    ;  i.e. -eye > S (the eye stays
+2971 9194             (    cube_core.asm):00251                         CMPA    <SIZE           ;  within +/-101, so NEGA can't
+2973 2F01             (    cube_core.asm):00252                         BLE     FP_2            ;  overflow)
+2975 5A               (    cube_core.asm):00253                         DECB
+2976 E7C0             (    cube_core.asm):00254         FP_2            STB     ,U+
+2978 39               (    cube_core.asm):00255                         RTS
                       (    cube_core.asm):00256         
                       (    cube_core.asm):00257         ; ---------------------------------------------------------------------------
                       (    cube_core.asm):00258         ; CORNERS - rotate and project all 8 corners into PX/PY
@@ -506,48 +509,48 @@
                       (    cube_core.asm):00264         ;     screen y  = CY + y * RYTAB[z] / 128         (PMUL)
                       (    cube_core.asm):00265         ;     screen x  = CX + x * RXTAB[z] / 128
                       (    cube_core.asm):00266         ; ---------------------------------------------------------------------------
-216D 0F8F             (    cube_core.asm):00267         CORNERS         CLR     <VI             ; start with corner 0
-216F D68F             (    cube_core.asm):00268         CN_LOOP         LDB     <VI             ; B = corner number, used by VSUM
-2171 CE0086           (    cube_core.asm):00269                         LDU     #TX             ;  to pick + or - for each term
-2174 8D45             (    cube_core.asm):00270                         BSR     VSUM
-2176 9790             (    cube_core.asm):00271                         STA     <VX             ; rotated x
-2178 CE008C           (    cube_core.asm):00272                         LDU     #TZ             ; (B is preserved by VSUM)
-217B 8D3E             (    cube_core.asm):00273                         BSR     VSUM            ; rotated z, range about -60..60
-217D 8B40             (    cube_core.asm):00274                         ADDA    #64             ; shift to 0..127 to index the tables
-217F 9791             (    cube_core.asm):00275                         STA     <ZI
-2181 CE0089           (    cube_core.asm):00276                         LDU     #TY
-2184 8D35             (    cube_core.asm):00277                         BSR     VSUM            ; rotated y, left in A
+2979 0F8F             (    cube_core.asm):00267         CORNERS         CLR     <VI             ; start with corner 0
+297B D68F             (    cube_core.asm):00268         CN_LOOP         LDB     <VI             ; B = corner number, used by VSUM
+297D CE0086           (    cube_core.asm):00269                         LDU     #TX             ;  to pick + or - for each term
+2980 8D45             (    cube_core.asm):00270                         BSR     VSUM
+2982 9790             (    cube_core.asm):00271                         STA     <VX             ; rotated x
+2984 CE008C           (    cube_core.asm):00272                         LDU     #TZ             ; (B is preserved by VSUM)
+2987 8D3E             (    cube_core.asm):00273                         BSR     VSUM            ; rotated z, range about -60..60
+2989 8B40             (    cube_core.asm):00274                         ADDA    #64             ; shift to 0..127 to index the tables
+298B 9791             (    cube_core.asm):00275                         STA     <ZI
+298D CE0089           (    cube_core.asm):00276                         LDU     #TY
+2990 8D35             (    cube_core.asm):00277                         BSR     VSUM            ; rotated y, left in A
                       (    cube_core.asm):00278         
                       (    cube_core.asm):00279         ; screen y = CY + y * RYTAB[z] / 128
-2186 308D024D         (    cube_core.asm):00280                         LEAX    RYTAB,PCR       ; B = RYTAB[ZI]
-218A D691             (    cube_core.asm):00281                         LDB     <ZI
-218C 3A               (    cube_core.asm):00282                         ABX
-218D E684             (    cube_core.asm):00283                         LDB     ,X
-218F 8D49             (    cube_core.asm):00284                         BSR     PMUL            ; A = y * RYTAB[z] / 128
-2191 8B24             (    cube_core.asm):00285                         ADDA    #CY
-2193 8E00A8           (    cube_core.asm):00286                         LDX     #PY             ; store at PY + VI
-2196 D68F             (    cube_core.asm):00287                         LDB     <VI
-2198 3A               (    cube_core.asm):00288                         ABX
-2199 A784             (    cube_core.asm):00289                         STA     ,X
+2992 308D024D         (    cube_core.asm):00280                         LEAX    RYTAB,PCR       ; B = RYTAB[ZI]
+2996 D691             (    cube_core.asm):00281                         LDB     <ZI
+2998 3A               (    cube_core.asm):00282                         ABX
+2999 E684             (    cube_core.asm):00283                         LDB     ,X
+299B 8D49             (    cube_core.asm):00284                         BSR     PMUL            ; A = y * RYTAB[z] / 128
+299D 8B24             (    cube_core.asm):00285                         ADDA    #CY
+299F 8E00A8           (    cube_core.asm):00286                         LDX     #PY             ; store at PY + VI
+29A2 D68F             (    cube_core.asm):00287                         LDB     <VI
+29A4 3A               (    cube_core.asm):00288                         ABX
+29A5 A784             (    cube_core.asm):00289                         STA     ,X
                       (    cube_core.asm):00290         
                       (    cube_core.asm):00291         ; screen x = CX + x * RXTAB[z] / 128
-219B 308D01B8         (    cube_core.asm):00292                         LEAX    RXTAB,PCR       ; B = RXTAB[ZI]
-219F D691             (    cube_core.asm):00293                         LDB     <ZI
-21A1 3A               (    cube_core.asm):00294                         ABX
-21A2 E684             (    cube_core.asm):00295                         LDB     ,X
-21A4 9690             (    cube_core.asm):00296                         LDA     <VX             ; A = rotated x
-21A6 8D32             (    cube_core.asm):00297                         BSR     PMUL
-21A8 8B27             (    cube_core.asm):00298                         ADDA    #CX
-21AA 8E00A0           (    cube_core.asm):00299                         LDX     #PX             ; store at PX + VI
-21AD D68F             (    cube_core.asm):00300                         LDB     <VI
-21AF 3A               (    cube_core.asm):00301                         ABX
-21B0 A784             (    cube_core.asm):00302                         STA     ,X
+29A7 308D01B8         (    cube_core.asm):00292                         LEAX    RXTAB,PCR       ; B = RXTAB[ZI]
+29AB D691             (    cube_core.asm):00293                         LDB     <ZI
+29AD 3A               (    cube_core.asm):00294                         ABX
+29AE E684             (    cube_core.asm):00295                         LDB     ,X
+29B0 9690             (    cube_core.asm):00296                         LDA     <VX             ; A = rotated x
+29B2 8D32             (    cube_core.asm):00297                         BSR     PMUL
+29B4 8B27             (    cube_core.asm):00298                         ADDA    #CX
+29B6 8E00A0           (    cube_core.asm):00299                         LDX     #PX             ; store at PX + VI
+29B9 D68F             (    cube_core.asm):00300                         LDB     <VI
+29BB 3A               (    cube_core.asm):00301                         ABX
+29BC A784             (    cube_core.asm):00302                         STA     ,X
                       (    cube_core.asm):00303         
-21B2 0C8F             (    cube_core.asm):00304                         INC     <VI             ; next corner, until all 8 done
-21B4 968F             (    cube_core.asm):00305                         LDA     <VI
-21B6 8108             (    cube_core.asm):00306                         CMPA    #8
-21B8 26B5             (    cube_core.asm):00307                         BNE     CN_LOOP
-21BA 39               (    cube_core.asm):00308                         RTS
+29BE 0C8F             (    cube_core.asm):00304                         INC     <VI             ; next corner, until all 8 done
+29C0 968F             (    cube_core.asm):00305                         LDA     <VI
+29C2 8108             (    cube_core.asm):00306                         CMPA    #8
+29C4 26B5             (    cube_core.asm):00307                         BNE     CN_LOOP
+29C6 39               (    cube_core.asm):00308                         RTS
                       (    cube_core.asm):00309         
                       (    cube_core.asm):00310         ; ---------------------------------------------------------------------------
                       (    cube_core.asm):00311         ; VSUM - one rotated coordinate of one corner
@@ -557,23 +560,23 @@
                       (    cube_core.asm):00315         ;   Exit:  A = term0 * (+/-1) + term1 * (+/-1) + term2 * (+/-1)
                       (    cube_core.asm):00316         ;          B preserved (so the caller can reuse it for the next coordinate)
                       (    cube_core.asm):00317         ; ---------------------------------------------------------------------------
-21BB 4F               (    cube_core.asm):00318         VSUM            CLRA                    ; running total
-21BC C501             (    cube_core.asm):00319                         BITB    #1              ; x sign: add or subtract term 0
-21BE 2704             (    cube_core.asm):00320                         BEQ     VS_1
-21C0 ABC4             (    cube_core.asm):00321                         ADDA    ,U
-21C2 2002             (    cube_core.asm):00322                         BRA     VS_2
-21C4 A0C4             (    cube_core.asm):00323         VS_1            SUBA    ,U
-21C6 C502             (    cube_core.asm):00324         VS_2            BITB    #2              ; y sign: term 1
-21C8 2704             (    cube_core.asm):00325                         BEQ     VS_3
-21CA AB41             (    cube_core.asm):00326                         ADDA    1,U
-21CC 2002             (    cube_core.asm):00327                         BRA     VS_4
-21CE A041             (    cube_core.asm):00328         VS_3            SUBA    1,U
-21D0 C504             (    cube_core.asm):00329         VS_4            BITB    #4              ; z sign: term 2
-21D2 2703             (    cube_core.asm):00330                         BEQ     VS_5
-21D4 AB42             (    cube_core.asm):00331                         ADDA    2,U
-21D6 39               (    cube_core.asm):00332                         RTS
-21D7 A042             (    cube_core.asm):00333         VS_5            SUBA    2,U
-21D9 39               (    cube_core.asm):00334                         RTS
+29C7 4F               (    cube_core.asm):00318         VSUM            CLRA                    ; running total
+29C8 C501             (    cube_core.asm):00319                         BITB    #1              ; x sign: add or subtract term 0
+29CA 2704             (    cube_core.asm):00320                         BEQ     VS_1
+29CC ABC4             (    cube_core.asm):00321                         ADDA    ,U
+29CE 2002             (    cube_core.asm):00322                         BRA     VS_2
+29D0 A0C4             (    cube_core.asm):00323         VS_1            SUBA    ,U
+29D2 C502             (    cube_core.asm):00324         VS_2            BITB    #2              ; y sign: term 1
+29D4 2704             (    cube_core.asm):00325                         BEQ     VS_3
+29D6 AB41             (    cube_core.asm):00326                         ADDA    1,U
+29D8 2002             (    cube_core.asm):00327                         BRA     VS_4
+29DA A041             (    cube_core.asm):00328         VS_3            SUBA    1,U
+29DC C504             (    cube_core.asm):00329         VS_4            BITB    #4              ; z sign: term 2
+29DE 2703             (    cube_core.asm):00330                         BEQ     VS_5
+29E0 AB42             (    cube_core.asm):00331                         ADDA    2,U
+29E2 39               (    cube_core.asm):00332                         RTS
+29E3 A042             (    cube_core.asm):00333         VS_5            SUBA    2,U
+29E5 39               (    cube_core.asm):00334                         RTS
                       (    cube_core.asm):00335         
                       (    cube_core.asm):00336         ; ---------------------------------------------------------------------------
                       (    cube_core.asm):00337         ; PMUL - projection multiply: A = (A * B) / 128
@@ -584,18 +587,18 @@
                       (    cube_core.asm):00342         ;   divide by 128 the same way (ASLB/ROLA leaves D/128 in A), and negate
                       (    cube_core.asm):00343         ;   the answer if A was negative.
                       (    cube_core.asm):00344         ; ---------------------------------------------------------------------------
-21DA 4D               (    cube_core.asm):00345         PMUL            TSTA
-21DB 2A06             (    cube_core.asm):00346                         BPL     PM_1
-21DD 40               (    cube_core.asm):00347                         NEGA                    ; negative coordinate:
-21DE 3D               (    cube_core.asm):00348                         MUL                     ;  |A| * B
-21DF 58               (    cube_core.asm):00349                         ASLB                    ;  / 128
-21E0 49               (    cube_core.asm):00350                         ROLA
-21E1 40               (    cube_core.asm):00351                         NEGA                    ;  and make it negative again
-21E2 39               (    cube_core.asm):00352                         RTS
-21E3 3D               (    cube_core.asm):00353         PM_1            MUL                     ; positive coordinate: A * B
-21E4 58               (    cube_core.asm):00354                         ASLB                    ;  / 128
-21E5 49               (    cube_core.asm):00355                         ROLA
-21E6 39               (    cube_core.asm):00356                         RTS
+29E6 4D               (    cube_core.asm):00345         PMUL            TSTA
+29E7 2A06             (    cube_core.asm):00346                         BPL     PM_1
+29E9 40               (    cube_core.asm):00347                         NEGA                    ; negative coordinate:
+29EA 3D               (    cube_core.asm):00348                         MUL                     ;  |A| * B
+29EB 58               (    cube_core.asm):00349                         ASLB                    ;  / 128
+29EC 49               (    cube_core.asm):00350                         ROLA
+29ED 40               (    cube_core.asm):00351                         NEGA                    ;  and make it negative again
+29EE 39               (    cube_core.asm):00352                         RTS
+29EF 3D               (    cube_core.asm):00353         PM_1            MUL                     ; positive coordinate: A * B
+29F0 58               (    cube_core.asm):00354                         ASLB                    ;  / 128
+29F1 49               (    cube_core.asm):00355                         ROLA
+29F2 39               (    cube_core.asm):00356                         RTS
                       (    cube_core.asm):00357         
                       (    cube_core.asm):00358         ; ---------------------------------------------------------------------------
                       (    cube_core.asm):00359         ; EDGES - draw the 12 edges
@@ -610,37 +613,37 @@
                       (    cube_core.asm):00368         ;   Unless WIRE is set (draw every edge), an edge is skipped if both its
                       (    cube_core.asm):00369         ;   faces are hidden. Edges use the current plot mode.
                       (    cube_core.asm):00370         ; ---------------------------------------------------------------------------
-21E7 318D003C         (    cube_core.asm):00371         EDGES           LEAY    EDGETAB,PCR
-21EB 860C             (    cube_core.asm):00372                         LDA     #12             ; 12 edges to draw
-21ED 9792             (    cube_core.asm):00373                         STA     <EC
-21EF 0D99             (    cube_core.asm):00374         ED_LOOP         TST     <WIRE           ; wireframe: draw every edge
-21F1 2612             (    cube_core.asm):00375                         BNE     ED_DRAW
-21F3 8E00B0           (    cube_core.asm):00376                         LDX     #VIS            ; skip the edge unless one of its
-21F6 E622             (    cube_core.asm):00377                         LDB     2,Y             ;  faces is visible
-21F8 3A               (    cube_core.asm):00378                         ABX
-21F9 A684             (    cube_core.asm):00379                         LDA     ,X
-21FB 8E00B0           (    cube_core.asm):00380                         LDX     #VIS
-21FE E623             (    cube_core.asm):00381                         LDB     3,Y
-2200 3A               (    cube_core.asm):00382                         ABX
-2201 AA84             (    cube_core.asm):00383                         ORA     ,X
-2203 271B             (    cube_core.asm):00384                         BEQ     ED_NEXT
-2205 8E00A0           (    cube_core.asm):00385         ED_DRAW         LDX     #PX             ; end corner's position -> U
-2208 E621             (    cube_core.asm):00386                         LDB     1,Y             ;  X -> PX + end corner
-220A 3A               (    cube_core.asm):00387                         ABX
-220B A684             (    cube_core.asm):00388                         LDA     ,X              ;  A = its x
-220D E608             (    cube_core.asm):00389                         LDB     8,X             ;  B = its y (PY = PX + 8)
-220F 1F03             (    cube_core.asm):00390                         TFR     D,U             ;  park x1:y1 in U for now
-2211 8E00A0           (    cube_core.asm):00391                         LDX     #PX             ; start corner's position -> A, B
-2214 E6A4             (    cube_core.asm):00392                         LDB     ,Y
-2216 3A               (    cube_core.asm):00393                         ABX
-2217 A684             (    cube_core.asm):00394                         LDA     ,X              ;  A = x0
-2219 E608             (    cube_core.asm):00395                         LDB     8,X             ;  B = y0
-221B 1F31             (    cube_core.asm):00396                         TFR     U,X             ; X = x1:y1, the packed end point
-221D BD1018           (    cube_core.asm):00397                         JSR     TGL_LINEC
-2220 3124             (    cube_core.asm):00398         ED_NEXT         LEAY    4,Y             ; next edge
-2222 0A92             (    cube_core.asm):00399                         DEC     <EC
-2224 26C9             (    cube_core.asm):00400                         BNE     ED_LOOP
-2226 39               (    cube_core.asm):00401                         RTS
+29F3 318D003C         (    cube_core.asm):00371         EDGES           LEAY    EDGETAB,PCR
+29F7 860C             (    cube_core.asm):00372                         LDA     #12             ; 12 edges to draw
+29F9 9792             (    cube_core.asm):00373                         STA     <EC
+29FB 0D99             (    cube_core.asm):00374         ED_LOOP         TST     <WIRE           ; wireframe: draw every edge
+29FD 2612             (    cube_core.asm):00375                         BNE     ED_DRAW
+29FF 8E00B0           (    cube_core.asm):00376                         LDX     #VIS            ; skip the edge unless one of its
+2A02 E622             (    cube_core.asm):00377                         LDB     2,Y             ;  faces is visible
+2A04 3A               (    cube_core.asm):00378                         ABX
+2A05 A684             (    cube_core.asm):00379                         LDA     ,X
+2A07 8E00B0           (    cube_core.asm):00380                         LDX     #VIS
+2A0A E623             (    cube_core.asm):00381                         LDB     3,Y
+2A0C 3A               (    cube_core.asm):00382                         ABX
+2A0D AA84             (    cube_core.asm):00383                         ORA     ,X
+2A0F 271B             (    cube_core.asm):00384                         BEQ     ED_NEXT
+2A11 8E00A0           (    cube_core.asm):00385         ED_DRAW         LDX     #PX             ; end corner's position -> U
+2A14 E621             (    cube_core.asm):00386                         LDB     1,Y             ;  X -> PX + end corner
+2A16 3A               (    cube_core.asm):00387                         ABX
+2A17 A684             (    cube_core.asm):00388                         LDA     ,X              ;  A = its x
+2A19 E608             (    cube_core.asm):00389                         LDB     8,X             ;  B = its y (PY = PX + 8)
+2A1B 1F03             (    cube_core.asm):00390                         TFR     D,U             ;  park x1:y1 in U for now
+2A1D 8E00A0           (    cube_core.asm):00391                         LDX     #PX             ; start corner's position -> A, B
+2A20 E6A4             (    cube_core.asm):00392                         LDB     ,Y
+2A22 3A               (    cube_core.asm):00393                         ABX
+2A23 A684             (    cube_core.asm):00394                         LDA     ,X              ;  A = x0
+2A25 E608             (    cube_core.asm):00395                         LDB     8,X             ;  B = y0
+2A27 1F31             (    cube_core.asm):00396                         TFR     U,X             ; X = x1:y1, the packed end point
+2A29 BD1018           (    cube_core.asm):00397                         JSR     TGL_LINEC
+2A2C 3124             (    cube_core.asm):00398         ED_NEXT         LEAY    4,Y             ; next edge
+2A2E 0A92             (    cube_core.asm):00399                         DEC     <EC
+2A30 26C9             (    cube_core.asm):00400                         BNE     ED_LOOP
+2A32 39               (    cube_core.asm):00401                         RTS
                       (    cube_core.asm):00402         
                       (    cube_core.asm):00403         ; ---------------------------------------------------------------------------
                       (    cube_core.asm):00404         ; The 12 edges: start corner, end corner, and the two faces the edge
@@ -648,143 +651,143 @@
                       (    cube_core.asm):00406         ; one bit, so the edge runs along that axis; its faces come from the other
                       (    cube_core.asm):00407         ; two bits (bit set: the + face, clear: the - face).
                       (    cube_core.asm):00408         ; ---------------------------------------------------------------------------
-2227                  (    cube_core.asm):00409         EDGETAB
-2227 00010305         (    cube_core.asm):00410                         FCB     0,1,3,5         ; along x: faces -y, -z
-222B 02030205         (    cube_core.asm):00411                         FCB     2,3,2,5         ; along x: faces +y, -z
-222F 04050304         (    cube_core.asm):00412                         FCB     4,5,3,4         ; along x: faces -y, +z
-2233 06070204         (    cube_core.asm):00413                         FCB     6,7,2,4         ; along x: faces +y, +z
-2237 00020105         (    cube_core.asm):00414                         FCB     0,2,1,5         ; along y: faces -x, -z
-223B 01030005         (    cube_core.asm):00415                         FCB     1,3,0,5         ; along y: faces +x, -z
-223F 04060104         (    cube_core.asm):00416                         FCB     4,6,1,4         ; along y: faces -x, +z
-2243 05070004         (    cube_core.asm):00417                         FCB     5,7,0,4         ; along y: faces +x, +z
-2247 00040103         (    cube_core.asm):00418                         FCB     0,4,1,3         ; along z: faces -x, -y
-224B 01050003         (    cube_core.asm):00419                         FCB     1,5,0,3         ; along z: faces +x, -y
-224F 02060102         (    cube_core.asm):00420                         FCB     2,6,1,2         ; along z: faces -x, +y
-2253 03070002         (    cube_core.asm):00421                         FCB     3,7,0,2         ; along z: faces +x, +y
+2A33                  (    cube_core.asm):00409         EDGETAB
+2A33 00010305         (    cube_core.asm):00410                         FCB     0,1,3,5         ; along x: faces -y, -z
+2A37 02030205         (    cube_core.asm):00411                         FCB     2,3,2,5         ; along x: faces +y, -z
+2A3B 04050304         (    cube_core.asm):00412                         FCB     4,5,3,4         ; along x: faces -y, +z
+2A3F 06070204         (    cube_core.asm):00413                         FCB     6,7,2,4         ; along x: faces +y, +z
+2A43 00020105         (    cube_core.asm):00414                         FCB     0,2,1,5         ; along y: faces -x, -z
+2A47 01030005         (    cube_core.asm):00415                         FCB     1,3,0,5         ; along y: faces +x, -z
+2A4B 04060104         (    cube_core.asm):00416                         FCB     4,6,1,4         ; along y: faces -x, +z
+2A4F 05070004         (    cube_core.asm):00417                         FCB     5,7,0,4         ; along y: faces +x, +z
+2A53 00040103         (    cube_core.asm):00418                         FCB     0,4,1,3         ; along z: faces -x, -y
+2A57 01050003         (    cube_core.asm):00419                         FCB     1,5,0,3         ; along z: faces +x, -y
+2A5B 02060102         (    cube_core.asm):00420                         FCB     2,6,1,2         ; along z: faces -x, +y
+2A5F 03070002         (    cube_core.asm):00421                         FCB     3,7,0,2         ; along z: faces +x, +y
                       (    cube_core.asm):00422         
                       (    cube_core.asm):00423         ; Sine table and perspective tables, generated by tools/gen_cube_tables.py
                       (    cube_core.asm):00424                         INCLUDE "cube_tables.asm"
                       (  cube_tables.asm):00001         ; Generated tables (see tools/gen_cube_tables.py)
                       (  cube_tables.asm):00002         
                       (  cube_tables.asm):00003         ; SINTAB: 127*sin(2*pi*i/256), signed
-2257 000306090C101316 (  cube_tables.asm):00004         SINTAB          FCB     $00,$03,$06,$09,$0C,$10,$13,$16,$19,$1C,$1F,$22,$25,$28,$2B,$2E
+2A63 000306090C101316 (  cube_tables.asm):00004         SINTAB          FCB     $00,$03,$06,$09,$0C,$10,$13,$16,$19,$1C,$1F,$22,$25,$28,$2B,$2E
      191C1F2225282B2E
-2267 313336393C3F4144 (  cube_tables.asm):00005                         FCB     $31,$33,$36,$39,$3C,$3F,$41,$44,$47,$49,$4C,$4E,$51,$53,$55,$58
+2A73 313336393C3F4144 (  cube_tables.asm):00005                         FCB     $31,$33,$36,$39,$3C,$3F,$41,$44,$47,$49,$4C,$4E,$51,$53,$55,$58
      47494C4E51535558
-2277 5A5C5E6062646668 (  cube_tables.asm):00006                         FCB     $5A,$5C,$5E,$60,$62,$64,$66,$68,$6A,$6B,$6D,$6F,$70,$71,$73,$74
+2A83 5A5C5E6062646668 (  cube_tables.asm):00006                         FCB     $5A,$5C,$5E,$60,$62,$64,$66,$68,$6A,$6B,$6D,$6F,$70,$71,$73,$74
      6A6B6D6F70717374
-2287 757678797A7A7B7C (  cube_tables.asm):00007                         FCB     $75,$76,$78,$79,$7A,$7A,$7B,$7C,$7D,$7D,$7E,$7E,$7E,$7F,$7F,$7F
+2A93 757678797A7A7B7C (  cube_tables.asm):00007                         FCB     $75,$76,$78,$79,$7A,$7A,$7B,$7C,$7D,$7D,$7E,$7E,$7E,$7F,$7F,$7F
      7D7D7E7E7E7F7F7F
-2297 7F7F7F7F7E7E7E7D (  cube_tables.asm):00008                         FCB     $7F,$7F,$7F,$7F,$7E,$7E,$7E,$7D,$7D,$7C,$7B,$7A,$7A,$79,$78,$76
+2AA3 7F7F7F7F7E7E7E7D (  cube_tables.asm):00008                         FCB     $7F,$7F,$7F,$7F,$7E,$7E,$7E,$7D,$7D,$7C,$7B,$7A,$7A,$79,$78,$76
      7D7C7B7A7A797876
-22A7 75747371706F6D6B (  cube_tables.asm):00009                         FCB     $75,$74,$73,$71,$70,$6F,$6D,$6B,$6A,$68,$66,$64,$62,$60,$5E,$5C
+2AB3 75747371706F6D6B (  cube_tables.asm):00009                         FCB     $75,$74,$73,$71,$70,$6F,$6D,$6B,$6A,$68,$66,$64,$62,$60,$5E,$5C
      6A68666462605E5C
-22B7 5A585553514E4C49 (  cube_tables.asm):00010                         FCB     $5A,$58,$55,$53,$51,$4E,$4C,$49,$47,$44,$41,$3F,$3C,$39,$36,$33
+2AC3 5A585553514E4C49 (  cube_tables.asm):00010                         FCB     $5A,$58,$55,$53,$51,$4E,$4C,$49,$47,$44,$41,$3F,$3C,$39,$36,$33
      4744413F3C393633
-22C7 312E2B2825221F1C (  cube_tables.asm):00011                         FCB     $31,$2E,$2B,$28,$25,$22,$1F,$1C,$19,$16,$13,$10,$0C,$09,$06,$03
+2AD3 312E2B2825221F1C (  cube_tables.asm):00011                         FCB     $31,$2E,$2B,$28,$25,$22,$1F,$1C,$19,$16,$13,$10,$0C,$09,$06,$03
      191613100C090603
-22D7 00FDFAF7F4F0EDEA (  cube_tables.asm):00012                         FCB     $00,$FD,$FA,$F7,$F4,$F0,$ED,$EA,$E7,$E4,$E1,$DE,$DB,$D8,$D5,$D2
+2AE3 00FDFAF7F4F0EDEA (  cube_tables.asm):00012                         FCB     $00,$FD,$FA,$F7,$F4,$F0,$ED,$EA,$E7,$E4,$E1,$DE,$DB,$D8,$D5,$D2
      E7E4E1DEDBD8D5D2
-22E7 CFCDCAC7C4C1BFBC (  cube_tables.asm):00013                         FCB     $CF,$CD,$CA,$C7,$C4,$C1,$BF,$BC,$B9,$B7,$B4,$B2,$AF,$AD,$AB,$A8
+2AF3 CFCDCAC7C4C1BFBC (  cube_tables.asm):00013                         FCB     $CF,$CD,$CA,$C7,$C4,$C1,$BF,$BC,$B9,$B7,$B4,$B2,$AF,$AD,$AB,$A8
      B9B7B4B2AFADABA8
-22F7 A6A4A2A09E9C9A98 (  cube_tables.asm):00014                         FCB     $A6,$A4,$A2,$A0,$9E,$9C,$9A,$98,$96,$95,$93,$91,$90,$8F,$8D,$8C
+2B03 A6A4A2A09E9C9A98 (  cube_tables.asm):00014                         FCB     $A6,$A4,$A2,$A0,$9E,$9C,$9A,$98,$96,$95,$93,$91,$90,$8F,$8D,$8C
      96959391908F8D8C
-2307 8B8A888786868584 (  cube_tables.asm):00015                         FCB     $8B,$8A,$88,$87,$86,$86,$85,$84,$83,$83,$82,$82,$82,$81,$81,$81
+2B13 8B8A888786868584 (  cube_tables.asm):00015                         FCB     $8B,$8A,$88,$87,$86,$86,$85,$84,$83,$83,$82,$82,$82,$81,$81,$81
      8383828282818181
-2317 8181818182828283 (  cube_tables.asm):00016                         FCB     $81,$81,$81,$81,$82,$82,$82,$83,$83,$84,$85,$86,$86,$87,$88,$8A
+2B23 8181818182828283 (  cube_tables.asm):00016                         FCB     $81,$81,$81,$81,$82,$82,$82,$83,$83,$84,$85,$86,$86,$87,$88,$8A
      838485868687888A
-2327 8B8C8D8F90919395 (  cube_tables.asm):00017                         FCB     $8B,$8C,$8D,$8F,$90,$91,$93,$95,$96,$98,$9A,$9C,$9E,$A0,$A2,$A4
+2B33 8B8C8D8F90919395 (  cube_tables.asm):00017                         FCB     $8B,$8C,$8D,$8F,$90,$91,$93,$95,$96,$98,$9A,$9C,$9E,$A0,$A2,$A4
      96989A9C9EA0A2A4
-2337 A6A8ABADAFB2B4B7 (  cube_tables.asm):00018                         FCB     $A6,$A8,$AB,$AD,$AF,$B2,$B4,$B7,$B9,$BC,$BF,$C1,$C4,$C7,$CA,$CD
+2B43 A6A8ABADAFB2B4B7 (  cube_tables.asm):00018                         FCB     $A6,$A8,$AB,$AD,$AF,$B2,$B4,$B7,$B9,$BC,$BF,$C1,$C4,$C7,$CA,$CD
      B9BCBFC1C4C7CACD
-2347 CFD2D5D8DBDEE1E4 (  cube_tables.asm):00019                         FCB     $CF,$D2,$D5,$D8,$DB,$DE,$E1,$E4,$E7,$EA,$ED,$F0,$F4,$F7,$FA,$FD
+2B53 CFD2D5D8DBDEE1E4 (  cube_tables.asm):00019                         FCB     $CF,$D2,$D5,$D8,$DB,$DE,$E1,$E4,$E7,$EA,$ED,$F0,$F4,$F7,$FA,$FD
      E7EAEDF0F4F7FAFD
                       (  cube_tables.asm):00020         
                       (  cube_tables.asm):00021         ; RXTAB/RYTAB: projection scale for depth z, indexed by z+64
                       (  cube_tables.asm):00022         ;   RX = 57*128/(100+z)  (x scale includes ~0.8 aspect correction)
                       (  cube_tables.asm):00023         ;   RY = 70*128/(100+z)
-2357 CBC5C0BBB6B2AEAA (  cube_tables.asm):00024         RXTAB           FCB     $CB,$C5,$C0,$BB,$B6,$B2,$AE,$AA,$A6,$A2,$9F,$9B,$98,$95,$92,$8F
+2B63 CBC5C0BBB6B2AEAA (  cube_tables.asm):00024         RXTAB           FCB     $CB,$C5,$C0,$BB,$B6,$B2,$AE,$AA,$A6,$A2,$9F,$9B,$98,$95,$92,$8F
      A6A29F9B9895928F
-2367 8C8A878582807E7C (  cube_tables.asm):00025                         FCB     $8C,$8A,$87,$85,$82,$80,$7E,$7C,$7A,$78,$76,$74,$72,$70,$6F,$6D
+2B73 8C8A878582807E7C (  cube_tables.asm):00025                         FCB     $8C,$8A,$87,$85,$82,$80,$7E,$7C,$7A,$78,$76,$74,$72,$70,$6F,$6D
      7A78767472706F6D
-2377 6B6A686765646361 (  cube_tables.asm):00026                         FCB     $6B,$6A,$68,$67,$65,$64,$63,$61,$60,$5F,$5E,$5C,$5B,$5A,$59,$58
+2B83 6B6A686765646361 (  cube_tables.asm):00026                         FCB     $6B,$6A,$68,$67,$65,$64,$63,$61,$60,$5F,$5E,$5C,$5B,$5A,$59,$58
      605F5E5C5B5A5958
-2387 5756555453525150 (  cube_tables.asm):00027                         FCB     $57,$56,$55,$54,$53,$52,$51,$50,$4F,$4E,$4E,$4D,$4C,$4B,$4A,$4A
+2B93 5756555453525150 (  cube_tables.asm):00027                         FCB     $57,$56,$55,$54,$53,$52,$51,$50,$4F,$4E,$4E,$4D,$4C,$4B,$4A,$4A
      4F4E4E4D4C4B4A4A
-2397 4948484746454544 (  cube_tables.asm):00028                         FCB     $49,$48,$48,$47,$46,$45,$45,$44,$44,$43,$42,$42,$41,$41,$40,$3F
+2BA3 4948484746454544 (  cube_tables.asm):00028                         FCB     $49,$48,$48,$47,$46,$45,$45,$44,$44,$43,$42,$42,$41,$41,$40,$3F
      444342424141403F
-23A7 3F3E3E3D3D3C3C3B (  cube_tables.asm):00029                         FCB     $3F,$3E,$3E,$3D,$3D,$3C,$3C,$3B,$3B,$3A,$3A,$39,$39,$39,$38,$38
+2BB3 3F3E3E3D3D3C3C3B (  cube_tables.asm):00029                         FCB     $3F,$3E,$3E,$3D,$3D,$3C,$3C,$3B,$3B,$3A,$3A,$39,$39,$39,$38,$38
      3B3A3A3939393838
-23B7 3737363636353534 (  cube_tables.asm):00030                         FCB     $37,$37,$36,$36,$36,$35,$35,$34,$34,$34,$33,$33,$33,$32,$32,$32
+2BC3 3737363636353534 (  cube_tables.asm):00030                         FCB     $37,$37,$36,$36,$36,$35,$35,$34,$34,$34,$33,$33,$33,$32,$32,$32
      3434333333323232
-23C7 3131313030302F2F (  cube_tables.asm):00031                         FCB     $31,$31,$31,$30,$30,$30,$2F,$2F,$2F,$2E,$2E,$2E,$2E,$2D,$2D,$2D
+2BD3 3131313030302F2F (  cube_tables.asm):00031                         FCB     $31,$31,$31,$30,$30,$30,$2F,$2F,$2F,$2E,$2E,$2E,$2E,$2D,$2D,$2D
      2F2E2E2E2E2D2D2D
-23D7 F9F2ECE6E0DBD5D0 (  cube_tables.asm):00032         RYTAB           FCB     $F9,$F2,$EC,$E6,$E0,$DB,$D5,$D0,$CC,$C7,$C3,$BF,$BB,$B7,$B3,$B0
+2BE3 F9F2ECE6E0DBD5D0 (  cube_tables.asm):00032         RYTAB           FCB     $F9,$F2,$EC,$E6,$E0,$DB,$D5,$D0,$CC,$C7,$C3,$BF,$BB,$B7,$B3,$B0
      CCC7C3BFBBB7B3B0
-23E7 ACA9A6A3A09D9A98 (  cube_tables.asm):00033                         FCB     $AC,$A9,$A6,$A3,$A0,$9D,$9A,$98,$95,$93,$91,$8E,$8C,$8A,$88,$86
+2BF3 ACA9A6A3A09D9A98 (  cube_tables.asm):00033                         FCB     $AC,$A9,$A6,$A3,$A0,$9D,$9A,$98,$95,$93,$91,$8E,$8C,$8A,$88,$86
      9593918E8C8A8886
-23F7 8482807E7C7B7977 (  cube_tables.asm):00034                         FCB     $84,$82,$80,$7E,$7C,$7B,$79,$77,$76,$74,$73,$71,$70,$6F,$6D,$6C
+2C03 8482807E7C7B7977 (  cube_tables.asm):00034                         FCB     $84,$82,$80,$7E,$7C,$7B,$79,$77,$76,$74,$73,$71,$70,$6F,$6D,$6C
      76747371706F6D6C
-2407 6B69686766656462 (  cube_tables.asm):00035                         FCB     $6B,$69,$68,$67,$66,$65,$64,$62,$61,$60,$5F,$5E,$5D,$5C,$5B,$5B
+2C13 6B69686766656462 (  cube_tables.asm):00035                         FCB     $6B,$69,$68,$67,$66,$65,$64,$62,$61,$60,$5F,$5E,$5D,$5C,$5B,$5B
      61605F5E5D5C5B5B
-2417 5A59585756555554 (  cube_tables.asm):00036                         FCB     $5A,$59,$58,$57,$56,$55,$55,$54,$53,$52,$51,$51,$50,$4F,$4F,$4E
+2C23 5A59585756555554 (  cube_tables.asm):00036                         FCB     $5A,$59,$58,$57,$56,$55,$55,$54,$53,$52,$51,$51,$50,$4F,$4F,$4E
      53525151504F4F4E
-2427 4D4D4C4B4B4A4949 (  cube_tables.asm):00037                         FCB     $4D,$4D,$4C,$4B,$4B,$4A,$49,$49,$48,$48,$47,$47,$46,$45,$45,$44
+2C33 4D4D4C4B4B4A4949 (  cube_tables.asm):00037                         FCB     $4D,$4D,$4C,$4B,$4B,$4A,$49,$49,$48,$48,$47,$47,$46,$45,$45,$44
      4848474746454544
-2437 4443434242414140 (  cube_tables.asm):00038                         FCB     $44,$43,$43,$42,$42,$41,$41,$40,$40,$40,$3F,$3F,$3E,$3E,$3D,$3D
+2C43 4443434242414140 (  cube_tables.asm):00038                         FCB     $44,$43,$43,$42,$42,$41,$41,$40,$40,$40,$3F,$3F,$3E,$3E,$3D,$3D
      40403F3F3E3E3D3D
-2447 3D3C3C3B3B3B3A3A (  cube_tables.asm):00039                         FCB     $3D,$3C,$3C,$3B,$3B,$3B,$3A,$3A,$39,$39,$39,$38,$38,$38,$37,$37
+2C53 3D3C3C3B3B3B3A3A (  cube_tables.asm):00039                         FCB     $3D,$3C,$3C,$3B,$3B,$3B,$3A,$3A,$39,$39,$39,$38,$38,$38,$37,$37
      3939393838383737
 
 Symbol Table:
 [ G] ANG_A                            0080
 [ G] ANG_B                            0081
-[ G] BUFFER                           3000
+[ G] BUFFER                           3800
 [ G] CA                               0083
 [ G] CB                               0085
-[ G] CN_LOOP                          216F
-[ G] CORNERS                          216D
+[ G] CN_LOOP                          297B
+[ G] CORNERS                          2979
 [ G] CX                               0027
 [ G] CY                               0024
-[ G] DONE                             2060
+[ G] DONE                             2860
 [ G] EC                               0092
-[ G] ED_DRAW                          2205
-[ G] ED_LOOP                          21EF
-[ G] ED_NEXT                          2220
-[ G] EDGES                            21E7
-[ G] EDGETAB                          2227
+[ G] ED_DRAW                          2A11
+[ G] ED_LOOP                          29FB
+[ G] ED_NEXT                          2A2C
+[ G] EDGES                            29F3
+[ G] EDGETAB                          2A33
 [ G] EX                               0096
 [ G] EY                               0097
 [ G] EZ                               0098
 [ G] FACEN                            00C2
-[ G] FACEPAIR                         215B
-[ G] FACES                            2128
-[ G] FP_1                             2161
-[ G] FP_2                             216A
-[ G] FRAME                            2024
+[ G] FACEPAIR                         2967
+[ G] FACES                            2934
+[ G] FP_1                             296D
+[ G] FP_2                             2976
+[ G] FRAME                            2824
 [ G] FRAMES                           0093
-[ G] KEYHELP                          2062
-[ G] MATRIX                           2088
-[ G] MS_1                             2113
-[ G] MS_2                             2117
-[ G] MS_3                             2125
-[ G] MULS7                            210D
-[ G] NOKEY                            205D
+[ G] KEYHELP                          2862
+[ G] MATRIX                           2894
+[ G] MS_1                             291F
+[ G] MS_2                             2923
+[ G] MS_3                             2931
+[ G] MULS7                            2919
+[ G] NOKEY                            285D
 [ G] PACE_TICKS                       0002
-[ G] PM_1                             21E3
-[ G] PMUL                             21DA
+[ G] PM_1                             29EF
+[ G] PMUL                             29E6
 [ G] POLY                             00B8
 [ G] PX                               00A0
 [ G] PY                               00A8
-[ G] RXTAB                            2357
-[ G] RYTAB                            23D7
+[ G] RXTAB                            2B63
+[ G] RYTAB                            2BE3
 [ G] SA                               0082
 [ G] SB                               0084
-[ G] SINTAB                           2257
+[ G] SINTAB                           2A63
 [ G] SIZE                             0094
 [ G] SIZE_MID                         0015
 [ G] STACK_TOP                        0200
-[ G] START                            2000
+[ G] START                            2800
 [ G] STEP_A                           0002
 [ G] STEP_B                           0003
 [ G] STEP_Z                           0001
@@ -799,6 +802,7 @@ Symbol Table:
 [ G] TGL_CYAN                         0006
 [ G] TGL_DONE                         101B
 [ G] TGL_EXIT                         1021
+[ G] TGL_FLIPH                        1045
 [ G] TGL_GREEN                        0002
 [ G] TGL_INIT                         1000
 [ G] TGL_INKEY                        101E
@@ -835,14 +839,14 @@ Symbol Table:
 [ G] TZ                               008C
 [ G] VI                               008F
 [ G] VIS                              00B0
-[ G] VS_1                             21C4
-[ G] VS_2                             21C6
-[ G] VS_3                             21CE
-[ G] VS_4                             21D0
-[ G] VS_5                             21D7
-[ G] VSUM                             21BB
+[ G] VS_1                             29D0
+[ G] VS_2                             29D2
+[ G] VS_3                             29DA
+[ G] VS_4                             29DC
+[ G] VS_5                             29E3
+[ G] VSUM                             29C7
 [ G] VX                               0090
 [ G] WIRE                             0099
 [ G] ZI                               0091
 [ G] ZOOM                             0095
-[ G] ZOOMSZ                           2077
+[ G] ZOOMSZ                           2883

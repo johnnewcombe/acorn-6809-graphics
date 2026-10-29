@@ -9,8 +9,8 @@
                       (   demo/boxes.asm):00009         ;   wherever a box crosses them. The status row below the graphics shows a
                       (   demo/boxes.asm):00010         ;   coloured title and a frame counter. Press any key to exit.
                       (   demo/boxes.asm):00011         ;
-                      (   demo/boxes.asm):00012         ;   Loading: tgl.bin at $1000 (TGL_BASE below), boxes.bin at $2000.
-                      (   demo/boxes.asm):00013         ;   Run from START ($2000). Works with either machine's library build.
+                      (   demo/boxes.asm):00012         ;   Loading: tgl.bin at $1000 (TGL_BASE below), boxes.bin at $2800.
+                      (   demo/boxes.asm):00013         ;   Run from START ($2800). Works with either machine's library build.
                       (   demo/boxes.asm):00014         ;
                       (   demo/boxes.asm):00015         ;   Rectangle calls take two opposite corners: A,B = x0,y0 and
                       (   demo/boxes.asm):00016         ;   X = x1:y1 (x1 in the high byte), signed, in any order.
@@ -51,33 +51,34 @@
      103C             (      tgl_api.inc):00029         TGL_PACE        EQU     TGL_BASE+60     ; steady frame rate: A = 50Hz ticks (1-3)
      103F             (      tgl_api.inc):00030         TGL_POLYF       EQU     TGL_BASE+63     ; filled convex polygon: X -> n, x0,y0, ...
      1042             (      tgl_api.inc):00031         TGL_SETPAT      EQU     TGL_BASE+66     ; fill pattern: A = 0-15 (2x2 pixels)
-                      (      tgl_api.inc):00032         
-     03C0             (      tgl_api.inc):00033         TGL_BUFSIZE     EQU     960
-     0000             (      tgl_api.inc):00034         TGL_MODE_SET    EQU     0
-     0001             (      tgl_api.inc):00035         TGL_MODE_CLEAR  EQU     1
-     0002             (      tgl_api.inc):00036         TGL_MODE_XOR    EQU     2
-                      (      tgl_api.inc):00037         
-                      (      tgl_api.inc):00038         ; Colours for TGL_COLOUR
-     0001             (      tgl_api.inc):00039         TGL_RED         EQU     1
-     0002             (      tgl_api.inc):00040         TGL_GREEN       EQU     2
-     0003             (      tgl_api.inc):00041         TGL_YELLOW      EQU     3
-     0004             (      tgl_api.inc):00042         TGL_BLUE        EQU     4
-     0005             (      tgl_api.inc):00043         TGL_MAGENTA     EQU     5
-     0006             (      tgl_api.inc):00044         TGL_CYAN        EQU     6
-     0007             (      tgl_api.inc):00045         TGL_WHITE       EQU     7
-                      (      tgl_api.inc):00046         
-                      (      tgl_api.inc):00047         ; Fill patterns for TGL_SETPAT: a 2x2 block of pixels repeated across the
-                      (      tgl_api.inc):00048         ; screen. Bit 0: even x, even y; bit 1: odd x, even y; bit 2: even x,
-                      (      tgl_api.inc):00049         ; odd y; bit 3: odd x, odd y.
-     0000             (      tgl_api.inc):00050         TGL_PAT_EMPTY   EQU     0
-     0001             (      tgl_api.inc):00051         TGL_PAT_25      EQU     %0001           ; one pixel in four
-     0009             (      tgl_api.inc):00052         TGL_PAT_50      EQU     %1001           ; checkerboard
-     000B             (      tgl_api.inc):00053         TGL_PAT_75      EQU     %1011           ; three pixels in four
-     000F             (      tgl_api.inc):00054         TGL_PAT_SOLID   EQU     %1111
-     0003             (      tgl_api.inc):00055         TGL_PAT_HLINES  EQU     %0011           ; horizontal stripes
-     0005             (      tgl_api.inc):00056         TGL_PAT_VLINES  EQU     %0101           ; vertical stripes
+     1045             (      tgl_api.inc):00032         TGL_FLIPH       EQU     TGL_BASE+69     ; card-turn flip: A = ticks per frame
+                      (      tgl_api.inc):00033         
+     03C0             (      tgl_api.inc):00034         TGL_BUFSIZE     EQU     960
+     0000             (      tgl_api.inc):00035         TGL_MODE_SET    EQU     0
+     0001             (      tgl_api.inc):00036         TGL_MODE_CLEAR  EQU     1
+     0002             (      tgl_api.inc):00037         TGL_MODE_XOR    EQU     2
+                      (      tgl_api.inc):00038         
+                      (      tgl_api.inc):00039         ; Colours for TGL_COLOUR
+     0001             (      tgl_api.inc):00040         TGL_RED         EQU     1
+     0002             (      tgl_api.inc):00041         TGL_GREEN       EQU     2
+     0003             (      tgl_api.inc):00042         TGL_YELLOW      EQU     3
+     0004             (      tgl_api.inc):00043         TGL_BLUE        EQU     4
+     0005             (      tgl_api.inc):00044         TGL_MAGENTA     EQU     5
+     0006             (      tgl_api.inc):00045         TGL_CYAN        EQU     6
+     0007             (      tgl_api.inc):00046         TGL_WHITE       EQU     7
+                      (      tgl_api.inc):00047         
+                      (      tgl_api.inc):00048         ; Fill patterns for TGL_SETPAT: a 2x2 block of pixels repeated across the
+                      (      tgl_api.inc):00049         ; screen. Bit 0: even x, even y; bit 1: odd x, even y; bit 2: even x,
+                      (      tgl_api.inc):00050         ; odd y; bit 3: odd x, odd y.
+     0000             (      tgl_api.inc):00051         TGL_PAT_EMPTY   EQU     0
+     0001             (      tgl_api.inc):00052         TGL_PAT_25      EQU     %0001           ; one pixel in four
+     0009             (      tgl_api.inc):00053         TGL_PAT_50      EQU     %1001           ; checkerboard
+     000B             (      tgl_api.inc):00054         TGL_PAT_75      EQU     %1011           ; three pixels in four
+     000F             (      tgl_api.inc):00055         TGL_PAT_SOLID   EQU     %1111
+     0003             (      tgl_api.inc):00056         TGL_PAT_HLINES  EQU     %0011           ; horizontal stripes
+     0005             (      tgl_api.inc):00057         TGL_PAT_VLINES  EQU     %0101           ; vertical stripes
                       (   demo/boxes.asm):00023         
-     3000             (   demo/boxes.asm):00024         BUFFER          EQU     $3000           ; off-screen buffer (960 bytes)
+     3800             (   demo/boxes.asm):00024         BUFFER          EQU     $3800           ; off-screen buffer (960 bytes)
      0200             (   demo/boxes.asm):00025         STACK_TOP       EQU     $0200           ; stack $0100-$01FF
                       (   demo/boxes.asm):00026         
                       (   demo/boxes.asm):00027         ; How far beyond the screen the boxes may travel before bouncing
@@ -92,79 +93,79 @@
      0082             (   demo/boxes.asm):00036         FCOUNT          EQU     $82             ; frame counter shown on the status
                       (   demo/boxes.asm):00037                                                 ;  row (16 bits, $82-$83)
                       (   demo/boxes.asm):00038         
-                      (   demo/boxes.asm):00039                         ORG     $2000
+                      (   demo/boxes.asm):00039                         ORG     $2800
                       (   demo/boxes.asm):00040         
-2000 10CE0200         (   demo/boxes.asm):00041         START           LDS     #STACK_TOP
-2004 4F               (   demo/boxes.asm):00042                         CLRA                    ; DP = $00 for the library
-2005 1F8B             (   demo/boxes.asm):00043                         TFR     A,DP
+2800 10CE0200         (   demo/boxes.asm):00041         START           LDS     #STACK_TOP
+2804 4F               (   demo/boxes.asm):00042                         CLRA                    ; DP = $00 for the library
+2805 1F8B             (   demo/boxes.asm):00043                         TFR     A,DP
      00               (   demo/boxes.asm):00044                         SETDP   $00
-2007 1CEF             (   demo/boxes.asm):00045                         ANDCC   #$EF            ; IRQs on (keyboard)
-2009 BD1000           (   demo/boxes.asm):00046                         JSR     TGL_INIT
-200C 8E3000           (   demo/boxes.asm):00047                         LDX     #BUFFER
-200F BD1003           (   demo/boxes.asm):00048                         JSR     TGL_SETBUF
-2012 0F81             (   demo/boxes.asm):00049                         CLR     <FRAMES
-2014 8E0000           (   demo/boxes.asm):00050                         LDX     #0              ; frame counter starts at 0
-2017 9F82             (   demo/boxes.asm):00051                         STX     <FCOUNT
+2807 1CEF             (   demo/boxes.asm):00045                         ANDCC   #$EF            ; IRQs on (keyboard)
+2809 BD1000           (   demo/boxes.asm):00046                         JSR     TGL_INIT
+280C 8E3800           (   demo/boxes.asm):00047                         LDX     #BUFFER
+280F BD1003           (   demo/boxes.asm):00048                         JSR     TGL_SETBUF
+2812 0F81             (   demo/boxes.asm):00049                         CLR     <FRAMES
+2814 8E0000           (   demo/boxes.asm):00050                         LDX     #0              ; frame counter starts at 0
+2817 9F82             (   demo/boxes.asm):00051                         STX     <FCOUNT
                       (   demo/boxes.asm):00052         
                       (   demo/boxes.asm):00053         ; The status row: written once, since the blit never touches it
-2019 4F               (   demo/boxes.asm):00054                         CLRA                    ; column 0
-201A 8E20D5           (   demo/boxes.asm):00055                         LDX     #TITLE
-201D BD1030           (   demo/boxes.asm):00056                         JSR     TGL_TEXT
+2819 4F               (   demo/boxes.asm):00054                         CLRA                    ; column 0
+281A 8E28D5           (   demo/boxes.asm):00055                         LDX     #TITLE
+281D BD1030           (   demo/boxes.asm):00056                         JSR     TGL_TEXT
                       (   demo/boxes.asm):00057         
                       (   demo/boxes.asm):00058         ; ---------------------------------------------------------------------------
                       (   demo/boxes.asm):00059         ; Main loop
                       (   demo/boxes.asm):00060         ; ---------------------------------------------------------------------------
-2020 BD1006           (   demo/boxes.asm):00061         FRAME           JSR     TGL_CLS
-2023 8602             (   demo/boxes.asm):00062                         LDA     #TGL_MODE_XOR   ; everything this frame is XORed
-2025 BD1009           (   demo/boxes.asm):00063                         JSR     TGL_SETMODE
+2820 BD1006           (   demo/boxes.asm):00061         FRAME           JSR     TGL_CLS
+2823 8602             (   demo/boxes.asm):00062                         LDA     #TGL_MODE_XOR   ; everything this frame is XORed
+2825 BD1009           (   demo/boxes.asm):00063                         JSR     TGL_SETMODE
                       (   demo/boxes.asm):00064         
                       (   demo/boxes.asm):00065         ; Move and draw each box. U walks through the box table, one record per box.
-2028 338D00C0         (   demo/boxes.asm):00066                         LEAU    BOXES,PCR
-202C 8604             (   demo/boxes.asm):00067                         LDA     #NBOXES
-202E 9780             (   demo/boxes.asm):00068                         STA     <BOXN
-2030 8D52             (   demo/boxes.asm):00069         BX_LOOP         BSR     MOVEBOX         ; update position, bouncing
-2032 A6C90000         (   demo/boxes.asm):00070                         LDA     BX_X,U          ; draw it: corner (x, y) ...
-2036 ABC90004         (   demo/boxes.asm):00071                         ADDA    BX_W,U          ; ... to (x+w-1, y+h-1)
-203A 4A               (   demo/boxes.asm):00072                         DECA
-203B E6C90001         (   demo/boxes.asm):00073                         LDB     BX_Y,U
-203F EBC90005         (   demo/boxes.asm):00074                         ADDB    BX_H,U
-2043 5A               (   demo/boxes.asm):00075                         DECB
-2044 1F01             (   demo/boxes.asm):00076                         TFR     D,X             ; X = x1:y1
-2046 A6C90000         (   demo/boxes.asm):00077                         LDA     BX_X,U          ; A,B = x0,y0
-204A E6C90001         (   demo/boxes.asm):00078                         LDB     BX_Y,U
-204E BD1027           (   demo/boxes.asm):00079                         JSR     TGL_RECTF
-2051 33C90006         (   demo/boxes.asm):00080                         LEAU    BX_SIZE,U       ; next box
-2055 0A80             (   demo/boxes.asm):00081                         DEC     <BOXN
-2057 26D7             (   demo/boxes.asm):00082                         BNE     BX_LOOP
+2828 338D00C0         (   demo/boxes.asm):00066                         LEAU    BOXES,PCR
+282C 8604             (   demo/boxes.asm):00067                         LDA     #NBOXES
+282E 9780             (   demo/boxes.asm):00068                         STA     <BOXN
+2830 8D52             (   demo/boxes.asm):00069         BX_LOOP         BSR     MOVEBOX         ; update position, bouncing
+2832 A6C90000         (   demo/boxes.asm):00070                         LDA     BX_X,U          ; draw it: corner (x, y) ...
+2836 ABC90004         (   demo/boxes.asm):00071                         ADDA    BX_W,U          ; ... to (x+w-1, y+h-1)
+283A 4A               (   demo/boxes.asm):00072                         DECA
+283B E6C90001         (   demo/boxes.asm):00073                         LDB     BX_Y,U
+283F EBC90005         (   demo/boxes.asm):00074                         ADDB    BX_H,U
+2843 5A               (   demo/boxes.asm):00075                         DECB
+2844 1F01             (   demo/boxes.asm):00076                         TFR     D,X             ; X = x1:y1
+2846 A6C90000         (   demo/boxes.asm):00077                         LDA     BX_X,U          ; A,B = x0,y0
+284A E6C90001         (   demo/boxes.asm):00078                         LDB     BX_Y,U
+284E BD1027           (   demo/boxes.asm):00079                         JSR     TGL_RECTF
+2851 33C90006         (   demo/boxes.asm):00080                         LEAU    BX_SIZE,U       ; next box
+2855 0A80             (   demo/boxes.asm):00081                         DEC     <BOXN
+2857 26D7             (   demo/boxes.asm):00082                         BNE     BX_LOOP
                       (   demo/boxes.asm):00083         
                       (   demo/boxes.asm):00084         ; Two fixed outline frames, also in XOR
-2059 4F               (   demo/boxes.asm):00085                         CLRA                    ; round the whole screen: (0,0)
-205A 5F               (   demo/boxes.asm):00086                         CLRB
-205B 8E4D47           (   demo/boxes.asm):00087                         LDX     #$4D47          ;  to (77,71)
-205E BD1024           (   demo/boxes.asm):00088                         JSR     TGL_RECT
-2061 860C             (   demo/boxes.asm):00089                         LDA     #12             ; and an inner frame: (12,9)
-2063 C609             (   demo/boxes.asm):00090                         LDB     #9
-2065 8E413E           (   demo/boxes.asm):00091                         LDX     #$413E          ;  to (65,62)
-2068 BD1024           (   demo/boxes.asm):00092                         JSR     TGL_RECT
+2859 4F               (   demo/boxes.asm):00085                         CLRA                    ; round the whole screen: (0,0)
+285A 5F               (   demo/boxes.asm):00086                         CLRB
+285B 8E4D47           (   demo/boxes.asm):00087                         LDX     #$4D47          ;  to (77,71)
+285E BD1024           (   demo/boxes.asm):00088                         JSR     TGL_RECT
+2861 860C             (   demo/boxes.asm):00089                         LDA     #12             ; and an inner frame: (12,9)
+2863 C609             (   demo/boxes.asm):00090                         LDB     #9
+2865 8E413E           (   demo/boxes.asm):00091                         LDX     #$413E          ;  to (65,62)
+2868 BD1024           (   demo/boxes.asm):00092                         JSR     TGL_RECT
                       (   demo/boxes.asm):00093         
-206B BD1012           (   demo/boxes.asm):00094                         JSR     TGL_BLIT        ; show the frame
+286B BD1012           (   demo/boxes.asm):00094                         JSR     TGL_BLIT        ; show the frame
                       (   demo/boxes.asm):00095         
-206E 9E82             (   demo/boxes.asm):00096                         LDX     <FCOUNT         ; count the frame and show it on the
-2070 3001             (   demo/boxes.asm):00097                         LEAX    1,X             ;  status row (straight to the screen,
-2072 9F82             (   demo/boxes.asm):00098                         STX     <FCOUNT         ;  five characters, right-aligned)
-2074 8617             (   demo/boxes.asm):00099                         LDA     #NUMCOL
-2076 BD1036           (   demo/boxes.asm):00100                         JSR     TGL_TNUM
+286E 9E82             (   demo/boxes.asm):00096                         LDX     <FCOUNT         ; count the frame and show it on the
+2870 3001             (   demo/boxes.asm):00097                         LEAX    1,X             ;  status row (straight to the screen,
+2872 9F82             (   demo/boxes.asm):00098                         STX     <FCOUNT         ;  five characters, right-aligned)
+2874 8617             (   demo/boxes.asm):00099                         LDA     #NUMCOL
+2876 BD1036           (   demo/boxes.asm):00100                         JSR     TGL_TNUM
                       (   demo/boxes.asm):00101         
-2079 BD101E           (   demo/boxes.asm):00102                         JSR     TGL_INKEY       ; any key exits
-207C 1026EFA1         (   demo/boxes.asm):00103                         LBNE    TGL_EXIT
+2879 BD101E           (   demo/boxes.asm):00102                         JSR     TGL_INKEY       ; any key exits
+287C 1026E7A1         (   demo/boxes.asm):00103                         LBNE    TGL_EXIT
                       (   demo/boxes.asm):00104                         IFDEF   TESTFRAMES
                       (   demo/boxes.asm):00105                         INC     <FRAMES
                       (   demo/boxes.asm):00106                         LDA     <FRAMES
                       (   demo/boxes.asm):00107                         CMPA    #TESTFRAMES
                       (   demo/boxes.asm):00108                         BEQ     DONE
                       (   demo/boxes.asm):00109                         ENDC
-2080 209E             (   demo/boxes.asm):00110                         BRA     FRAME
-2082 20FE             (   demo/boxes.asm):00111         DONE            BRA     DONE
+2880 209E             (   demo/boxes.asm):00110                         BRA     FRAME
+2882 20FE             (   demo/boxes.asm):00111         DONE            BRA     DONE
                       (   demo/boxes.asm):00112         
                       (   demo/boxes.asm):00113         ; ---------------------------------------------------------------------------
                       (   demo/boxes.asm):00114         ; MOVEBOX - move the box at U by its velocity, bouncing off the limits
@@ -174,34 +175,34 @@
                       (   demo/boxes.asm):00118         ;   positions can be negative.
                       (   demo/boxes.asm):00119         ;   Entry: U -> box record    Exit: A, B corrupted
                       (   demo/boxes.asm):00120         ; ---------------------------------------------------------------------------
-2084 A6C90000         (   demo/boxes.asm):00121         MOVEBOX         LDA     BX_X,U          ; new x = x + dx
-2088 ABC90002         (   demo/boxes.asm):00122                         ADDA    BX_DX,U
-208C 81F4             (   demo/boxes.asm):00123                         CMPA    #X_LO           ; past the left limit?
-208E 2D0C             (   demo/boxes.asm):00124                         BLT     MB_XFLIP
-2090 C65A             (   demo/boxes.asm):00125                         LDB     #X_HI           ; past the right limit? (x > X_HI - w)
-2092 E0C90004         (   demo/boxes.asm):00126                         SUBB    BX_W,U
-2096 3404             (   demo/boxes.asm):00127                         PSHS    B
-2098 A1E0             (   demo/boxes.asm):00128                         CMPA    ,S+
-209A 2F0C             (   demo/boxes.asm):00129                         BLE     MB_XOK
-209C 60C90002         (   demo/boxes.asm):00130         MB_XFLIP        NEG     BX_DX,U         ; bounce: reverse, move the other way
-20A0 A6C90000         (   demo/boxes.asm):00131                         LDA     BX_X,U
-20A4 ABC90002         (   demo/boxes.asm):00132                         ADDA    BX_DX,U
-20A8 A7C90000         (   demo/boxes.asm):00133         MB_XOK          STA     BX_X,U
+2884 A6C90000         (   demo/boxes.asm):00121         MOVEBOX         LDA     BX_X,U          ; new x = x + dx
+2888 ABC90002         (   demo/boxes.asm):00122                         ADDA    BX_DX,U
+288C 81F4             (   demo/boxes.asm):00123                         CMPA    #X_LO           ; past the left limit?
+288E 2D0C             (   demo/boxes.asm):00124                         BLT     MB_XFLIP
+2890 C65A             (   demo/boxes.asm):00125                         LDB     #X_HI           ; past the right limit? (x > X_HI - w)
+2892 E0C90004         (   demo/boxes.asm):00126                         SUBB    BX_W,U
+2896 3404             (   demo/boxes.asm):00127                         PSHS    B
+2898 A1E0             (   demo/boxes.asm):00128                         CMPA    ,S+
+289A 2F0C             (   demo/boxes.asm):00129                         BLE     MB_XOK
+289C 60C90002         (   demo/boxes.asm):00130         MB_XFLIP        NEG     BX_DX,U         ; bounce: reverse, move the other way
+28A0 A6C90000         (   demo/boxes.asm):00131                         LDA     BX_X,U
+28A4 ABC90002         (   demo/boxes.asm):00132                         ADDA    BX_DX,U
+28A8 A7C90000         (   demo/boxes.asm):00133         MB_XOK          STA     BX_X,U
                       (   demo/boxes.asm):00134         
-20AC A6C90001         (   demo/boxes.asm):00135                         LDA     BX_Y,U          ; the same for y
-20B0 ABC90003         (   demo/boxes.asm):00136                         ADDA    BX_DY,U
-20B4 81F7             (   demo/boxes.asm):00137                         CMPA    #Y_LO
-20B6 2D0C             (   demo/boxes.asm):00138                         BLT     MB_YFLIP
-20B8 C651             (   demo/boxes.asm):00139                         LDB     #Y_HI
-20BA E0C90005         (   demo/boxes.asm):00140                         SUBB    BX_H,U
-20BE 3404             (   demo/boxes.asm):00141                         PSHS    B
-20C0 A1E0             (   demo/boxes.asm):00142                         CMPA    ,S+
-20C2 2F0C             (   demo/boxes.asm):00143                         BLE     MB_YOK
-20C4 60C90003         (   demo/boxes.asm):00144         MB_YFLIP        NEG     BX_DY,U
-20C8 A6C90001         (   demo/boxes.asm):00145                         LDA     BX_Y,U
-20CC ABC90003         (   demo/boxes.asm):00146                         ADDA    BX_DY,U
-20D0 A7C90001         (   demo/boxes.asm):00147         MB_YOK          STA     BX_Y,U
-20D4 39               (   demo/boxes.asm):00148                         RTS
+28AC A6C90001         (   demo/boxes.asm):00135                         LDA     BX_Y,U          ; the same for y
+28B0 ABC90003         (   demo/boxes.asm):00136                         ADDA    BX_DY,U
+28B4 81F7             (   demo/boxes.asm):00137                         CMPA    #Y_LO
+28B6 2D0C             (   demo/boxes.asm):00138                         BLT     MB_YFLIP
+28B8 C651             (   demo/boxes.asm):00139                         LDB     #Y_HI
+28BA E0C90005         (   demo/boxes.asm):00140                         SUBB    BX_H,U
+28BE 3404             (   demo/boxes.asm):00141                         PSHS    B
+28C0 A1E0             (   demo/boxes.asm):00142                         CMPA    ,S+
+28C2 2F0C             (   demo/boxes.asm):00143                         BLE     MB_YOK
+28C4 60C90003         (   demo/boxes.asm):00144         MB_YFLIP        NEG     BX_DY,U
+28C8 A6C90001         (   demo/boxes.asm):00145                         LDA     BX_Y,U
+28CC ABC90003         (   demo/boxes.asm):00146                         ADDA    BX_DY,U
+28D0 A7C90001         (   demo/boxes.asm):00147         MB_YOK          STA     BX_Y,U
+28D4 39               (   demo/boxes.asm):00148                         RTS
                       (   demo/boxes.asm):00149         
                       (   demo/boxes.asm):00150         ; ---------------------------------------------------------------------------
                       (   demo/boxes.asm):00151         ; The boxes. Each record: x, y (top-left, signed), dx, dy (velocity per
@@ -221,46 +222,46 @@
                       (   demo/boxes.asm):00165         ; cyan text from that point along the row. Each takes up one character
                       (   demo/boxes.asm):00166         ; position. The frame number goes in the five columns after "FRAME ".
                       (   demo/boxes.asm):00167         ; ---------------------------------------------------------------------------
-20D5 83               (   demo/boxes.asm):00168         TITLE           FCB     $83
-20D6 52454354414E474C (   demo/boxes.asm):00169                         FCC     "RECTANGLES DEMO"
+28D5 83               (   demo/boxes.asm):00168         TITLE           FCB     $83
+28D6 52454354414E474C (   demo/boxes.asm):00169                         FCC     "RECTANGLES DEMO"
      45532044454D4F
-20E5 86               (   demo/boxes.asm):00170                         FCB     $86
-20E6 4652414D45       (   demo/boxes.asm):00171                         FCC     "FRAME"
-20EB 00               (   demo/boxes.asm):00172                         FCB     0
+28E5 86               (   demo/boxes.asm):00170                         FCB     $86
+28E6 4652414D45       (   demo/boxes.asm):00171                         FCC     "FRAME"
+28EB 00               (   demo/boxes.asm):00172                         FCB     0
      0017             (   demo/boxes.asm):00173         NUMCOL          EQU     23              ; 1 + 15 + 1 + 5 = 22 characters,
                       (   demo/boxes.asm):00174                                                 ;  plus a space
                       (   demo/boxes.asm):00175         
-20EC 040601011E14     (   demo/boxes.asm):00176         BOXES           FCB     4,6,1,1,30,20           ; wide box
-20F2 281EFE01181E     (   demo/boxes.asm):00177                         FCB     40,30,-2,1,24,30        ; tall box, faster
-20F8 142D02FF280E     (   demo/boxes.asm):00178                         FCB     20,45,2,-1,40,14        ; long flat box
-20FE 370AFFFF1212     (   demo/boxes.asm):00179                         FCB     55,10,-1,-1,18,18       ; small square
+28EC 040601011E14     (   demo/boxes.asm):00176         BOXES           FCB     4,6,1,1,30,20           ; wide box
+28F2 281EFE01181E     (   demo/boxes.asm):00177                         FCB     40,30,-2,1,24,30        ; tall box, faster
+28F8 142D02FF280E     (   demo/boxes.asm):00178                         FCB     20,45,2,-1,40,14        ; long flat box
+28FE 370AFFFF1212     (   demo/boxes.asm):00179                         FCB     55,10,-1,-1,18,18       ; small square
      0004             (   demo/boxes.asm):00180         NBOXES          EQU     4
 
 Symbol Table:
-[ G] BOXES                            20EC
+[ G] BOXES                            28EC
 [ G] BOXN                             0080
-[ G] BUFFER                           3000
+[ G] BUFFER                           3800
 [ G] BX_DX                            0002
 [ G] BX_DY                            0003
 [ G] BX_H                             0005
-[ G] BX_LOOP                          2030
+[ G] BX_LOOP                          2830
 [ G] BX_SIZE                          0006
 [ G] BX_W                             0004
 [ G] BX_X                             0000
 [ G] BX_Y                             0001
-[ G] DONE                             2082
+[ G] DONE                             2882
 [ G] FCOUNT                           0082
-[ G] FRAME                            2020
+[ G] FRAME                            2820
 [ G] FRAMES                           0081
-[ G] MB_XFLIP                         209C
-[ G] MB_XOK                           20A8
-[ G] MB_YFLIP                         20C4
-[ G] MB_YOK                           20D0
-[ G] MOVEBOX                          2084
+[ G] MB_XFLIP                         289C
+[ G] MB_XOK                           28A8
+[ G] MB_YFLIP                         28C4
+[ G] MB_YOK                           28D0
+[ G] MOVEBOX                          2884
 [ G] NBOXES                           0004
 [ G] NUMCOL                           0017
 [ G] STACK_TOP                        0200
-[ G] START                            2000
+[ G] START                            2800
 [ G] TGL_BASE                         1000
 [ G] TGL_BLIT                         1012
 [ G] TGL_BLUE                         0004
@@ -272,6 +273,7 @@ Symbol Table:
 [ G] TGL_CYAN                         0006
 [ G] TGL_DONE                         101B
 [ G] TGL_EXIT                         1021
+[ G] TGL_FLIPH                        1045
 [ G] TGL_GREEN                        0002
 [ G] TGL_INIT                         1000
 [ G] TGL_INKEY                        101E
@@ -303,7 +305,7 @@ Symbol Table:
 [ G] TGL_TNUM                         1036
 [ G] TGL_WHITE                        0007
 [ G] TGL_YELLOW                       0003
-[ G] TITLE                            20D5
+[ G] TITLE                            28D5
 [ G] X_HI                             005A
 [ G] X_LO                             FFFFFFF4
 [ G] Y_HI                             0051

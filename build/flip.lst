@@ -1,0 +1,220 @@
+                      (    demo/flip.asm):00001         ; ===========================================================================
+                      (    demo/flip.asm):00002         ; Splash-screen flip demo for the teletext graphics library
+                      (    demo/flip.asm):00003         ;
+                      (    demo/flip.asm):00004         ;   Draws a deliberately lopsided picture (a letter F, a right-pointing
+                      (    demo/flip.asm):00005         ;   arrow and a ball, so the mirroring is easy to see), then turns it over
+                      (    demo/flip.asm):00006         ;   with TGL_FLIPH every couple of seconds: the picture narrows to the
+                      (    demo/flip.asm):00007         ;   centre line and opens out again mirror-reversed, like a card turning.
+                      (    demo/flip.asm):00008         ;   Press any key to exit.
+                      (    demo/flip.asm):00009         ;
+                      (    demo/flip.asm):00010         ;   Loading: tgl.bin at $1000 (TGL_BASE below), splash.bin at $2800.
+                      (    demo/flip.asm):00011         ;   Run from START ($2800). Works with either machine's library build.
+                      (    demo/flip.asm):00012         ;
+                      (    demo/flip.asm):00013         ;   TGL_FLIPH animates whatever is in the off-screen buffer and leaves the
+                      (    demo/flip.asm):00014         ;   buffer mirrored, so the next flip turns it back again.
+                      (    demo/flip.asm):00015         ; ===========================================================================
+                      (    demo/flip.asm):00016         
+     1000             (    demo/flip.asm):00017         TGL_BASE        EQU     $1000
+                      (    demo/flip.asm):00018                         INCLUDE "tgl_api.inc"
+                      (      tgl_api.inc):00001         ; ---------------------------------------------------------------------------
+                      (      tgl_api.inc):00002         ; Acorn System 3 Teletext Graphics Library - caller interface
+                      (      tgl_api.inc):00003         ;
+                      (      tgl_api.inc):00004         ; Define TGL_BASE as the address the library binary is loaded at, then
+                      (      tgl_api.inc):00005         ; INCLUDE this file. Entry points are fixed offsets from the load address.
+                      (      tgl_api.inc):00006         ;
+                      (      tgl_api.inc):00007         ; All routines: enter with DP = $00. Registers are preserved unless stated.
+                      (      tgl_api.inc):00008         ; ---------------------------------------------------------------------------
+     1000             (      tgl_api.inc):00009         TGL_INIT        EQU     TGL_BASE+0      ; initialise; buffer = end of library
+     1003             (      tgl_api.inc):00010         TGL_SETBUF      EQU     TGL_BASE+3      ; X = off-screen buffer address
+     1006             (      tgl_api.inc):00011         TGL_CLS         EQU     TGL_BASE+6      ; clear buffer to blank graphics
+     1009             (      tgl_api.inc):00012         TGL_SETMODE     EQU     TGL_BASE+9      ; A = plot mode (TGL_MODE_xxx)
+     100C             (      tgl_api.inc):00013         TGL_PLOT        EQU     TGL_BASE+12     ; A = x (0-77), B = y (0-71)
+     100F             (      tgl_api.inc):00014         TGL_LINE        EQU     TGL_BASE+15     ; A,B = x0,y0  X = x1:y1 (hi:lo)
+     1012             (      tgl_api.inc):00015         TGL_BLIT        EQU     TGL_BASE+18     ; copy buffer to screen rows 0-23
+     1015             (      tgl_api.inc):00016         TGL_PLOTC       EQU     TGL_BASE+21     ; clipped plot: A,B = signed x,y
+     1018             (      tgl_api.inc):00017         TGL_LINEC       EQU     TGL_BASE+24     ; clipped line: signed coordinates
+     101B             (      tgl_api.inc):00018         TGL_DONE        EQU     TGL_BASE+27     ; restore text display (clears screen)
+     101E             (      tgl_api.inc):00019         TGL_INKEY       EQU     TGL_BASE+30     ; key waiting? Z set: none; else A = key
+     1021             (      tgl_api.inc):00020         TGL_EXIT        EQU     TGL_BASE+33     ; restore display, back to FLEX/monitor
+     1024             (      tgl_api.inc):00021         TGL_RECT        EQU     TGL_BASE+36     ; outline rectangle: corners as TGL_LINEC
+     1027             (      tgl_api.inc):00022         TGL_RECTF       EQU     TGL_BASE+39     ; filled rectangle: corners as TGL_LINEC
+     102A             (      tgl_api.inc):00023         TGL_CIRC        EQU     TGL_BASE+42     ; outline circle: A,B = centre, X = radius
+     102D             (      tgl_api.inc):00024         TGL_CIRCF       EQU     TGL_BASE+45     ; filled circle: A,B = centre, X = radius
+     1030             (      tgl_api.inc):00025         TGL_TEXT        EQU     TGL_BASE+48     ; status row text: A = column, X -> string
+     1033             (      tgl_api.inc):00026         TGL_TCLR        EQU     TGL_BASE+51     ; clear the status row
+     1036             (      tgl_api.inc):00027         TGL_TNUM        EQU     TGL_BASE+54     ; status row number: A = column, X = value
+     1039             (      tgl_api.inc):00028         TGL_COLOUR      EQU     TGL_BASE+57     ; row colour: A,B = first,last row, X = colour
+     103C             (      tgl_api.inc):00029         TGL_PACE        EQU     TGL_BASE+60     ; steady frame rate: A = 50Hz ticks (1-3)
+     103F             (      tgl_api.inc):00030         TGL_POLYF       EQU     TGL_BASE+63     ; filled convex polygon: X -> n, x0,y0, ...
+     1042             (      tgl_api.inc):00031         TGL_SETPAT      EQU     TGL_BASE+66     ; fill pattern: A = 0-15 (2x2 pixels)
+     1045             (      tgl_api.inc):00032         TGL_FLIPH       EQU     TGL_BASE+69     ; card-turn flip: A = ticks per frame
+                      (      tgl_api.inc):00033         
+     03C0             (      tgl_api.inc):00034         TGL_BUFSIZE     EQU     960
+     0000             (      tgl_api.inc):00035         TGL_MODE_SET    EQU     0
+     0001             (      tgl_api.inc):00036         TGL_MODE_CLEAR  EQU     1
+     0002             (      tgl_api.inc):00037         TGL_MODE_XOR    EQU     2
+                      (      tgl_api.inc):00038         
+                      (      tgl_api.inc):00039         ; Colours for TGL_COLOUR
+     0001             (      tgl_api.inc):00040         TGL_RED         EQU     1
+     0002             (      tgl_api.inc):00041         TGL_GREEN       EQU     2
+     0003             (      tgl_api.inc):00042         TGL_YELLOW      EQU     3
+     0004             (      tgl_api.inc):00043         TGL_BLUE        EQU     4
+     0005             (      tgl_api.inc):00044         TGL_MAGENTA     EQU     5
+     0006             (      tgl_api.inc):00045         TGL_CYAN        EQU     6
+     0007             (      tgl_api.inc):00046         TGL_WHITE       EQU     7
+                      (      tgl_api.inc):00047         
+                      (      tgl_api.inc):00048         ; Fill patterns for TGL_SETPAT: a 2x2 block of pixels repeated across the
+                      (      tgl_api.inc):00049         ; screen. Bit 0: even x, even y; bit 1: odd x, even y; bit 2: even x,
+                      (      tgl_api.inc):00050         ; odd y; bit 3: odd x, odd y.
+     0000             (      tgl_api.inc):00051         TGL_PAT_EMPTY   EQU     0
+     0001             (      tgl_api.inc):00052         TGL_PAT_25      EQU     %0001           ; one pixel in four
+     0009             (      tgl_api.inc):00053         TGL_PAT_50      EQU     %1001           ; checkerboard
+     000B             (      tgl_api.inc):00054         TGL_PAT_75      EQU     %1011           ; three pixels in four
+     000F             (      tgl_api.inc):00055         TGL_PAT_SOLID   EQU     %1111
+     0003             (      tgl_api.inc):00056         TGL_PAT_HLINES  EQU     %0011           ; horizontal stripes
+     0005             (      tgl_api.inc):00057         TGL_PAT_VLINES  EQU     %0101           ; vertical stripes
+                      (    demo/flip.asm):00019         
+     3800             (    demo/flip.asm):00020         BUFFER          EQU     $3800           ; off-screen buffer (960 bytes)
+     0200             (    demo/flip.asm):00021         STACK_TOP       EQU     $0200           ; stack $0100-$01FF
+                      (    demo/flip.asm):00022         
+     0002             (    demo/flip.asm):00023         FLIP_TICKS      EQU     2               ; flip speed: 50Hz ticks per frame
+                      (    demo/flip.asm):00024                                                 ;  (2 = about 0.7 s, 3 = about 1 s)
+     0064             (    demo/flip.asm):00025         PAUSE           EQU     100             ; pause between flips, in 50Hz ticks
+                      (    demo/flip.asm):00026         
+     0080             (    demo/flip.asm):00027         WAITN           EQU     $80             ; pause counter
+                      (    demo/flip.asm):00028         
+                      (    demo/flip.asm):00029                         ORG     $2800
+                      (    demo/flip.asm):00030         
+2800 10CE0200         (    demo/flip.asm):00031         START           LDS     #STACK_TOP
+2804 4F               (    demo/flip.asm):00032                         CLRA                    ; DP = $00 for the library
+2805 1F8B             (    demo/flip.asm):00033                         TFR     A,DP
+     00               (    demo/flip.asm):00034                         SETDP   $00
+2807 1CEF             (    demo/flip.asm):00035                         ANDCC   #$EF            ; IRQs on (keyboard)
+2809 BD1000           (    demo/flip.asm):00036                         JSR     TGL_INIT
+280C 8E3800           (    demo/flip.asm):00037                         LDX     #BUFFER
+280F BD1003           (    demo/flip.asm):00038                         JSR     TGL_SETBUF
+2812 BD1006           (    demo/flip.asm):00039                         JSR     TGL_CLS
+2815 4F               (    demo/flip.asm):00040                         CLRA                    ; status row title
+2816 8E2886           (    demo/flip.asm):00041                         LDX     #TITLE
+2819 BD1030           (    demo/flip.asm):00042                         JSR     TGL_TEXT
+                      (    demo/flip.asm):00043         
+                      (    demo/flip.asm):00044         ; ---------------------------------------------------------------------------
+                      (    demo/flip.asm):00045         ; The picture
+                      (    demo/flip.asm):00046         ; ---------------------------------------------------------------------------
+281C 4F               (    demo/flip.asm):00047                         CLRA                    ; a frame round the screen
+281D 5F               (    demo/flip.asm):00048                         CLRB
+281E 8E4D47           (    demo/flip.asm):00049                         LDX     #$4D47
+2821 BD1024           (    demo/flip.asm):00050                         JSR     TGL_RECT
+2824 8608             (    demo/flip.asm):00051                         LDA     #8              ; the letter F: upright ...
+2826 C60C             (    demo/flip.asm):00052                         LDB     #12
+2828 8E0D3B           (    demo/flip.asm):00053                         LDX     #$0D3B          ;  (8,12)-(13,59)
+282B BD1027           (    demo/flip.asm):00054                         JSR     TGL_RECTF
+282E 860E             (    demo/flip.asm):00055                         LDA     #14             ; ... top bar ...
+2830 C60C             (    demo/flip.asm):00056                         LDB     #12
+2832 8E1E11           (    demo/flip.asm):00057                         LDX     #$1E11          ;  (14,12)-(30,17)
+2835 BD1027           (    demo/flip.asm):00058                         JSR     TGL_RECTF
+2838 860E             (    demo/flip.asm):00059                         LDA     #14             ; ... and middle bar
+283A C620             (    demo/flip.asm):00060                         LDB     #32
+283C 8E1824           (    demo/flip.asm):00061                         LDX     #$1824          ;  (14,32)-(24,36)
+283F BD1027           (    demo/flip.asm):00062                         JSR     TGL_RECTF
+2842 8E2876           (    demo/flip.asm):00063                         LDX     #ARROW          ; the arrow, pointing right: its head
+2845 BD103F           (    demo/flip.asm):00064                         JSR     TGL_POLYF
+2848 8E287D           (    demo/flip.asm):00065                         LDX     #SHAFT          ;  and its shaft (an arrow isn't
+284B BD103F           (    demo/flip.asm):00066                         JSR     TGL_POLYF       ;  convex, so it is two polygons)
+284E 8642             (    demo/flip.asm):00067                         LDA     #66             ; the ball, top right
+2850 C610             (    demo/flip.asm):00068                         LDB     #16
+2852 8E0007           (    demo/flip.asm):00069                         LDX     #7
+2855 BD102D           (    demo/flip.asm):00070                         JSR     TGL_CIRCF
+2858 BD1012           (    demo/flip.asm):00071                         JSR     TGL_BLIT
+                      (    demo/flip.asm):00072         
+                      (    demo/flip.asm):00073         ; ---------------------------------------------------------------------------
+                      (    demo/flip.asm):00074         ; Pause, flip, repeat (any key exits)
+                      (    demo/flip.asm):00075         ; ---------------------------------------------------------------------------
+285B 8664             (    demo/flip.asm):00076         LOOP            LDA     #PAUSE          ; pause, checking for a key
+285D 9780             (    demo/flip.asm):00077                         STA     <WAITN
+285F BD101E           (    demo/flip.asm):00078         WAIT            JSR     TGL_INKEY
+2862 1026E7BB         (    demo/flip.asm):00079                         LBNE    TGL_EXIT
+2866 8601             (    demo/flip.asm):00080                         LDA     #1              ; one 50Hz tick
+2868 BD103C           (    demo/flip.asm):00081                         JSR     TGL_PACE
+286B 0A80             (    demo/flip.asm):00082                         DEC     <WAITN
+286D 26F0             (    demo/flip.asm):00083                         BNE     WAIT
+286F 8602             (    demo/flip.asm):00084                         LDA     #FLIP_TICKS     ; turn the picture over
+2871 BD1045           (    demo/flip.asm):00085                         JSR     TGL_FLIPH
+2874 20E5             (    demo/flip.asm):00086                         BRA     LOOP
+                      (    demo/flip.asm):00087         
+                      (    demo/flip.asm):00088         ; The arrow is not convex, so it is drawn as two convex polygons: a
+                      (    demo/flip.asm):00089         ; triangle for the head and a rectangle for the shaft
+2876 03               (    demo/flip.asm):00090         ARROW           FCB     3               ; head: a triangle pointing right
+2877 3214             (    demo/flip.asm):00091                         FCB     50,20
+2879 4624             (    demo/flip.asm):00092                         FCB     70,36
+287B 3234             (    demo/flip.asm):00093                         FCB     50,52
+287D 04               (    demo/flip.asm):00094         SHAFT           FCB     4               ; shaft
+287E 1E1E             (    demo/flip.asm):00095                         FCB     30,30
+2880 321E             (    demo/flip.asm):00096                         FCB     50,30
+2882 322A             (    demo/flip.asm):00097                         FCB     50,42
+2884 1E2A             (    demo/flip.asm):00098                         FCB     30,42
+                      (    demo/flip.asm):00099         
+                      (    demo/flip.asm):00100         ; Status row title. $83 yellow, $86 cyan text codes.
+2886 83               (    demo/flip.asm):00101         TITLE           FCB     $83
+2887 53504C4153482046 (    demo/flip.asm):00102                         FCC     "SPLASH FLIP"
+     4C4950
+2892 86               (    demo/flip.asm):00103                         FCB     $86
+2893 414E59204B455920 (    demo/flip.asm):00104                         FCC     "ANY KEY EXITS"
+     4558495453
+28A0 00               (    demo/flip.asm):00105                         FCB     0
+
+Symbol Table:
+[ G] ARROW                            2876
+[ G] BUFFER                           3800
+[ G] FLIP_TICKS                       0002
+[ G] LOOP                             285B
+[ G] PAUSE                            0064
+[ G] SHAFT                            287D
+[ G] STACK_TOP                        0200
+[ G] START                            2800
+[ G] TGL_BASE                         1000
+[ G] TGL_BLIT                         1012
+[ G] TGL_BLUE                         0004
+[ G] TGL_BUFSIZE                      03C0
+[ G] TGL_CIRC                         102A
+[ G] TGL_CIRCF                        102D
+[ G] TGL_CLS                          1006
+[ G] TGL_COLOUR                       1039
+[ G] TGL_CYAN                         0006
+[ G] TGL_DONE                         101B
+[ G] TGL_EXIT                         1021
+[ G] TGL_FLIPH                        1045
+[ G] TGL_GREEN                        0002
+[ G] TGL_INIT                         1000
+[ G] TGL_INKEY                        101E
+[ G] TGL_LINE                         100F
+[ G] TGL_LINEC                        1018
+[ G] TGL_MAGENTA                      0005
+[ G] TGL_MODE_CLEAR                   0001
+[ G] TGL_MODE_SET                     0000
+[ G] TGL_MODE_XOR                     0002
+[ G] TGL_PACE                         103C
+[ G] TGL_PAT_25                       0001
+[ G] TGL_PAT_50                       0009
+[ G] TGL_PAT_75                       000B
+[ G] TGL_PAT_EMPTY                    0000
+[ G] TGL_PAT_HLINES                   0003
+[ G] TGL_PAT_SOLID                    000F
+[ G] TGL_PAT_VLINES                   0005
+[ G] TGL_PLOT                         100C
+[ G] TGL_PLOTC                        1015
+[ G] TGL_POLYF                        103F
+[ G] TGL_RECT                         1024
+[ G] TGL_RECTF                        1027
+[ G] TGL_RED                          0001
+[ G] TGL_SETBUF                       1003
+[ G] TGL_SETMODE                      1009
+[ G] TGL_SETPAT                       1042
+[ G] TGL_TCLR                         1033
+[ G] TGL_TEXT                         1030
+[ G] TGL_TNUM                         1036
+[ G] TGL_WHITE                        0007
+[ G] TGL_YELLOW                       0003
+[ G] TITLE                            2886
+[ G] WAIT                             285F
+[ G] WAITN                            0080

@@ -17,8 +17,8 @@
                       ( demo/circles.asm):00017         ;   than they are tall), so they look round on screen even though they are
                       ( demo/circles.asm):00018         ;   narrower than they are tall in pixels.
                       ( demo/circles.asm):00019         ;
-                      ( demo/circles.asm):00020         ;   Loading: tgl.bin at $1000 (TGL_BASE below), circles.bin at $2000.
-                      ( demo/circles.asm):00021         ;   Run from START ($2000). Works with either machine's library build.
+                      ( demo/circles.asm):00020         ;   Loading: tgl.bin at $1000 (TGL_BASE below), circles.bin at $2800.
+                      ( demo/circles.asm):00021         ;   Run from START ($2800). Works with either machine's library build.
                       ( demo/circles.asm):00022         ;
                       ( demo/circles.asm):00023         ;   Circle calls: A,B = centre x,y (signed), X = radius (0-127).
                       ( demo/circles.asm):00024         ;
@@ -58,33 +58,34 @@
      103C             (      tgl_api.inc):00029         TGL_PACE        EQU     TGL_BASE+60     ; steady frame rate: A = 50Hz ticks (1-3)
      103F             (      tgl_api.inc):00030         TGL_POLYF       EQU     TGL_BASE+63     ; filled convex polygon: X -> n, x0,y0, ...
      1042             (      tgl_api.inc):00031         TGL_SETPAT      EQU     TGL_BASE+66     ; fill pattern: A = 0-15 (2x2 pixels)
-                      (      tgl_api.inc):00032         
-     03C0             (      tgl_api.inc):00033         TGL_BUFSIZE     EQU     960
-     0000             (      tgl_api.inc):00034         TGL_MODE_SET    EQU     0
-     0001             (      tgl_api.inc):00035         TGL_MODE_CLEAR  EQU     1
-     0002             (      tgl_api.inc):00036         TGL_MODE_XOR    EQU     2
-                      (      tgl_api.inc):00037         
-                      (      tgl_api.inc):00038         ; Colours for TGL_COLOUR
-     0001             (      tgl_api.inc):00039         TGL_RED         EQU     1
-     0002             (      tgl_api.inc):00040         TGL_GREEN       EQU     2
-     0003             (      tgl_api.inc):00041         TGL_YELLOW      EQU     3
-     0004             (      tgl_api.inc):00042         TGL_BLUE        EQU     4
-     0005             (      tgl_api.inc):00043         TGL_MAGENTA     EQU     5
-     0006             (      tgl_api.inc):00044         TGL_CYAN        EQU     6
-     0007             (      tgl_api.inc):00045         TGL_WHITE       EQU     7
-                      (      tgl_api.inc):00046         
-                      (      tgl_api.inc):00047         ; Fill patterns for TGL_SETPAT: a 2x2 block of pixels repeated across the
-                      (      tgl_api.inc):00048         ; screen. Bit 0: even x, even y; bit 1: odd x, even y; bit 2: even x,
-                      (      tgl_api.inc):00049         ; odd y; bit 3: odd x, odd y.
-     0000             (      tgl_api.inc):00050         TGL_PAT_EMPTY   EQU     0
-     0001             (      tgl_api.inc):00051         TGL_PAT_25      EQU     %0001           ; one pixel in four
-     0009             (      tgl_api.inc):00052         TGL_PAT_50      EQU     %1001           ; checkerboard
-     000B             (      tgl_api.inc):00053         TGL_PAT_75      EQU     %1011           ; three pixels in four
-     000F             (      tgl_api.inc):00054         TGL_PAT_SOLID   EQU     %1111
-     0003             (      tgl_api.inc):00055         TGL_PAT_HLINES  EQU     %0011           ; horizontal stripes
-     0005             (      tgl_api.inc):00056         TGL_PAT_VLINES  EQU     %0101           ; vertical stripes
+     1045             (      tgl_api.inc):00032         TGL_FLIPH       EQU     TGL_BASE+69     ; card-turn flip: A = ticks per frame
+                      (      tgl_api.inc):00033         
+     03C0             (      tgl_api.inc):00034         TGL_BUFSIZE     EQU     960
+     0000             (      tgl_api.inc):00035         TGL_MODE_SET    EQU     0
+     0001             (      tgl_api.inc):00036         TGL_MODE_CLEAR  EQU     1
+     0002             (      tgl_api.inc):00037         TGL_MODE_XOR    EQU     2
+                      (      tgl_api.inc):00038         
+                      (      tgl_api.inc):00039         ; Colours for TGL_COLOUR
+     0001             (      tgl_api.inc):00040         TGL_RED         EQU     1
+     0002             (      tgl_api.inc):00041         TGL_GREEN       EQU     2
+     0003             (      tgl_api.inc):00042         TGL_YELLOW      EQU     3
+     0004             (      tgl_api.inc):00043         TGL_BLUE        EQU     4
+     0005             (      tgl_api.inc):00044         TGL_MAGENTA     EQU     5
+     0006             (      tgl_api.inc):00045         TGL_CYAN        EQU     6
+     0007             (      tgl_api.inc):00046         TGL_WHITE       EQU     7
+                      (      tgl_api.inc):00047         
+                      (      tgl_api.inc):00048         ; Fill patterns for TGL_SETPAT: a 2x2 block of pixels repeated across the
+                      (      tgl_api.inc):00049         ; screen. Bit 0: even x, even y; bit 1: odd x, even y; bit 2: even x,
+                      (      tgl_api.inc):00050         ; odd y; bit 3: odd x, odd y.
+     0000             (      tgl_api.inc):00051         TGL_PAT_EMPTY   EQU     0
+     0001             (      tgl_api.inc):00052         TGL_PAT_25      EQU     %0001           ; one pixel in four
+     0009             (      tgl_api.inc):00053         TGL_PAT_50      EQU     %1001           ; checkerboard
+     000B             (      tgl_api.inc):00054         TGL_PAT_75      EQU     %1011           ; three pixels in four
+     000F             (      tgl_api.inc):00055         TGL_PAT_SOLID   EQU     %1111
+     0003             (      tgl_api.inc):00056         TGL_PAT_HLINES  EQU     %0011           ; horizontal stripes
+     0005             (      tgl_api.inc):00057         TGL_PAT_VLINES  EQU     %0101           ; vertical stripes
                       ( demo/circles.asm):00030         
-     3000             ( demo/circles.asm):00031         BUFFER          EQU     $3000           ; off-screen buffer (960 bytes)
+     3800             ( demo/circles.asm):00031         BUFFER          EQU     $3800           ; off-screen buffer (960 bytes)
      0200             ( demo/circles.asm):00032         STACK_TOP       EQU     $0200           ; stack $0100-$01FF
                       ( demo/circles.asm):00033         
      0026             ( demo/circles.asm):00034         CX              EQU     38              ; centre of the ripples
@@ -114,145 +115,145 @@
      0006             ( demo/circles.asm):00058         NBANDS          EQU     6               ; six bands of four rows = 24 rows
      0004             ( demo/circles.asm):00059         CYCLE           EQU     4               ; frames between rainbow moves
                       ( demo/circles.asm):00060         
-                      ( demo/circles.asm):00061                         ORG     $2000
+                      ( demo/circles.asm):00061                         ORG     $2800
                       ( demo/circles.asm):00062         
-2000 10CE0200         ( demo/circles.asm):00063         START           LDS     #STACK_TOP
-2004 4F               ( demo/circles.asm):00064                         CLRA                    ; DP = $00 for the library
-2005 1F8B             ( demo/circles.asm):00065                         TFR     A,DP
+2800 10CE0200         ( demo/circles.asm):00063         START           LDS     #STACK_TOP
+2804 4F               ( demo/circles.asm):00064                         CLRA                    ; DP = $00 for the library
+2805 1F8B             ( demo/circles.asm):00065                         TFR     A,DP
      00               ( demo/circles.asm):00066                         SETDP   $00
-2007 1CEF             ( demo/circles.asm):00067                         ANDCC   #$EF            ; IRQs on (keyboard)
-2009 BD1000           ( demo/circles.asm):00068                         JSR     TGL_INIT
-200C 8E3000           ( demo/circles.asm):00069                         LDX     #BUFFER
-200F BD1003           ( demo/circles.asm):00070                         JSR     TGL_SETBUF
-2012 8602             ( demo/circles.asm):00071                         LDA     #TGL_MODE_XOR   ; everything is drawn in XOR
-2014 BD1009           ( demo/circles.asm):00072                         JSR     TGL_SETMODE
-2017 CC1410           ( demo/circles.asm):00073                         LDD     #$1410          ; ball starts at (20,16) ...
-201A DD80             ( demo/circles.asm):00074                         STD     <BALLX
-201C CC0201           ( demo/circles.asm):00075                         LDD     #$0201          ; ... moving right 2, down 1
-201F DD82             ( demo/circles.asm):00076                         STD     <BALLDX
-2021 0F84             ( demo/circles.asm):00077                         CLR     <PHASE
-2023 0F86             ( demo/circles.asm):00078                         CLR     <FRAMES
-2025 0F87             ( demo/circles.asm):00079                         CLR     <SHIFT
-2027 8601             ( demo/circles.asm):00080                         LDA     #1              ; colour the bands on the first frame
-2029 9788             ( demo/circles.asm):00081                         STA     <CYC
-202B 4F               ( demo/circles.asm):00082                         CLRA                    ; status row title, at column 0
-202C 8E20D8           ( demo/circles.asm):00083                         LDX     #TITLE
-202F BD1030           ( demo/circles.asm):00084                         JSR     TGL_TEXT
+2807 1CEF             ( demo/circles.asm):00067                         ANDCC   #$EF            ; IRQs on (keyboard)
+2809 BD1000           ( demo/circles.asm):00068                         JSR     TGL_INIT
+280C 8E3800           ( demo/circles.asm):00069                         LDX     #BUFFER
+280F BD1003           ( demo/circles.asm):00070                         JSR     TGL_SETBUF
+2812 8602             ( demo/circles.asm):00071                         LDA     #TGL_MODE_XOR   ; everything is drawn in XOR
+2814 BD1009           ( demo/circles.asm):00072                         JSR     TGL_SETMODE
+2817 CC1410           ( demo/circles.asm):00073                         LDD     #$1410          ; ball starts at (20,16) ...
+281A DD80             ( demo/circles.asm):00074                         STD     <BALLX
+281C CC0201           ( demo/circles.asm):00075                         LDD     #$0201          ; ... moving right 2, down 1
+281F DD82             ( demo/circles.asm):00076                         STD     <BALLDX
+2821 0F84             ( demo/circles.asm):00077                         CLR     <PHASE
+2823 0F86             ( demo/circles.asm):00078                         CLR     <FRAMES
+2825 0F87             ( demo/circles.asm):00079                         CLR     <SHIFT
+2827 8601             ( demo/circles.asm):00080                         LDA     #1              ; colour the bands on the first frame
+2829 9788             ( demo/circles.asm):00081                         STA     <CYC
+282B 4F               ( demo/circles.asm):00082                         CLRA                    ; status row title, at column 0
+282C 8E28D8           ( demo/circles.asm):00083                         LDX     #TITLE
+282F BD1030           ( demo/circles.asm):00084                         JSR     TGL_TEXT
                       ( demo/circles.asm):00085         
                       ( demo/circles.asm):00086         ; ---------------------------------------------------------------------------
                       ( demo/circles.asm):00087         ; Main loop
                       ( demo/circles.asm):00088         ; ---------------------------------------------------------------------------
-2032 BD1006           ( demo/circles.asm):00089         FRAME           JSR     TGL_CLS
+2832 BD1006           ( demo/circles.asm):00089         FRAME           JSR     TGL_CLS
                       ( demo/circles.asm):00090         
                       ( demo/circles.asm):00091         ; The ball: move it (bouncing off the limits), then draw it filled
-2035 9680             ( demo/circles.asm):00092                         LDA     <BALLX          ; new x = x + dx
-2037 9B82             ( demo/circles.asm):00093                         ADDA    <BALLDX
-2039 81FA             ( demo/circles.asm):00094                         CMPA    #BX_LO          ; outside the limits? (signed, as
-203B 2D04             ( demo/circles.asm):00095                         BLT     BL_XF           ;  the centre can go negative)
-203D 8153             ( demo/circles.asm):00096                         CMPA    #BX_HI
-203F 2F06             ( demo/circles.asm):00097                         BLE     BL_XOK
-2041 0082             ( demo/circles.asm):00098         BL_XF           NEG     <BALLDX         ; bounce: reverse, move the other way
-2043 9680             ( demo/circles.asm):00099                         LDA     <BALLX
-2045 9B82             ( demo/circles.asm):00100                         ADDA    <BALLDX
-2047 9780             ( demo/circles.asm):00101         BL_XOK          STA     <BALLX
-2049 9681             ( demo/circles.asm):00102                         LDA     <BALLY          ; the same for y
-204B 9B83             ( demo/circles.asm):00103                         ADDA    <BALLDY
-204D 81FA             ( demo/circles.asm):00104                         CMPA    #BY_LO
-204F 2D04             ( demo/circles.asm):00105                         BLT     BL_YF
-2051 814D             ( demo/circles.asm):00106                         CMPA    #BY_HI
-2053 2F06             ( demo/circles.asm):00107                         BLE     BL_YOK
-2055 0083             ( demo/circles.asm):00108         BL_YF           NEG     <BALLDY
-2057 9681             ( demo/circles.asm):00109                         LDA     <BALLY
-2059 9B83             ( demo/circles.asm):00110                         ADDA    <BALLDY
-205B 9781             ( demo/circles.asm):00111         BL_YOK          STA     <BALLY
-205D 9680             ( demo/circles.asm):00112                         LDA     <BALLX          ; A,B = centre
-205F D681             ( demo/circles.asm):00113                         LDB     <BALLY
-2061 8E0008           ( demo/circles.asm):00114                         LDX     #BALL_R         ; X = radius
-2064 BD102D           ( demo/circles.asm):00115                         JSR     TGL_CIRCF
+2835 9680             ( demo/circles.asm):00092                         LDA     <BALLX          ; new x = x + dx
+2837 9B82             ( demo/circles.asm):00093                         ADDA    <BALLDX
+2839 81FA             ( demo/circles.asm):00094                         CMPA    #BX_LO          ; outside the limits? (signed, as
+283B 2D04             ( demo/circles.asm):00095                         BLT     BL_XF           ;  the centre can go negative)
+283D 8153             ( demo/circles.asm):00096                         CMPA    #BX_HI
+283F 2F06             ( demo/circles.asm):00097                         BLE     BL_XOK
+2841 0082             ( demo/circles.asm):00098         BL_XF           NEG     <BALLDX         ; bounce: reverse, move the other way
+2843 9680             ( demo/circles.asm):00099                         LDA     <BALLX
+2845 9B82             ( demo/circles.asm):00100                         ADDA    <BALLDX
+2847 9780             ( demo/circles.asm):00101         BL_XOK          STA     <BALLX
+2849 9681             ( demo/circles.asm):00102                         LDA     <BALLY          ; the same for y
+284B 9B83             ( demo/circles.asm):00103                         ADDA    <BALLDY
+284D 81FA             ( demo/circles.asm):00104                         CMPA    #BY_LO
+284F 2D04             ( demo/circles.asm):00105                         BLT     BL_YF
+2851 814D             ( demo/circles.asm):00106                         CMPA    #BY_HI
+2853 2F06             ( demo/circles.asm):00107                         BLE     BL_YOK
+2855 0083             ( demo/circles.asm):00108         BL_YF           NEG     <BALLDY
+2857 9681             ( demo/circles.asm):00109                         LDA     <BALLY
+2859 9B83             ( demo/circles.asm):00110                         ADDA    <BALLDY
+285B 9781             ( demo/circles.asm):00111         BL_YOK          STA     <BALLY
+285D 9680             ( demo/circles.asm):00112                         LDA     <BALLX          ; A,B = centre
+285F D681             ( demo/circles.asm):00113                         LDB     <BALLY
+2861 8E0008           ( demo/circles.asm):00114                         LDX     #BALL_R         ; X = radius
+2864 BD102D           ( demo/circles.asm):00115                         JSR     TGL_CIRCF
                       ( demo/circles.asm):00116         
                       ( demo/circles.asm):00117         ; The rings: radii PHASE, PHASE+GAP, PHASE+2*GAP. As PHASE counts up to
                       ( demo/circles.asm):00118         ; GAP-1 and wraps to 0, every ring grows by one pixel per frame, and the
                       ( demo/circles.asm):00119         ; outermost one reappears at the centre - so the rings seem to ripple
                       ( demo/circles.asm):00120         ; outwards for ever.
-2067 9684             ( demo/circles.asm):00121                         LDA     <PHASE
-2069 9785             ( demo/circles.asm):00122                         STA     <RING
-206B 4F               ( demo/circles.asm):00123         RG_LOOP         CLRA                    ; X = radius: D = 0:RING, then
-206C D685             ( demo/circles.asm):00124                         LDB     <RING           ;  copied to X
-206E 1F01             ( demo/circles.asm):00125                         TFR     D,X
-2070 8626             ( demo/circles.asm):00126                         LDA     #CX             ; A,B = centre
-2072 C623             ( demo/circles.asm):00127                         LDB     #CY
-2074 BD102A           ( demo/circles.asm):00128                         JSR     TGL_CIRC
-2077 9685             ( demo/circles.asm):00129                         LDA     <RING           ; next ring out
-2079 8B0C             ( demo/circles.asm):00130                         ADDA    #RING_GAP
-207B 9785             ( demo/circles.asm):00131                         STA     <RING
-207D 8124             ( demo/circles.asm):00132                         CMPA    #RING_MAX
-207F 25EA             ( demo/circles.asm):00133                         BLO     RG_LOOP
+2867 9684             ( demo/circles.asm):00121                         LDA     <PHASE
+2869 9785             ( demo/circles.asm):00122                         STA     <RING
+286B 4F               ( demo/circles.asm):00123         RG_LOOP         CLRA                    ; X = radius: D = 0:RING, then
+286C D685             ( demo/circles.asm):00124                         LDB     <RING           ;  copied to X
+286E 1F01             ( demo/circles.asm):00125                         TFR     D,X
+2870 8626             ( demo/circles.asm):00126                         LDA     #CX             ; A,B = centre
+2872 C623             ( demo/circles.asm):00127                         LDB     #CY
+2874 BD102A           ( demo/circles.asm):00128                         JSR     TGL_CIRC
+2877 9685             ( demo/circles.asm):00129                         LDA     <RING           ; next ring out
+2879 8B0C             ( demo/circles.asm):00130                         ADDA    #RING_GAP
+287B 9785             ( demo/circles.asm):00131                         STA     <RING
+287D 8124             ( demo/circles.asm):00132                         CMPA    #RING_MAX
+287F 25EA             ( demo/circles.asm):00133                         BLO     RG_LOOP
                       ( demo/circles.asm):00134         
-2081 9684             ( demo/circles.asm):00135                         LDA     <PHASE          ; advance the ripple
-2083 4C               ( demo/circles.asm):00136                         INCA
-2084 810C             ( demo/circles.asm):00137                         CMPA    #RING_GAP
-2086 2501             ( demo/circles.asm):00138                         BLO     PH_OK
-2088 4F               ( demo/circles.asm):00139                         CLRA
-2089 9784             ( demo/circles.asm):00140         PH_OK           STA     <PHASE
+2881 9684             ( demo/circles.asm):00135                         LDA     <PHASE          ; advance the ripple
+2883 4C               ( demo/circles.asm):00136                         INCA
+2884 810C             ( demo/circles.asm):00137                         CMPA    #RING_GAP
+2886 2501             ( demo/circles.asm):00138                         BLO     PH_OK
+2888 4F               ( demo/circles.asm):00139                         CLRA
+2889 9784             ( demo/circles.asm):00140         PH_OK           STA     <PHASE
                       ( demo/circles.asm):00141         
                       ( demo/circles.asm):00142         ; The rainbow. Every CYCLE frames each band takes the colour of the band
                       ( demo/circles.asm):00143         ; above it, so the colours scroll downwards. Band b (rows 4b to 4b+3) gets
                       ( demo/circles.asm):00144         ; RAINBOW[(b - SHIFT) mod 6]. The library remembers row colours, so this
                       ( demo/circles.asm):00145         ; only needs doing when they change.
-208B 0A88             ( demo/circles.asm):00146                         DEC     <CYC
-208D 2634             ( demo/circles.asm):00147                         BNE     RB_DONE
-208F 8604             ( demo/circles.asm):00148                         LDA     #CYCLE
-2091 9788             ( demo/circles.asm):00149                         STA     <CYC
-2093 0F89             ( demo/circles.asm):00150                         CLR     <BAND
-2095 9689             ( demo/circles.asm):00151         RB_LOOP         LDA     <BAND           ; colour index = (band - shift) mod 6
-2097 9087             ( demo/circles.asm):00152                         SUBA    <SHIFT
-2099 2A02             ( demo/circles.asm):00153                         BPL     RB_1
-209B 8B06             ( demo/circles.asm):00154                         ADDA    #NBANDS
-209D 308D0031         ( demo/circles.asm):00155         RB_1            LEAX    RAINBOW,PCR     ; B = colour for this band
-20A1 E686             ( demo/circles.asm):00156                         LDB     A,X
-20A3 4F               ( demo/circles.asm):00157                         CLRA                    ; X = colour
-20A4 1F01             ( demo/circles.asm):00158                         TFR     D,X
-20A6 9689             ( demo/circles.asm):00159                         LDA     <BAND           ; A = first row = band * 4
-20A8 48               ( demo/circles.asm):00160                         ASLA
-20A9 48               ( demo/circles.asm):00161                         ASLA
-20AA 1F89             ( demo/circles.asm):00162                         TFR     A,B             ; B = last row = first + 3
-20AC CB03             ( demo/circles.asm):00163                         ADDB    #3
-20AE BD1039           ( demo/circles.asm):00164                         JSR     TGL_COLOUR
-20B1 0C89             ( demo/circles.asm):00165                         INC     <BAND
-20B3 9689             ( demo/circles.asm):00166                         LDA     <BAND
-20B5 8106             ( demo/circles.asm):00167                         CMPA    #NBANDS
-20B7 25DC             ( demo/circles.asm):00168                         BLO     RB_LOOP
-20B9 9687             ( demo/circles.asm):00169                         LDA     <SHIFT          ; move the rainbow on for next time
-20BB 4C               ( demo/circles.asm):00170                         INCA
-20BC 8106             ( demo/circles.asm):00171                         CMPA    #NBANDS
-20BE 2501             ( demo/circles.asm):00172                         BLO     RB_2
-20C0 4F               ( demo/circles.asm):00173                         CLRA
-20C1 9787             ( demo/circles.asm):00174         RB_2            STA     <SHIFT
-20C3                  ( demo/circles.asm):00175         RB_DONE
+288B 0A88             ( demo/circles.asm):00146                         DEC     <CYC
+288D 2634             ( demo/circles.asm):00147                         BNE     RB_DONE
+288F 8604             ( demo/circles.asm):00148                         LDA     #CYCLE
+2891 9788             ( demo/circles.asm):00149                         STA     <CYC
+2893 0F89             ( demo/circles.asm):00150                         CLR     <BAND
+2895 9689             ( demo/circles.asm):00151         RB_LOOP         LDA     <BAND           ; colour index = (band - shift) mod 6
+2897 9087             ( demo/circles.asm):00152                         SUBA    <SHIFT
+2899 2A02             ( demo/circles.asm):00153                         BPL     RB_1
+289B 8B06             ( demo/circles.asm):00154                         ADDA    #NBANDS
+289D 308D0031         ( demo/circles.asm):00155         RB_1            LEAX    RAINBOW,PCR     ; B = colour for this band
+28A1 E686             ( demo/circles.asm):00156                         LDB     A,X
+28A3 4F               ( demo/circles.asm):00157                         CLRA                    ; X = colour
+28A4 1F01             ( demo/circles.asm):00158                         TFR     D,X
+28A6 9689             ( demo/circles.asm):00159                         LDA     <BAND           ; A = first row = band * 4
+28A8 48               ( demo/circles.asm):00160                         ASLA
+28A9 48               ( demo/circles.asm):00161                         ASLA
+28AA 1F89             ( demo/circles.asm):00162                         TFR     A,B             ; B = last row = first + 3
+28AC CB03             ( demo/circles.asm):00163                         ADDB    #3
+28AE BD1039           ( demo/circles.asm):00164                         JSR     TGL_COLOUR
+28B1 0C89             ( demo/circles.asm):00165                         INC     <BAND
+28B3 9689             ( demo/circles.asm):00166                         LDA     <BAND
+28B5 8106             ( demo/circles.asm):00167                         CMPA    #NBANDS
+28B7 25DC             ( demo/circles.asm):00168                         BLO     RB_LOOP
+28B9 9687             ( demo/circles.asm):00169                         LDA     <SHIFT          ; move the rainbow on for next time
+28BB 4C               ( demo/circles.asm):00170                         INCA
+28BC 8106             ( demo/circles.asm):00171                         CMPA    #NBANDS
+28BE 2501             ( demo/circles.asm):00172                         BLO     RB_2
+28C0 4F               ( demo/circles.asm):00173                         CLRA
+28C1 9787             ( demo/circles.asm):00174         RB_2            STA     <SHIFT
+28C3                  ( demo/circles.asm):00175         RB_DONE
                       ( demo/circles.asm):00176         
-20C3 BD1012           ( demo/circles.asm):00177                         JSR     TGL_BLIT        ; show the frame
-20C6 BD101E           ( demo/circles.asm):00178                         JSR     TGL_INKEY       ; any key exits
-20C9 1026EF54         ( demo/circles.asm):00179                         LBNE    TGL_EXIT
+28C3 BD1012           ( demo/circles.asm):00177                         JSR     TGL_BLIT        ; show the frame
+28C6 BD101E           ( demo/circles.asm):00178                         JSR     TGL_INKEY       ; any key exits
+28C9 1026E754         ( demo/circles.asm):00179                         LBNE    TGL_EXIT
                       ( demo/circles.asm):00180                         IFDEF   TESTFRAMES
                       ( demo/circles.asm):00181                         INC     <FRAMES
                       ( demo/circles.asm):00182                         LDA     <FRAMES
                       ( demo/circles.asm):00183                         CMPA    #TESTFRAMES
                       ( demo/circles.asm):00184                         BEQ     DONE
                       ( demo/circles.asm):00185                         ENDC
-20CD 16FF62           ( demo/circles.asm):00186                         LBRA    FRAME
-20D0 20FE             ( demo/circles.asm):00187         DONE            BRA     DONE
+28CD 16FF62           ( demo/circles.asm):00186                         LBRA    FRAME
+28D0 20FE             ( demo/circles.asm):00187         DONE            BRA     DONE
                       ( demo/circles.asm):00188         
                       ( demo/circles.asm):00189         ; Rainbow order: red, yellow, green, cyan, blue, magenta
-20D2 010302060405     ( demo/circles.asm):00190         RAINBOW         FCB     TGL_RED,TGL_YELLOW,TGL_GREEN,TGL_CYAN,TGL_BLUE,TGL_MAGENTA
+28D2 010302060405     ( demo/circles.asm):00190         RAINBOW         FCB     TGL_RED,TGL_YELLOW,TGL_GREEN,TGL_CYAN,TGL_BLUE,TGL_MAGENTA
                       ( demo/circles.asm):00191         
                       ( demo/circles.asm):00192         ; Status row title: $83 yellow, $86 cyan and $82 green text codes
-20D8 83               ( demo/circles.asm):00193         TITLE           FCB     $83
-20D9 434952434C4553   ( demo/circles.asm):00194                         FCC     "CIRCLES"
-20E0 86               ( demo/circles.asm):00195                         FCB     $86
-20E1 414E44           ( demo/circles.asm):00196                         FCC     "AND"
-20E4 82               ( demo/circles.asm):00197                         FCB     $82
-20E5 434F4C4F5552     ( demo/circles.asm):00198                         FCC     "COLOUR"
-20EB 00               ( demo/circles.asm):00199                         FCB     0
+28D8 83               ( demo/circles.asm):00193         TITLE           FCB     $83
+28D9 434952434C4553   ( demo/circles.asm):00194                         FCC     "CIRCLES"
+28E0 86               ( demo/circles.asm):00195                         FCB     $86
+28E1 414E44           ( demo/circles.asm):00196                         FCC     "AND"
+28E4 82               ( demo/circles.asm):00197                         FCB     $82
+28E5 434F4C4F5552     ( demo/circles.asm):00198                         FCC     "COLOUR"
+28EB 00               ( demo/circles.asm):00199                         FCB     0
 
 Symbol Table:
 [ G] BALL_R                           0008
@@ -261,11 +262,11 @@ Symbol Table:
 [ G] BALLX                            0080
 [ G] BALLY                            0081
 [ G] BAND                             0089
-[ G] BL_XF                            2041
-[ G] BL_XOK                           2047
-[ G] BL_YF                            2055
-[ G] BL_YOK                           205B
-[ G] BUFFER                           3000
+[ G] BL_XF                            2841
+[ G] BL_XOK                           2847
+[ G] BL_YF                            2855
+[ G] BL_YOK                           285B
+[ G] BUFFER                           3800
 [ G] BX_HI                            0053
 [ G] BX_LO                            FFFFFFFA
 [ G] BY_HI                            004D
@@ -274,25 +275,25 @@ Symbol Table:
 [ G] CY                               0023
 [ G] CYC                              0088
 [ G] CYCLE                            0004
-[ G] DONE                             20D0
-[ G] FRAME                            2032
+[ G] DONE                             28D0
+[ G] FRAME                            2832
 [ G] FRAMES                           0086
 [ G] NBANDS                           0006
 [ G] NRINGS                           0003
-[ G] PH_OK                            2089
+[ G] PH_OK                            2889
 [ G] PHASE                            0084
-[ G] RAINBOW                          20D2
-[ G] RB_1                             209D
-[ G] RB_2                             20C1
-[ G] RB_DONE                          20C3
-[ G] RB_LOOP                          2095
-[ G] RG_LOOP                          206B
+[ G] RAINBOW                          28D2
+[ G] RB_1                             289D
+[ G] RB_2                             28C1
+[ G] RB_DONE                          28C3
+[ G] RB_LOOP                          2895
+[ G] RG_LOOP                          286B
 [ G] RING                             0085
 [ G] RING_GAP                         000C
 [ G] RING_MAX                         0024
 [ G] SHIFT                            0087
 [ G] STACK_TOP                        0200
-[ G] START                            2000
+[ G] START                            2800
 [ G] TGL_BASE                         1000
 [ G] TGL_BLIT                         1012
 [ G] TGL_BLUE                         0004
@@ -304,6 +305,7 @@ Symbol Table:
 [ G] TGL_CYAN                         0006
 [ G] TGL_DONE                         101B
 [ G] TGL_EXIT                         1021
+[ G] TGL_FLIPH                        1045
 [ G] TGL_GREEN                        0002
 [ G] TGL_INIT                         1000
 [ G] TGL_INKEY                        101E
@@ -335,4 +337,4 @@ Symbol Table:
 [ G] TGL_TNUM                         1036
 [ G] TGL_WHITE                        0007
 [ G] TGL_YELLOW                       0003
-[ G] TITLE                            20D8
+[ G] TITLE                            28D8

@@ -7,7 +7,7 @@
 ;   (to see the full wireframe); any other key exits.
 ;
 ;   Loading: tgl.bin at $1000 (TGL_BASE in cube_defs.inc), cube.bin at
-;   $2000 (its ORG). Run from START ($2000). Works with either machine's
+;   $2800 (its ORG). Run from START ($2800). Works with either machine's
 ;   library build.
 ;
 ;   This is the simplest of three cube demos sharing the same code:
@@ -38,7 +38,7 @@
 PACE_TICKS      EQU     2               ; frame length in 50Hz ticks: 2 = 25
                                         ;  frames per second
 
-                ORG     $2000
+                ORG     $2800
 
 ; ---------------------------------------------------------------------------
 ; Set up
@@ -50,7 +50,7 @@ START           LDS     #STACK_TOP
                 ANDCC   #$EF            ; enable IRQs: the keyboard is read
                                         ;  under interrupt
                 JSR     TGL_INIT        ; reset CRTC start, hide cursor
-                LDX     #BUFFER         ; draw into our buffer at $3000
+                LDX     #BUFFER         ; draw into our buffer at $3800
                 JSR     TGL_SETBUF
                 CLR     <ANG_A          ; start square-on, mid zoom
                 CLR     <ANG_B
@@ -112,9 +112,11 @@ DONE            BRA     DONE
 
 ; Status row help. $83 yellow, $87 white, $86 cyan text codes.
 KEYHELP         FCB     $83
-                FCC     "CUBE DEMO"
-                FCB     $86
+                FCC     "SPACE"
+                FCB     $87
                 FCC     "WIREFRAME"
+                FCB     $86
+                FCC     "OTHER KEY EXITS"
                 FCB     0
 
                 INCLUDE "cube_core.asm"

@@ -4,8 +4,8 @@
 ;   Draws a border round the screen and a starburst of lines from the centre
 ;   to points round the edge, shows it, then waits for a key and exits.
 ;
-;   Loading: tgl.bin at $1000 (TGL_BASE below), demo.bin at $2000 (its ORG).
-;   Run from START ($2000). Press any key to exit.
+;   Loading: tgl.bin at $1000 (TGL_BASE below), demo.bin at $2800 (its ORG).
+;   Run from START ($2800). Press any key to exit.
 ;
 ;   The same demo.bin works on both machines: everything machine-specific
 ;   (screen address, CRTC, monitor vectors) lives inside the library build.
@@ -34,7 +34,7 @@ TGL_BASE        EQU     $1000
 ; ---------------------------------------------------------------------------
 ; Memory and constants
 ; ---------------------------------------------------------------------------
-DEMOBUF         EQU     $3000           ; off-screen buffer: 960 bytes
+DEMOBUF         EQU     $3800           ; off-screen buffer: 960 bytes
                                         ;  (24 rows x 40 characters)
 STACK_TOP       EQU     $0200           ; stack occupies $0100-$01FF; the 6809
                                         ;  pre-decrements, so the first push
@@ -45,7 +45,7 @@ D_N             EQU     $80             ; loop counter, in page zero. The
 CX              EQU     38              ; centre of the starburst
 CY              EQU     35
 
-                ORG     $2000
+                ORG     $2800
 
 ; ---------------------------------------------------------------------------
 ; Set up
@@ -66,7 +66,7 @@ START           LDS     #STACK_TOP      ; our own stack
 
                 JSR     TGL_INIT        ; reset the 6845 start address, hide
                                         ;  the cursor, select SET plot mode
-                LDX     #DEMOBUF        ; use our own buffer at $3000
+                LDX     #DEMOBUF        ; use our own buffer at $3800
                 JSR     TGL_SETBUF
                 JSR     TGL_CLS         ; blank it
 
