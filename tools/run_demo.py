@@ -7,6 +7,25 @@ import sys
 from MC6809.components.cpu6809 import CPU
 from MC6809.components.memory import Memory
 from MC6809.core.configs import BaseConfig
+from MC6809.components import mc6809_base
+
+
+# The MC6809 package's SEX instruction never sets A to $FF for a negative B
+# (as of version 0.9.0), which breaks the polygon fill. Replace it with a
+# correct version.
+def _fixed_sex(self, opcode):
+    self.accu_a.set(0xFF if self.accu_b.value & 0x80 else 0x00)
+    self.clear_NZ()
+    self.update_NZ_16(self.accu_d.value)
+
+
+for _cls in vars(mc6809_base).values():
+    if isinstance(_cls, type) and hasattr(_cls, "instruction_SEX"):
+        _orig = _cls.instruction_SEX
+        _fixed_sex._is_opcode = True        # what the package's @opcode
+        _fixed_sex._opcodes = _orig._opcodes  # decorator attaches
+        _cls.instruction_SEX = _fixed_sex
+
 
 class Cfg(BaseConfig):
     RAM_START, RAM_END, ROM_START, ROM_END = 0x0000, 0x7FFF, 0x8000, 0xFFFF

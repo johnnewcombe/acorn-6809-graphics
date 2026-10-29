@@ -50,6 +50,8 @@ J_TCLR          LBRA    T_TCLR          ; +51
 J_TNUM          LBRA    T_TNUM          ; +54
 J_COLOUR        LBRA    T_COLOUR        ; +57
 J_PACE          LBRA    T_PACE          ; +60
+J_POLYF         LBRA    T_POLYF         ; +63
+J_SETPAT        LBRA    T_SETPAT        ; +66
 
 ; Check the table against the published interface
 TGL_BASE        EQU     TGL_START
@@ -75,7 +77,7 @@ TGL_BASE        EQU     TGL_START
                 IFNE    (J_TEXT-TGL_TEXT)|(J_TCLR-TGL_TCLR)|(J_TNUM-TGL_TNUM)
                 ERROR   "Jump table does not match tgl_api.inc"
                 ENDC
-                IFNE    (J_COLOUR-TGL_COLOUR)|(J_PACE-TGL_PACE)
+                IFNE    (J_COLOUR-TGL_COLOUR)|(J_PACE-TGL_PACE)|(J_POLYF-TGL_POLYF)|(J_SETPAT-TGL_SETPAT)
                 ERROR   "Jump table does not match tgl_api.inc"
                 ENDC
 
@@ -93,6 +95,7 @@ TGL_BASE        EQU     TGL_START
                 INCLUDE "text.asm"
                 INCLUDE "colour.asm"
                 INCLUDE "pace.asm"
+                INCLUDE "polygon.asm"
                 INCLUDE "system.asm"
                 INCLUDE "tables.asm"
 

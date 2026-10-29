@@ -49,20 +49,33 @@
      1036             (      tgl_api.inc):00027         TGL_TNUM        EQU     TGL_BASE+54     ; status row number: A = column, X = value
      1039             (      tgl_api.inc):00028         TGL_COLOUR      EQU     TGL_BASE+57     ; row colour: A,B = first,last row, X = colour
      103C             (      tgl_api.inc):00029         TGL_PACE        EQU     TGL_BASE+60     ; steady frame rate: A = 50Hz ticks (1-3)
-                      (      tgl_api.inc):00030         
-     03C0             (      tgl_api.inc):00031         TGL_BUFSIZE     EQU     960
-     0000             (      tgl_api.inc):00032         TGL_MODE_SET    EQU     0
-     0001             (      tgl_api.inc):00033         TGL_MODE_CLEAR  EQU     1
-     0002             (      tgl_api.inc):00034         TGL_MODE_XOR    EQU     2
-                      (      tgl_api.inc):00035         
-                      (      tgl_api.inc):00036         ; Colours for TGL_COLOUR
-     0001             (      tgl_api.inc):00037         TGL_RED         EQU     1
-     0002             (      tgl_api.inc):00038         TGL_GREEN       EQU     2
-     0003             (      tgl_api.inc):00039         TGL_YELLOW      EQU     3
-     0004             (      tgl_api.inc):00040         TGL_BLUE        EQU     4
-     0005             (      tgl_api.inc):00041         TGL_MAGENTA     EQU     5
-     0006             (      tgl_api.inc):00042         TGL_CYAN        EQU     6
-     0007             (      tgl_api.inc):00043         TGL_WHITE       EQU     7
+     103F             (      tgl_api.inc):00030         TGL_POLYF       EQU     TGL_BASE+63     ; filled convex polygon: X -> n, x0,y0, ...
+     1042             (      tgl_api.inc):00031         TGL_SETPAT      EQU     TGL_BASE+66     ; fill pattern: A = 0-15 (2x2 pixels)
+                      (      tgl_api.inc):00032         
+     03C0             (      tgl_api.inc):00033         TGL_BUFSIZE     EQU     960
+     0000             (      tgl_api.inc):00034         TGL_MODE_SET    EQU     0
+     0001             (      tgl_api.inc):00035         TGL_MODE_CLEAR  EQU     1
+     0002             (      tgl_api.inc):00036         TGL_MODE_XOR    EQU     2
+                      (      tgl_api.inc):00037         
+                      (      tgl_api.inc):00038         ; Colours for TGL_COLOUR
+     0001             (      tgl_api.inc):00039         TGL_RED         EQU     1
+     0002             (      tgl_api.inc):00040         TGL_GREEN       EQU     2
+     0003             (      tgl_api.inc):00041         TGL_YELLOW      EQU     3
+     0004             (      tgl_api.inc):00042         TGL_BLUE        EQU     4
+     0005             (      tgl_api.inc):00043         TGL_MAGENTA     EQU     5
+     0006             (      tgl_api.inc):00044         TGL_CYAN        EQU     6
+     0007             (      tgl_api.inc):00045         TGL_WHITE       EQU     7
+                      (      tgl_api.inc):00046         
+                      (      tgl_api.inc):00047         ; Fill patterns for TGL_SETPAT: a 2x2 block of pixels repeated across the
+                      (      tgl_api.inc):00048         ; screen. Bit 0: even x, even y; bit 1: odd x, even y; bit 2: even x,
+                      (      tgl_api.inc):00049         ; odd y; bit 3: odd x, odd y.
+     0000             (      tgl_api.inc):00050         TGL_PAT_EMPTY   EQU     0
+     0001             (      tgl_api.inc):00051         TGL_PAT_25      EQU     %0001           ; one pixel in four
+     0009             (      tgl_api.inc):00052         TGL_PAT_50      EQU     %1001           ; checkerboard
+     000B             (      tgl_api.inc):00053         TGL_PAT_75      EQU     %1011           ; three pixels in four
+     000F             (      tgl_api.inc):00054         TGL_PAT_SOLID   EQU     %1111
+     0003             (      tgl_api.inc):00055         TGL_PAT_HLINES  EQU     %0011           ; horizontal stripes
+     0005             (      tgl_api.inc):00056         TGL_PAT_VLINES  EQU     %0101           ; vertical stripes
                       (   demo/boxes.asm):00023         
      3000             (   demo/boxes.asm):00024         BUFFER          EQU     $3000           ; off-screen buffer (960 bytes)
      0200             (   demo/boxes.asm):00025         STACK_TOP       EQU     $0200           ; stack $0100-$01FF
@@ -269,13 +282,22 @@ Symbol Table:
 [ G] TGL_MODE_SET                     0000
 [ G] TGL_MODE_XOR                     0002
 [ G] TGL_PACE                         103C
+[ G] TGL_PAT_25                       0001
+[ G] TGL_PAT_50                       0009
+[ G] TGL_PAT_75                       000B
+[ G] TGL_PAT_EMPTY                    0000
+[ G] TGL_PAT_HLINES                   0003
+[ G] TGL_PAT_SOLID                    000F
+[ G] TGL_PAT_VLINES                   0005
 [ G] TGL_PLOT                         100C
 [ G] TGL_PLOTC                        1015
+[ G] TGL_POLYF                        103F
 [ G] TGL_RECT                         1024
 [ G] TGL_RECTF                        1027
 [ G] TGL_RED                          0001
 [ G] TGL_SETBUF                       1003
 [ G] TGL_SETMODE                      1009
+[ G] TGL_SETPAT                       1042
 [ G] TGL_TCLR                         1033
 [ G] TGL_TEXT                         1030
 [ G] TGL_TNUM                         1036

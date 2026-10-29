@@ -22,6 +22,11 @@ T_INIT          PSHS    D,X
                 LDA     #$20            ; bits 6-5 = 01: no cursor
                 STA     CRTC_DATA
                 LBSR    T_TCLR          ; blank the status row
+                CLR     <P_RUN          ; no frame period running yet (the
+                                        ;  timer itself is not touched)
+                LDA     #$0F            ; fills are solid until TGL_SETPAT
+                STA     <U_PAT
+                STA     <H_PAT
                 LDX     #ROWCOL         ; every row white
                 LDA     #GFX_WHITE
 IN_COL          STA     ,X+

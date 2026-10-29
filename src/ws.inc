@@ -64,4 +64,17 @@ K_CODE          EQU     WS+66           ; 1  colour: control code
 ROWCOL          EQU     WS+67           ; 24 each row's graphics control code,
                                         ;    written into column 0 by TGL_CLS
 P_RUN           EQU     WS+91           ; 1  pace: a frame period is running
-WS_SIZE         EQU     92
+H_PAT           EQU     WS+92           ; 1  pattern used by HSPAN (15 = solid)
+U_PAT           EQU     WS+93           ; 1  pattern chosen with TGL_SETPAT
+P_PTR           EQU     WS+94           ; 2  polygon: address of the corner list
+P_N             EQU     WS+96           ; 1  polygon: number of corners
+P_YMAX          EQU     WS+97           ; 1  polygon: lowest corner's y
+P_Y             EQU     WS+98           ; 1  polygon: row being filled
+P_TOP           EQU     WS+99           ; 1  polygon: index of the top corner
+CHA             EQU     WS+100          ; 11 polygon: edge walker going forward
+CHB             EQU     WS+111          ; 11 polygon: edge walker going back
+P_MEVEN         EQU     WS+122          ; 6  polygon: pattern masks for even
+                                        ;    character rows (3 left, 3 right)
+WS_SIZE         EQU     128             ; ($00-$7F: programs can use $80 up)
+; The polygon fill also borrows the clipping temporaries (I_U0..I_E) and
+; the rectangle corners (R_X0, R_Y0), which it never uses at the same time.

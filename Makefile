@@ -25,6 +25,8 @@ endif
 MAME 	 = /home/john/Dropbox/Repositories/mame-acorn-flex/mame
 DEMO     = ./build/demo.bin
 CUBE	 = ./build/cube.bin
+CUBEP	 = ./build/cubep.bin
+CUBED	 = ./build/cubed.bin
 SHIP	 = ./build/ship.bin
 BOXES	 = ./build/boxes.bin
 CIRCLES	 = ./build/circles.bin
@@ -36,14 +38,16 @@ TOOLS	 = ./tools
 PIC_A    = 0x1000
 PIC_B    = 0x2345
 
-.PHONY: all sys3 flex demo cube ship boxes circles test clean
+.PHONY: all sys3 flex demo cube cubep cubed ship boxes circles test clean
 
-all: sys3 flex demo cube ship boxes circles
+all: sys3 flex demo cube cubep cubed ship boxes circles
 
 sys3: build/sys3/tgl.bin
 flex: build/flex/tgl.bin
 demo: build/demo.bin
 cube: build/cube.bin
+cubep: build/cubep.bin
+cubed: build/cubed.bin
 ship: build/ship.bin
 boxes: build/boxes.bin
 circles: build/circles.bin
@@ -72,9 +76,19 @@ build/demo.bin: demo/demo.asm src/tgl_api.inc
 	@mkdir -p $(@D)
 	$(LWASM) $(LWFLAGS) --output=$@ --list=build/demo.lst --symbols demo/demo.asm
 
-build/cube.bin: demo/cube.asm demo/cube_tables.asm src/tgl_api.inc
+CUBE_SHARED = demo/cube_defs.inc demo/cube_core.asm demo/cube_tables.asm src/tgl_api.inc
+
+build/cube.bin: demo/cube.asm $(CUBE_SHARED)
 	@mkdir -p $(@D)
 	$(LWASM) $(LWFLAGS) -I demo --output=$@ --list=build/cube.lst --symbols demo/cube.asm
+
+build/cubep.bin: demo/cubep.asm demo/cube_fill.asm $(CUBE_SHARED)
+	@mkdir -p $(@D)
+	$(LWASM) $(LWFLAGS) -I demo --output=$@ --list=build/cubep.lst --symbols demo/cubep.asm
+
+build/cubed.bin: demo/cubed.asm demo/cube_fill.asm $(CUBE_SHARED)
+	@mkdir -p $(@D)
+	$(LWASM) $(LWFLAGS) -I demo --output=$@ --list=build/cubed.lst --symbols demo/cubed.asm
 
 build/circles.bin: demo/circles.asm src/tgl_api.inc
 	@mkdir -p $(@D)
@@ -89,11 +103,13 @@ build/ship.bin: demo/ship.asm demo/ship_model.asm demo/cube_tables.asm src/tgl_a
 	$(LWASM) $(LWFLAGS) -I demo --output=$@ --list=build/ship.lst --symbols demo/ship.asm
 
 
-test: flex demo cube ship boxes circles
+test: flex demo cube cubep cubed ship boxes circles
 	# create a FLEX .dsk image
 	# delete any previous file
 	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(DEMO)
 	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(CUBE)
+	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(CUBEP)
+	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(CUBED)
 	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(SHIP)
 	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(BOXES)
 	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(CIRCLES)
@@ -102,6 +118,8 @@ test: flex demo cube ship boxes circles
 	# add the newly built file, this will be in raw binary format
 	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(DEMO) -l 0x2000 -t 0x2000
 	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(CUBE) -l 0x2000 -t 0x2000
+	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(CUBEP) -l 0x2000 -t 0x2000
+	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(CUBED) -l 0x2000 -t 0x2000
 	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(SHIP) -l 0x2000 -t 0x2000
 	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(BOXES) -l 0x2000 -t 0x2000
 	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(CIRCLES) -l 0x2000 -t 0x2000

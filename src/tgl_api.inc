@@ -27,6 +27,8 @@ TGL_TCLR        EQU     TGL_BASE+51     ; clear the status row
 TGL_TNUM        EQU     TGL_BASE+54     ; status row number: A = column, X = value
 TGL_COLOUR      EQU     TGL_BASE+57     ; row colour: A,B = first,last row, X = colour
 TGL_PACE        EQU     TGL_BASE+60     ; steady frame rate: A = 50Hz ticks (1-3)
+TGL_POLYF       EQU     TGL_BASE+63     ; filled convex polygon: X -> n, x0,y0, ...
+TGL_SETPAT      EQU     TGL_BASE+66     ; fill pattern: A = 0-15 (2x2 pixels)
 
 TGL_BUFSIZE     EQU     960
 TGL_MODE_SET    EQU     0
@@ -41,3 +43,14 @@ TGL_BLUE        EQU     4
 TGL_MAGENTA     EQU     5
 TGL_CYAN        EQU     6
 TGL_WHITE       EQU     7
+
+; Fill patterns for TGL_SETPAT: a 2x2 block of pixels repeated across the
+; screen. Bit 0: even x, even y; bit 1: odd x, even y; bit 2: even x,
+; odd y; bit 3: odd x, odd y.
+TGL_PAT_EMPTY   EQU     0
+TGL_PAT_25      EQU     %0001           ; one pixel in four
+TGL_PAT_50      EQU     %1001           ; checkerboard
+TGL_PAT_75      EQU     %1011           ; three pixels in four
+TGL_PAT_SOLID   EQU     %1111
+TGL_PAT_HLINES  EQU     %0011           ; horizontal stripes
+TGL_PAT_VLINES  EQU     %0101           ; vertical stripes

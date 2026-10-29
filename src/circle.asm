@@ -31,12 +31,16 @@
 T_CIRC          PSHS    D,X,Y,U
                 LBSR    CI_SETUP
                 CLR     <C_FILL         ; outline
+                LDA     #$0F            ; outlines are always solid
+                STA     <H_PAT
                 BRA     CI_RUN
 
 T_CIRCF         PSHS    D,X,Y,U
                 LBSR    CI_SETUP
                 LDA     #1              ; filled
                 STA     <C_FILL
+                LDA     <U_PAT          ; filled circles use the fill pattern
+                STA     <H_PAT
 
 CI_RUN          CLR     <C_ROW          ; start at the centre row
                 LDB     <C_R            ; x = r
@@ -143,12 +147,17 @@ RD_6            TFR     A,B
 ; DRUN - draw a horizontal run of pixels on row C_Y
 ;   Entry: A = left x, B = right x (signed, A <= B)
 ;   A single pixel (most of an outline) goes to the clipped plot, which is
-;   cheaper; anything longer goes to HSPAN.
+;   cheaper; anything longer, or anything patterned, goes to HSPAN.
 ; ---------------------------------------------------------------------------
 DRUN            PSHS    B
                 CMPA    ,S+
                 BNE     HSPAN
-                LDB     <C_Y            ; one pixel: A,B = x,y
+                PSHS    B               ; patterned: HSPAN applies the pattern
+                LDB     <H_PAT          ;  (keep B, the run's right end;
+                CMPB    #$0F            ;  PULS leaves the flags alone)
+                PULS    B
+                BNE     HSPAN
+                LDB     <C_Y            ; one solid pixel: A,B = x,y
                 LBRA    T_PLOTC
 
 ; ---------------------------------------------------------------------------
@@ -156,7 +165,9 @@ DRUN            PSHS    B
 ;   Entry: A = left x, B = right x (signed, A <= B)
 ;   Exit:  A, B, X, U corrupted
 ;
-;   A lean, single-row version of the rectangle fill. The row's left and
+;   A lean, single-row version of the rectangle fill, which also applies
+;   the fill pattern in H_PAT (15 = solid). Used by the circles and the
+;   polygon fill; the caller sets H_PAT. The row's left and
 ;   right pixel masks come straight from PTAB, so there is no sorting, no
 ;   multiply and no mask lookup: clip, find the cells, then
 ;     - if the run starts on a right-hand pixel, that cell gets only its
@@ -191,6 +202,22 @@ HS_2            LBSR    PT_ENTRY        ; U -> PTAB entry for this row (B = y)
                 STA     <F_ML
                 LDA     3,U
                 STA     <F_MR
+
+                LDB     <H_PAT          ; apply the fill pattern: odd rows use
+                LDA     <C_Y            ;  bits 2-3, even rows bits 0-1;
+                BITA    #1              ;  the low bit is for left (even x)
+                BEQ     HS_P1           ;  pixels, the next for right (odd x)
+                LSRB
+                LSRB
+HS_P1           BITB    #1
+                BNE     HS_P2
+                CLR     <F_ML
+HS_P2           BITB    #2
+                BNE     HS_P3
+                CLR     <F_MR
+HS_P3           LDA     <F_ML           ; nothing left to draw on this row?
+                ORA     <F_MR
+                LBEQ    HS_X
 
                 LDA     ,S              ; first cell, and does the run start
                 LSRA                    ;  on its right pixel (x odd)?
