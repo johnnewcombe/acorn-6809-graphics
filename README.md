@@ -104,7 +104,7 @@ Press any key to exit (in `cube.bin`, any key except space).
 
 __Rotating Cube Demo.__
 
-![Cube](demo/cube-demo.gif)
+![Cube Demo](demo/cube-demo.gif)
 
 - `ship.bin` - an original spaceship design, the "Kestrel" courier,
   tumbling in perspective with hidden lines removed so it looks solid.
@@ -115,7 +115,7 @@ __Rotating Cube Demo.__
 
 __Rotating Space Ship Demo.__
 
-![Space Ship](demo/ship-demo.gif)
+![Space Ship Demo](demo/ship-demo.gif)
 
 - `boxes.bin` - four filled boxes drift and bounce in XOR mode, so their
   overlaps cancel out, sliding partly off the screen edges to show the
@@ -125,7 +125,7 @@ __Rotating Space Ship Demo.__
 
 __Boxes Demo__
 
-![Boxes](demo/boxes-demo.gif)
+![Boxes Demo](demo/boxes-demo.gif)
 
 - `circles.bin` - a filled ball bounces around, partly off the edges,
   while rings ripple outwards from the centre, all in XOR so the rings
@@ -134,7 +134,7 @@ __Boxes Demo__
 
 __Circles Demo__
 
-![Circles](demo/circles-demo.gif)
+![Circles Demo](demo/circles-demo.gif)
 
 - `flip.bin` - a lopsided picture (a letter F, an arrow and a ball) that
   `TGL_FLIPH` turns over every couple of seconds, like a card: it narrows
@@ -142,7 +142,7 @@ __Circles Demo__
 
 __Horizontal Flip Demo__
 
-![Flip](demo/flip-demo.gif)
+![Flip Display Demo](demo/flip-demo.gif)
 
 - `ants.bin` - marching ants: two dashed boxes march clockwise round a
   small scene in SET mode (their gaps clear the pixels they cross, cutting
@@ -150,11 +150,20 @@ __Horizontal Flip Demo__
   marching the other way. About 140,000 cycles per frame, as it draws
   nearly 400 dashed pixels as well as the scene (roughly 8 frames per
   second); a single selection box costs far less.
+
+__Marching Ants Demo__
+
+![Marching Ants Demo](demo/ants-demo.gif)
+
 - `logo.bin` - an existing separated-graphics teletext splash screen,
   converted with `tools/screen2tgl.py` (see _Converting a Screen_ below),
   turned over with `TGL_FLIPH` every couple of seconds. Load it with the
   separated library (`GET 1.TGLS.BIN`) to see it exactly as designed; with
   `TGL.BIN` it shows as solid blocks.
+
+__Logo Flip Demo__
+
+![Logo Demo](demo/logo-demo.gif)
 
 ## Using the Library
 
