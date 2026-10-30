@@ -1,7 +1,5 @@
 # Acorn System 3 6809 Teletext Graphics Library
 
-![Cube](demo/cube-demo.gif)
-
 The library follows the Bitshifters' teletextr routines (Kieran Connell and
 Simon Morris, adapted from Bresenham routines by Rich Talbot-Watkins) see _Credits_ and uses
 the Sixel graphics of the Acorn teletext VDU (6845 + SAA5050) on 6809-based
@@ -32,6 +30,7 @@ inserted in disk 1, the following commands will load the graphics library and de
     make circles    # circles demo only
     make flip       # flip-screen demo only
     make ants       # marching ants demo only
+    make logo       # converted splash screen demo only
     make SAFE=1     # range-checked build (see below)
     make NOPACE=1   # TGL_PACE does nothing and never touches the VIA timer
     make test       # build, put the FLEX library and demos on TGL.dsk,
@@ -40,8 +39,8 @@ inserted in disk 1, the following commands will load the graphics library and de
 
 Output is raw binary: `build/sys3/tgl.bin`, `build/flex/tgl.bin`,
 `build/demo.bin`, `build/cube.bin`, `build/cubep.bin`, `build/cubed.bin`,
-`build/ship.bin`, `build/boxes.bin`, `build/circles.bin`, `build/flip.bin`
-and `build/ants.bin`, with listings alongside.
+`build/ship.bin`, `build/boxes.bin`, `build/circles.bin`, `build/flip.bin`,
+`build/ants.bin` and `build/logo.bin`, with listings alongside.
 
 ### Safe builds
 
@@ -134,10 +133,9 @@ __Horizontal Flip Demo__
   marching the other way. About 140,000 cycles per frame, as it draws
   nearly 400 dashed pixels as well as the scene (roughly 8 frames per
   second); a single selection box costs far less.
-
-__Moving Ants Demo__
-
-![Flip](demo/ants-demo.gif)
+- `logo.bin` - an existing teletext splash screen, converted with
+  `tools/screen2tgl.py` (see _Converting a Screen_ below), turned over with
+  `TGL_FLIPH` every couple of seconds.
 
 ## Using the Library
 
@@ -303,6 +301,29 @@ Cycle figures in this README come from the Python emulator used for
 testing, which adds a cycle for every memory read on top of each
 instruction's normal count, so its figures run high. Frame rates measured
 in MAME suggest real costs are around 15-20% lower.
+
+## Converting a Screen
+
+`tools/screen2tgl.py` turns an existing teletext graphics screen into a
+table for the library, so a splash screen designed elsewhere can be shown
+and then animated (with `TGL_FLIPH`, for example). It reads the screen
+memory and writes an assembler include in the library's own buffer layout:
+24 rows of 39 cells (columns 1-39), then the 24 row colours.
+
+    python3 tools/screen2tgl.py screen.txt --first-row 1 --label LOGO -o demo/logo_screen.asm
+
+The input can be the raw screen bytes as saved by a teletext editor (40
+bytes per row, with or without a newline after each row), or a hex listing,
+which may have an address at the start of each line (`E400:`, `0400`) and
+an ASCII column at the end. It tells which automatically. It should hold
+24 or 25 rows; `--first-row N` picks which screen row becomes graphics
+row 0 (the library's row 24 is its status row, so a 25-row screen whose
+picture starts on row 1 needs `--first-row 1`). Each row's graphics colour code becomes its colour
+(rows without one are white), control codes in the picture become blank
+cells, and sixel cells are copied as they are. The library draws contiguous
+graphics, so a separated-graphics screen shows as solid blocks.
+`demo/logo.asm` shows how to load the table: copy each row's cells into
+the buffer, set the row's colour with `TGL_COLOUR`, and blit.
 
 ## System Routines
 

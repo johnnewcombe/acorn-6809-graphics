@@ -32,6 +32,7 @@ BOXES	 = ./build/boxes.bin
 CIRCLES	 = ./build/circles.bin
 FLIP	 = ./build/flip.bin
 ANTS	 = ./build/ants.bin
+LOGO	 = ./build/logo.bin
 TGL 	 = ./build/flex/tgl.bin
 DESTDISK = ./mame/disks/TGL.dsk
 TOOLS	 = ./tools
@@ -40,9 +41,9 @@ TOOLS	 = ./tools
 PIC_A    = 0x1000
 PIC_B    = 0x2345
 
-.PHONY: all sys3 flex demo cube cubep cubed ship boxes circles flip ants test clean
+.PHONY: all sys3 flex demo cube cubep cubed ship boxes circles flip ants logo test clean
 
-all: sys3 flex demo cube cubep cubed ship boxes circles flip ants
+all: sys3 flex demo cube cubep cubed ship boxes circles flip ants logo
 
 sys3: build/sys3/tgl.bin
 flex: build/flex/tgl.bin
@@ -55,6 +56,7 @@ boxes: build/boxes.bin
 circles: build/circles.bin
 flip: build/flip.bin
 ants: build/ants.bin
+logo: build/logo.bin
 
 build/sys3/tgl.bin: $(SRC)
 	@mkdir -p $(@D)
@@ -98,6 +100,10 @@ build/flip.bin: demo/flip.asm src/tgl_api.inc
 	@mkdir -p $(@D)
 	$(LWASM) $(LWFLAGS) -I demo --output=$@ --list=build/flip.lst --symbols demo/flip.asm
 
+build/logo.bin: demo/logo.asm demo/logo_screen.asm src/tgl_api.inc
+	@mkdir -p $(@D)
+	$(LWASM) $(LWFLAGS) -I demo --output=$@ --list=build/logo.lst --symbols demo/logo.asm
+
 build/ants.bin: demo/ants.asm src/tgl_api.inc
 	@mkdir -p $(@D)
 	$(LWASM) $(LWFLAGS) -I demo --output=$@ --list=build/ants.lst --symbols demo/ants.asm
@@ -115,7 +121,7 @@ build/ship.bin: demo/ship.asm demo/ship_model.asm demo/cube_tables.asm src/tgl_a
 	$(LWASM) $(LWFLAGS) -I demo --output=$@ --list=build/ship.lst --symbols demo/ship.asm
 
 
-test: flex demo cube cubep cubed ship boxes circles flip ants
+test: flex demo cube cubep cubed ship boxes circles flip ants logo
 	# create a FLEX .dsk image
 	# delete any previous file
 	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(DEMO)
@@ -127,6 +133,7 @@ test: flex demo cube cubep cubed ship boxes circles flip ants
 	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(CIRCLES)
 	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(FLIP)
 	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(ANTS)
+	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(LOGO)
 	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(TGL)
 
 	# add the newly built file, this will be in raw binary format
@@ -139,6 +146,7 @@ test: flex demo cube cubep cubed ship boxes circles flip ants
 	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(CIRCLES) -l 0x2800 -t 0x2800
 	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(FLIP) -l 0x2800 -t 0x2800
 	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(ANTS) -l 0x2800 -t 0x2800
+	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(LOGO) -l 0x2800 -t 0x2800
 	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(TGL) -l 0x1000 -t 0x1000
 
 	# validate the disk
