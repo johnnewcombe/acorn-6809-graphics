@@ -1,5 +1,7 @@
 # Acorn System 3 6809 Teletext Graphics Library
 
+![Cube](demo/cube-demo.gif)
+
 The library follows the Bitshifters' teletextr routines (Kieran Connell and
 Simon Morris, adapted from Bresenham routines by Rich Talbot-Watkins) see _Credits_ and uses
 the Sixel graphics of the Acorn teletext VDU (6845 + SAA5050) on 6809-based
@@ -132,6 +134,10 @@ __Horizontal Flip Demo__
   marching the other way. About 140,000 cycles per frame, as it draws
   nearly 400 dashed pixels as well as the scene (roughly 8 frames per
   second); a single selection box costs far less.
+
+__Moving Ants Demo__
+
+![Flip](demo/ants-demo.gif)
 
 ## Using the Library
 
