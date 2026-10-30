@@ -72,31 +72,34 @@
      103F             (      tgl_api.inc):00030         TGL_POLYF       EQU     TGL_BASE+63     ; filled convex polygon: X -> n, x0,y0, ...
      1042             (      tgl_api.inc):00031         TGL_SETPAT      EQU     TGL_BASE+66     ; fill pattern: A = 0-15 (2x2 pixels)
      1045             (      tgl_api.inc):00032         TGL_FLIPH       EQU     TGL_BASE+69     ; card-turn flip: A = ticks per frame
-                      (      tgl_api.inc):00033         
-     03C0             (      tgl_api.inc):00034         TGL_BUFSIZE     EQU     960
-     0000             (      tgl_api.inc):00035         TGL_MODE_SET    EQU     0
-     0001             (      tgl_api.inc):00036         TGL_MODE_CLEAR  EQU     1
-     0002             (      tgl_api.inc):00037         TGL_MODE_XOR    EQU     2
-                      (      tgl_api.inc):00038         
-                      (      tgl_api.inc):00039         ; Colours for TGL_COLOUR
-     0001             (      tgl_api.inc):00040         TGL_RED         EQU     1
-     0002             (      tgl_api.inc):00041         TGL_GREEN       EQU     2
-     0003             (      tgl_api.inc):00042         TGL_YELLOW      EQU     3
-     0004             (      tgl_api.inc):00043         TGL_BLUE        EQU     4
-     0005             (      tgl_api.inc):00044         TGL_MAGENTA     EQU     5
-     0006             (      tgl_api.inc):00045         TGL_CYAN        EQU     6
-     0007             (      tgl_api.inc):00046         TGL_WHITE       EQU     7
-                      (      tgl_api.inc):00047         
-                      (      tgl_api.inc):00048         ; Fill patterns for TGL_SETPAT: a 2x2 block of pixels repeated across the
-                      (      tgl_api.inc):00049         ; screen. Bit 0: even x, even y; bit 1: odd x, even y; bit 2: even x,
-                      (      tgl_api.inc):00050         ; odd y; bit 3: odd x, odd y.
-     0000             (      tgl_api.inc):00051         TGL_PAT_EMPTY   EQU     0
-     0001             (      tgl_api.inc):00052         TGL_PAT_25      EQU     %0001           ; one pixel in four
-     0009             (      tgl_api.inc):00053         TGL_PAT_50      EQU     %1001           ; checkerboard
-     000B             (      tgl_api.inc):00054         TGL_PAT_75      EQU     %1011           ; three pixels in four
-     000F             (      tgl_api.inc):00055         TGL_PAT_SOLID   EQU     %1111
-     0003             (      tgl_api.inc):00056         TGL_PAT_HLINES  EQU     %0011           ; horizontal stripes
-     0005             (      tgl_api.inc):00057         TGL_PAT_VLINES  EQU     %0101           ; vertical stripes
+     1048             (      tgl_api.inc):00033         TGL_SETDASH     EQU     TGL_BASE+72     ; dash: A = pattern, B = length, X = phase
+     104B             (      tgl_api.inc):00034         TGL_LINED       EQU     TGL_BASE+75     ; dashed line: as TGL_LINEC
+     104E             (      tgl_api.inc):00035         TGL_RECTD       EQU     TGL_BASE+78     ; dashed rectangle outline: as TGL_RECT
+                      (      tgl_api.inc):00036         
+     03C0             (      tgl_api.inc):00037         TGL_BUFSIZE     EQU     960
+     0000             (      tgl_api.inc):00038         TGL_MODE_SET    EQU     0
+     0001             (      tgl_api.inc):00039         TGL_MODE_CLEAR  EQU     1
+     0002             (      tgl_api.inc):00040         TGL_MODE_XOR    EQU     2
+                      (      tgl_api.inc):00041         
+                      (      tgl_api.inc):00042         ; Colours for TGL_COLOUR
+     0001             (      tgl_api.inc):00043         TGL_RED         EQU     1
+     0002             (      tgl_api.inc):00044         TGL_GREEN       EQU     2
+     0003             (      tgl_api.inc):00045         TGL_YELLOW      EQU     3
+     0004             (      tgl_api.inc):00046         TGL_BLUE        EQU     4
+     0005             (      tgl_api.inc):00047         TGL_MAGENTA     EQU     5
+     0006             (      tgl_api.inc):00048         TGL_CYAN        EQU     6
+     0007             (      tgl_api.inc):00049         TGL_WHITE       EQU     7
+                      (      tgl_api.inc):00050         
+                      (      tgl_api.inc):00051         ; Fill patterns for TGL_SETPAT: a 2x2 block of pixels repeated across the
+                      (      tgl_api.inc):00052         ; screen. Bit 0: even x, even y; bit 1: odd x, even y; bit 2: even x,
+                      (      tgl_api.inc):00053         ; odd y; bit 3: odd x, odd y.
+     0000             (      tgl_api.inc):00054         TGL_PAT_EMPTY   EQU     0
+     0001             (      tgl_api.inc):00055         TGL_PAT_25      EQU     %0001           ; one pixel in four
+     0009             (      tgl_api.inc):00056         TGL_PAT_50      EQU     %1001           ; checkerboard
+     000B             (      tgl_api.inc):00057         TGL_PAT_75      EQU     %1011           ; three pixels in four
+     000F             (      tgl_api.inc):00058         TGL_PAT_SOLID   EQU     %1111
+     0003             (      tgl_api.inc):00059         TGL_PAT_HLINES  EQU     %0011           ; horizontal stripes
+     0005             (      tgl_api.inc):00060         TGL_PAT_VLINES  EQU     %0101           ; vertical stripes
                       (    cube_defs.inc):00011         
                       (    cube_defs.inc):00012         ; ---------------------------------------------------------------------------
                       (    cube_defs.inc):00013         ; Memory
@@ -1089,6 +1092,7 @@ Symbol Table:
 [ G] TGL_INKEY                        101E
 [ G] TGL_LINE                         100F
 [ G] TGL_LINEC                        1018
+[ G] TGL_LINED                        104B
 [ G] TGL_MAGENTA                      0005
 [ G] TGL_MODE_CLEAR                   0001
 [ G] TGL_MODE_SET                     0000
@@ -1105,9 +1109,11 @@ Symbol Table:
 [ G] TGL_PLOTC                        1015
 [ G] TGL_POLYF                        103F
 [ G] TGL_RECT                         1024
+[ G] TGL_RECTD                        104E
 [ G] TGL_RECTF                        1027
 [ G] TGL_RED                          0001
 [ G] TGL_SETBUF                       1003
+[ G] TGL_SETDASH                      1048
 [ G] TGL_SETMODE                      1009
 [ G] TGL_SETPAT                       1042
 [ G] TGL_TCLR                         1033

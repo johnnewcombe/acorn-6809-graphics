@@ -27,6 +27,10 @@ T_INIT          PSHS    D,X
                 LDA     #$0F            ; fills are solid until TGL_SETPAT
                 STA     <U_PAT
                 STA     <H_PAT
+                LDA     #%011           ; default dashes: on, on, off
+                LDB     #3
+                LDX     #0
+                LBSR    T_SETDASH
                 LDX     #ROWCOL         ; every row white
                 LDA     #GFX_WHITE
 IN_COL          STA     ,X+

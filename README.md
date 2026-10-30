@@ -1,7 +1,5 @@
 # Acorn System 3 6809 Teletext Graphics Library
 
-![Circles](demo/circles-demo.gif)
-
 The library follows the Bitshifters' teletextr routines (Kieran Connell and
 Simon Morris, adapted from Bresenham routines by Rich Talbot-Watkins) see _Credits_ and uses
 the Sixel graphics of the Acorn teletext VDU (6845 + SAA5050) on 6809-based
@@ -31,6 +29,7 @@ inserted in disk 1, the following commands will load the graphics library and de
     make boxes      # rectangles demo only
     make circles    # circles demo only
     make flip       # flip-screen demo only
+    make ants       # marching ants demo only
     make SAFE=1     # range-checked build (see below)
     make NOPACE=1   # TGL_PACE does nothing and never touches the VIA timer
     make test       # build, put the FLEX library and demos on TGL.dsk,
@@ -39,8 +38,8 @@ inserted in disk 1, the following commands will load the graphics library and de
 
 Output is raw binary: `build/sys3/tgl.bin`, `build/flex/tgl.bin`,
 `build/demo.bin`, `build/cube.bin`, `build/cubep.bin`, `build/cubed.bin`,
-`build/ship.bin`, `build/boxes.bin`, `build/circles.bin` and
-`build/flip.bin`, with listings alongside.
+`build/ship.bin`, `build/boxes.bin`, `build/circles.bin`, `build/flip.bin`
+and `build/ants.bin`, with listings alongside.
 
 ### Safe builds
 
@@ -127,6 +126,13 @@ __Horizontal Flip Demo__
 
 ![Flip](demo/flip-demo.gif)
 
+- `ants.bin` - marching ants: two dashed boxes march clockwise round a
+  small scene in SET mode (their gaps clear the pixels they cross, cutting
+  into the ball), while a dashed diagonal crosses everything in XOR mode,
+  marching the other way. About 140,000 cycles per frame, as it draws
+  nearly 400 dashed pixels as well as the scene (roughly 8 frames per
+  second); a single selection box costs far less.
+
 ## Using the Library
 
 The binary is position-independent: load it anywhere. Define `TGL_BASE`
@@ -174,6 +180,9 @@ the binaries differ, so position independence can't silently break.
 | TGL_POLYF   | +63    | Filled convex polygon: X -> corner count, then x,y pairs (signed) |
 | TGL_SETPAT  | +66    | Fill pattern for TGL_POLYF and TGL_CIRCF: A = 0-15 (2x2 pixels) |
 | TGL_FLIPH   | +69    | Card-turn flip of the buffer, left to right: A = 50Hz ticks per frame (1-3) |
+| TGL_SETDASH | +72    | Dash pattern: A = pattern (bit 0 first), B = length (1-8), X = phase |
+| TGL_LINED   | +75    | Dashed line: coordinates as TGL_LINEC |
+| TGL_RECTD   | +78    | Dashed rectangle outline: corners as TGL_RECT |
 
 `TGL_PLOT` and `TGL_LINE` do not range-check, for speed. `TGL_PLOTC` and
 `TGL_LINEC` accept signed coordinates and draw only what is on screen;
@@ -264,6 +273,25 @@ turns it back. Row colours are unchanged. It works on the library's own
 graphics: teletext text can't be mirrored (the SAA5050 has no reversed
 characters), and control codes part-way along a row would end up in the
 wrong place. It uses about 90 bytes of stack.
+
+`TGL_LINED` and `TGL_RECTD` draw dashed lines and rectangle outlines,
+for "marching ants" selection boxes and the like. `TGL_SETDASH` sets the
+pattern: A holds up to 8 pixels of it, bit 0 first (1 drawn, 0 a gap), B
+its length (1-8) and X the phase (in the low byte). `TGL_INIT` sets on,
+on, off (A = %011, B = 3). Drawn pixels use the current plot mode and gaps
+the opposite: cleared in SET mode, set in CLEAR mode, and left alone in
+XOR mode, so XOR ants can run over a picture without harming it. The
+pattern runs from the start point given towards the end point; for a
+rectangle it runs clockwise from the top-left corner, carrying on round
+the corners, with every pixel drawn once. Add 1 to the phase each frame
+(calling `TGL_SETDASH` again) and the dashes march forward a pixel at a
+time; subtract 1 and they march backwards. Both routines take signed
+coordinates and clip a pixel at a time, so the pattern stays anchored to
+the true start even when part of the shape is off screen. Horizontal and
+vertical lines (including every rectangle edge) take a faster path: a
+50 x 40 dashed box takes about 39,000 cycles, a 74-pixel diagonal about
+31,000. The dash settings are kept inside the library itself, as the
+page-zero workspace is full.
 
 Cycle figures in this README come from the Python emulator used for
 testing, which adds a cycle for every memory read on top of each

@@ -53,6 +53,9 @@ J_PACE          LBRA    T_PACE          ; +60
 J_POLYF         LBRA    T_POLYF         ; +63
 J_SETPAT        LBRA    T_SETPAT        ; +66
 J_FLIPH         LBRA    T_FLIPH         ; +69
+J_SETDASH       LBRA    T_SETDASH       ; +72
+J_LINED         LBRA    T_LINED         ; +75
+J_RECTD         LBRA    T_RECTD         ; +78
 
 ; Check the table against the published interface
 TGL_BASE        EQU     TGL_START
@@ -81,6 +84,9 @@ TGL_BASE        EQU     TGL_START
                 IFNE    (J_COLOUR-TGL_COLOUR)|(J_PACE-TGL_PACE)|(J_POLYF-TGL_POLYF)|(J_SETPAT-TGL_SETPAT)|(J_FLIPH-TGL_FLIPH)
                 ERROR   "Jump table does not match tgl_api.inc"
                 ENDC
+                IFNE    (J_SETDASH-TGL_SETDASH)|(J_LINED-TGL_LINED)|(J_RECTD-TGL_RECTD)
+                ERROR   "Jump table does not match tgl_api.inc"
+                ENDC
 
 ; ---------------------------------------------------------------------------
 ; Modules
@@ -98,6 +104,7 @@ TGL_BASE        EQU     TGL_START
                 INCLUDE "pace.asm"
                 INCLUDE "polygon.asm"
                 INCLUDE "flip.asm"
+                INCLUDE "dash.asm"
                 INCLUDE "system.asm"
                 INCLUDE "tables.asm"
 
