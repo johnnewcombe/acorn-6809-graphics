@@ -127,12 +127,6 @@ __Horizontal Flip Demo__
 
 ![Flip](demo/flip-demo.gif)
 
-- `flip.bin` - a lopsided picture (a letter F, an arrow and a ball) that
-  `TGL_FLIPH` turns over every couple of seconds, like a card: it narrows
-  to the centre line and opens out again mirror-reversed.
-
-![Circles](demo/flip-demo.gif)
-
 ## Using the Library
 
 The binary is position-independent: load it anywhere. Define `TGL_BASE`
