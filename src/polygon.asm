@@ -269,10 +269,10 @@ CS3_LOOP        CMPA    #3              ;  repeated subtraction (y <= 71)
                 BRA     CS3_LOOP
 CS3_DONE        STA     <CR_S
                 STB     <CR_IDX
-                LDA     #COLS           ; address = buffer + 1 + row * 40
+                LDA     #COLS           ; address = buffer + COL1 + row * 40
                 MUL
                 ADDD    <W_BUF
-                ADDD    #1
+                ADDD    #COL1
                 STD     <CR_ROW
                 BRA     CR_CLEAR
 

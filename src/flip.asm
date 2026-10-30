@@ -15,7 +15,9 @@
 ;
 ;   Each frame, the width follows a cosine curve (the way a turning card
 ;   looks), so screen pixel column X shows source column
-;       38.5 + (X - 38.5) * s,   s = 1 / cos(angle)
+;       c + (X - c) * s,   s = 1 / cos(angle)
+;   where c is the centre: 38.5 (or 37.5 in a separated build, 76 pixels
+;   wide). CELLS, COL1 and XMAX (consts.inc) give the geometry.
 ;   with s < 0 in the second half giving the mirror image. FL_MAP works
 ;   this out for all 78 columns into a table on the stack, stepping out
 ;   from the centre by s each column (no division). FL_DRAW then builds
@@ -29,7 +31,7 @@ FL_K            EQU     R_Y1            ; frame number, 1-15
 FL_S            EQU     I_U0            ; 2  this frame's s (8.8 fixed point)
 FL_O            EQU     I_V0            ; 2  distance from the centre, source
 FL_J            EQU     I_E             ; column counter
-FL_COL          EQU     I_SGN           ; screen cell column, 0-38
+FL_COL          EQU     I_SGN           ; screen cell column, 0 .. CELLS-1
 FL_CNT          EQU     I_DU            ; row counter
 FL_PL           EQU     F_CX1           ; source pixel for a cell's left half
 FL_PR           EQU     F_PL            ;  ... and its right half
@@ -39,11 +41,15 @@ T_FLIPH         PSHS    D,X,Y,U
                 STA     <FL_TICKS
                 LEAS    -78,S           ; the column map: 78 bytes of stack
                 STS     <FL_SRC
-                LDX     <W_BUF          ; row colour codes onto the screen
-                LDU     #VDU_BASE       ;  (column 0 never changes)
+                LDX     <W_BUF          ; row control codes onto the screen
+                LDU     #VDU_BASE       ;  (columns before COL1 never change)
                 LDB     #ROWS
 FL_C0           LDA     ,X
                 STA     ,U
+                IFDEF   TGL_SEPARATED
+                LDA     1,X
+                STA     1,U
+                ENDC
                 LEAX    COLS,X
                 LEAU    COLS,U
                 DECB
@@ -70,16 +76,17 @@ FL_FRAME        LEAX    FL_STAB-2,PCR   ; s for this frame
                 PULS    D,X,Y,U,PC
 
 ; ---------------------------------------------------------------------------
-; FL_MAP - fill the column map: for each screen pixel column X (0-77), the
-;   source pixel column it shows, or $FF for none (beyond the picture).
-;   Works out from the centre: at distance j + 0.5 the source is at
-;   38.5 +/- o with o = (j + 0.5) * s, so o starts at s/2 and grows by s
-;   each column. Rounded to the nearest column: source = (39*256 +/- o) / 256
-;   in 8.8 fixed point. Stops once o is beyond the picture's edge.
+; FL_MAP - fill the column map: for each screen pixel column X (0-XMAX),
+;   the source pixel column it shows, or $FF for none (beyond the picture).
+;   Works out from the centre c (= CELLS - 0.5): at distance j + 0.5 the
+;   source is at c +/- o with o = (j + 0.5) * s, so o starts at s/2 and
+;   grows by s each column. Rounded to the nearest column:
+;   source = (CELLS*256 +/- o) / 256 in 8.8 fixed point. Stops once o is
+;   beyond the picture's edge.
 ; ---------------------------------------------------------------------------
 FL_MAP          LDX     <FL_SRC         ; start with every column blank
                 LDA     #$FF
-                LDB     #78
+                LDB     #2*CELLS
 FM_CLR          STA     ,X+
                 DECB
                 BNE     FM_CLR
@@ -93,24 +100,24 @@ FM_LOOP         LDD     <FL_O           ; |o| beyond the picture? stop
                 COMA
                 COMB
                 ADDD    #1
-FM_1            CMPD    #40*256
+FM_1            CMPD    #(CELLS+1)*256
                 BHI     FM_X
-                LDD     #39*256         ; right side: X = 39 + j shows
-                ADDD    <FL_O           ;  39*256 + o
+                LDD     #CELLS*256      ; right side: X = CELLS + j shows
+                ADDD    <FL_O           ;  CELLS*256 + o
                 BMI     FM_2            ;  (off the left of the picture)
-                CMPD    #78*256
+                CMPD    #2*CELLS*256
                 BGE     FM_2            ;  (off the right)
                 LDX     <FL_SRC         ; A = source column
                 LDB     <FL_J
                 ABX
-                STA     39,X
-FM_2            LDD     #39*256         ; left side: X = 38 - j shows
-                SUBD    <FL_O           ;  39*256 - o
+                STA     CELLS,X
+FM_2            LDD     #CELLS*256      ; left side: X = CELLS - 1 - j shows
+                SUBD    <FL_O           ;  CELLS*256 - o
                 BMI     FM_3
-                CMPD    #78*256
+                CMPD    #2*CELLS*256
                 BGE     FM_3
                 LDX     <FL_SRC
-                LDB     #38
+                LDB     #CELLS-1
                 SUBB    <FL_J
                 ABX
                 STA     ,X
@@ -119,7 +126,7 @@ FM_3            LDD     <FL_O           ; next column out
                 STD     <FL_O
                 INC     <FL_J
                 LDA     <FL_J
-                CMPA    #39
+                CMPA    #CELLS
                 BLO     FM_LOOP
 FM_X            RTS
 
@@ -146,8 +153,8 @@ FD_COL          LDX     <FL_SRC         ; PL, PR for this cell column
                 SUBD    <W_BUF          ;  VDU_BASE + column - W_BUF (it can
                 ADDB    <FL_COL         ;  wrap round 64K, which is fine)
                 ADCA    #0
-                LDX     <W_BUF          ; X -> column 1 of buffer row 0
-                LEAX    1,X
+                LDX     <W_BUF          ; X -> first pixel column of buffer
+                LEAX    COL1,X          ;  row 0
                 LDU     <FL_PL          ; both halves blank: spaces
                 CMPU    #$FFFF
                 LBEQ    FD_BLANK
@@ -212,7 +219,7 @@ FG_D2           STA     >2*COLS,X
                 BNE     FG_LOOP
 FD_NEXT         INC     <FL_COL
                 LDA     <FL_COL
-                CMPA    #COLS-1
+                CMPA    #CELLS
                 LBLO    FD_COL
                 RTS
 
@@ -229,16 +236,17 @@ FB_LOOP         STA     ,X
 
 ; ---------------------------------------------------------------------------
 ; FL_MIRROR - mirror the buffer left-to-right in place: in each row, swap
-;   cells 1-19 with 39-21, mirroring each (its left and right pixels
-;   swapped), and mirror cell 20 where it is
+;   the pixel cells in pairs from the outside in (1-19 with 39-21, or in a
+;   separated build 2-20 with 39-21), mirroring each (its left and right
+;   pixels swapped), and mirror the middle cell, if there is one (cell 20)
 ; ---------------------------------------------------------------------------
 FL_MIRROR       LDX     <W_BUF
                 LDA     #ROWS
                 STA     <FL_CNT
 MR_ROW          PSHS    X
-                LEAY    39,X            ; Y -> column 39
-                LEAX    1,X             ; X -> column 1
-                LDA     #19
+                LEAY    COLS-1,X        ; Y -> column 39
+                LEAX    COL1,X          ; X -> the first pixel column
+                LDA     #CELLS/2
                 STA     <FL_J
 MR_LOOP         LDB     ,Y              ; mirror of the right-hand cell ...
                 BSR     MIRB
@@ -251,9 +259,11 @@ MR_LOOP         LDB     ,Y              ; mirror of the right-hand cell ...
                 LEAY    -1,Y
                 DEC     <FL_J
                 BNE     MR_LOOP
-                LDB     ,X              ; the middle cell (column 20)
+                IFNE    CELLS&1         ; an odd number of cells: the middle
+                LDB     ,X              ;  one (column 20)
                 BSR     MIRB
                 STA     ,X
+                ENDC
                 PULS    X
                 LEAX    COLS,X
                 DEC     <FL_CNT

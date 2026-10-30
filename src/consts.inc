@@ -14,7 +14,17 @@ MODE_SET        EQU     0
 MODE_CLEAR      EQU     1
 MODE_XOR        EQU     2
 
-XMAX            EQU     77              ; largest visible x
+; Separated-graphics build (-D TGL_SEPARATED): column 1 of every row holds
+; the separated-graphics code as well as column 0 the colour code, so the
+; pixels start at column 2 and the screen is 76 pixels wide, not 78
+                IFDEF   TGL_SEPARATED
+COL1            EQU     2               ; first pixel column
+                ELSE
+COL1            EQU     1
+                ENDC
+CELLS           EQU     COLS-COL1       ; pixel cells per row: 39, or 38
+XMAX            EQU     2*CELLS-1       ; largest visible x: 77, or 75
+GFX_SEP         EQU     $9A             ; separated graphics control code
 YMAX            EQU     71              ; largest visible y
 STATUS_ROW      EQU     24              ; the status (text) row: below the
                                         ;  graphics, never touched by the blit

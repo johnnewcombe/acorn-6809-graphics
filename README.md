@@ -1,5 +1,7 @@
 # Acorn System 3 6809 Teletext Graphics Library
 
+![Acornsoft](demo/logo-demo.gif)
+
 The library follows the Bitshifters' teletextr routines (Kieran Connell and
 Simon Morris, adapted from Bresenham routines by Rich Talbot-Watkins) see _Credits_ and uses
 the Sixel graphics of the Acorn teletext VDU (6845 + SAA5050) on 6809-based
@@ -21,6 +23,7 @@ inserted in disk 1, the following commands will load the graphics library and de
     make            # library for both targets, plus the demos
     make sys3       # standard Acorn System 3  (VDU $0400, CRTC $0800)
     make flex       # FLEX machine            (VDU $E400, CRTC $E800)
+                    #  (each builds tgl.bin and the separated tgls.bin)
     make demo       # starburst demo only
     make cube       # rotating cube demo only
     make cubep      # patterned cube demo only
@@ -37,7 +40,8 @@ inserted in disk 1, the following commands will load the graphics library and de
                     #  and start MAME
     make clean      # remove the build directory
 
-Output is raw binary: `build/sys3/tgl.bin`, `build/flex/tgl.bin`,
+Output is raw binary: `build/sys3/tgl.bin`, `build/flex/tgl.bin`, the
+separated-graphics builds `build/sys3/tgls.bin` and `build/flex/tgls.bin`,
 `build/demo.bin`, `build/cube.bin`, `build/cubep.bin`, `build/cubed.bin`,
 `build/ship.bin`, `build/boxes.bin`, `build/circles.bin`, `build/flip.bin`,
 `build/ants.bin` and `build/logo.bin`, with listings alongside.
@@ -54,6 +58,19 @@ and is byte-for-byte unaffected. The build message ends with
 `make NOPACE=1` reduces `TGL_PACE` to a bare return, for programs that
 need the VIA's Timer 2 for themselves and want a guarantee the library
 never touches it (see `TGL_PACE` below). The two options can be combined.
+
+### Separated graphics
+
+Every build also produces `tgls.bin`, the library for separated graphics
+(the dotted look, where each sixel is drawn as a smaller block with a gap
+round it). Teletext needs a second control code for that, so in this build
+column 1 of every row holds the separated-graphics code as well as column
+0 the colour code: the pixels start at column 2 and the screen is 76
+pixels wide (x = 0-75) instead of 78. Everything else is the same - the
+same entry points, and every routine (`TGL_FLIPH` included) works on the
+narrower screen, clipping at x = 75. `TGL_CLS` keeps the separated code in
+column 1. Programs load whichever library suits them; the demos use
+`tgl.bin` except `logo.bin`, which is designed for `tgls.bin`.
 
 `make` decides what to rebuild from file dates, so it won't notice that
 an option has changed. When switching between build options, use
@@ -133,9 +150,11 @@ __Horizontal Flip Demo__
   marching the other way. About 140,000 cycles per frame, as it draws
   nearly 400 dashed pixels as well as the scene (roughly 8 frames per
   second); a single selection box costs far less.
-- `logo.bin` - an existing teletext splash screen, converted with
-  `tools/screen2tgl.py` (see _Converting a Screen_ below), turned over with
-  `TGL_FLIPH` every couple of seconds.
+- `logo.bin` - an existing separated-graphics teletext splash screen,
+  converted with `tools/screen2tgl.py` (see _Converting a Screen_ below),
+  turned over with `TGL_FLIPH` every couple of seconds. Load it with the
+  separated library (`GET 1.TGLS.BIN`) to see it exactly as designed; with
+  `TGL.BIN` it shows as solid blocks.
 
 ## Using the Library
 
@@ -308,9 +327,10 @@ in MAME suggest real costs are around 15-20% lower.
 table for the library, so a splash screen designed elsewhere can be shown
 and then animated (with `TGL_FLIPH`, for example). It reads the screen
 memory and writes an assembler include in the library's own buffer layout:
-24 rows of 39 cells (columns 1-39), then the 24 row colours.
+24 rows of picture cells (columns 1-39, or 2-39 with `--first-col 2`),
+then the 24 row colours.
 
-    python3 tools/screen2tgl.py screen.txt --first-row 1 --label LOGO -o demo/logo_screen.asm
+    python3 tools/screen2tgl.py screen.txt --first-row 1 --first-col 2 --label LOGO -o demo/logo_screen.asm
 
 The input can be the raw screen bytes as saved by a teletext editor (40
 bytes per row, with or without a newline after each row), or a hex listing,
@@ -318,12 +338,15 @@ which may have an address at the start of each line (`E400:`, `0400`) and
 an ASCII column at the end. It tells which automatically. It should hold
 24 or 25 rows; `--first-row N` picks which screen row becomes graphics
 row 0 (the library's row 24 is its status row, so a 25-row screen whose
-picture starts on row 1 needs `--first-row 1`). Each row's graphics colour code becomes its colour
-(rows without one are white), control codes in the picture become blank
-cells, and sixel cells are copied as they are. The library draws contiguous
-graphics, so a separated-graphics screen shows as solid blocks.
-`demo/logo.asm` shows how to load the table: copy each row's cells into
-the buffer, set the row's colour with `TGL_COLOUR`, and blit.
+picture starts on row 1 needs `--first-row 1`). `--first-col 2` takes the
+picture from column 2 onwards, for separated-graphics screens (column 1
+holds the separated code): shown with `tgls.bin` they look exactly as
+designed, and with `tgl.bin` as solid blocks. Each row's graphics colour
+code becomes its colour (rows without one are white), control codes in the
+picture become blank cells, and sixel cells are copied as they are. The
+table records its first column and width (`LOGO_COL1`, `LOGO_CELLS` for
+`--label LOGO`). `demo/logo.asm` shows how to load it: copy each row's
+cells into the buffer, set the row's colour with `TGL_COLOUR`, and blit.
 
 ## System Routines
 

@@ -17,7 +17,8 @@
 ;   The library draws contiguous graphics, so a separated-graphics screen
 ;   shows as solid blocks.
 ;
-;   Loading: tgl.bin at $1000 (TGL_BASE below), logo.bin at $2800.
+;   Loading: tgls.bin (or tgl.bin) at $1000 (TGL_BASE below), logo.bin at
+;   $2800.
 ;   Run from START ($2800). Works with either machine's library build.
 ; ===========================================================================
 
@@ -50,19 +51,19 @@ START           LDS     #STACK_TOP
                 JSR     TGL_TEXT
 
 ; ---------------------------------------------------------------------------
-; Copy the picture into the buffer: for each row, its 39 cells into
-; columns 1-39, then its colour with TGL_COLOUR (which writes column 0 and
+; Copy the picture into the buffer: for each row, its cells into columns
+; LOGO_COL1-39, then its colour with TGL_COLOUR (which writes column 0 and
 ; remembers it, so TGL_CLS would keep it)
 ; ---------------------------------------------------------------------------
                 LDY     #LOGO           ; Y -> the picture's cells
-                LDU     #BUFFER+1       ; U -> column 1 of buffer row 0
+                LDU     #BUFFER+LOGO_COL1 ; U -> first picture column, row 0
                 CLR     <ROW
-COPYROW         LDB     #39             ; 39 cells
+COPYROW         LDB     #LOGO_CELLS     ; this row's cells
 COPYCELL        LDA     ,Y+
                 STA     ,U+
                 DECB
                 BNE     COPYCELL
-                LEAU    1,U             ; skip column 0 of the next row
+                LEAU    LOGO_COL1,U     ; skip the next row's control columns
                 LDX     #LOGO_COL       ; this row's colour (1-7)
                 LDB     <ROW
                 ABX

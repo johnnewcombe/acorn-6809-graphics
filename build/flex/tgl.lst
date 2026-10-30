@@ -58,19 +58,29 @@
      0001             (       consts.inc):00014         MODE_CLEAR      EQU     1
      0002             (       consts.inc):00015         MODE_XOR        EQU     2
                       (       consts.inc):00016         
-     004D             (       consts.inc):00017         XMAX            EQU     77              ; largest visible x
-     0047             (       consts.inc):00018         YMAX            EQU     71              ; largest visible y
-     0018             (       consts.inc):00019         STATUS_ROW      EQU     24              ; the status (text) row: below the
-                      (       consts.inc):00020                                                 ;  graphics, never touched by the blit
-                      (       consts.inc):00021         
-                      (       consts.inc):00022         ; VIA registers used by TGL_PACE (offsets from VIA_BASE)
-     0008             (       consts.inc):00023         VIA_T2L         EQU     8               ; Timer 2 low byte (write: latch)
-     0009             (       consts.inc):00024         VIA_T2H         EQU     9               ; Timer 2 high byte (write: start)
-     000B             (       consts.inc):00025         VIA_ACR         EQU     $B              ; auxiliary control register
-     000D             (       consts.inc):00026         VIA_IFR         EQU     $D              ; interrupt flag register
-     0020             (       consts.inc):00027         T2_FLAG         EQU     $20             ; IFR bit 5: Timer 2 has timed out
-     0020             (       consts.inc):00028         ACR_T2COUNT     EQU     $20             ; ACR bit 5: Timer 2 counts pulses
-     4E20             (       consts.inc):00029         TICK            EQU     20000           ; one 50Hz tick in VIA clocks (1MHz)
+                      (       consts.inc):00017         ; Separated-graphics build (-D TGL_SEPARATED): column 1 of every row holds
+                      (       consts.inc):00018         ; the separated-graphics code as well as column 0 the colour code, so the
+                      (       consts.inc):00019         ; pixels start at column 2 and the screen is 76 pixels wide, not 78
+                      (       consts.inc):00020                         IFDEF   TGL_SEPARATED
+0000                  (       consts.inc):00021         COL1            EQU     2               ; first pixel column
+                      (       consts.inc):00022                         ELSE
+     0001             (       consts.inc):00023         COL1            EQU     1
+                      (       consts.inc):00024                         ENDC
+     0027             (       consts.inc):00025         CELLS           EQU     COLS-COL1       ; pixel cells per row: 39, or 38
+     004D             (       consts.inc):00026         XMAX            EQU     2*CELLS-1       ; largest visible x: 77, or 75
+     009A             (       consts.inc):00027         GFX_SEP         EQU     $9A             ; separated graphics control code
+     0047             (       consts.inc):00028         YMAX            EQU     71              ; largest visible y
+     0018             (       consts.inc):00029         STATUS_ROW      EQU     24              ; the status (text) row: below the
+                      (       consts.inc):00030                                                 ;  graphics, never touched by the blit
+                      (       consts.inc):00031         
+                      (       consts.inc):00032         ; VIA registers used by TGL_PACE (offsets from VIA_BASE)
+     0008             (       consts.inc):00033         VIA_T2L         EQU     8               ; Timer 2 low byte (write: latch)
+     0009             (       consts.inc):00034         VIA_T2H         EQU     9               ; Timer 2 high byte (write: start)
+     000B             (       consts.inc):00035         VIA_ACR         EQU     $B              ; auxiliary control register
+     000D             (       consts.inc):00036         VIA_IFR         EQU     $D              ; interrupt flag register
+     0020             (       consts.inc):00037         T2_FLAG         EQU     $20             ; IFR bit 5: Timer 2 has timed out
+     0020             (       consts.inc):00038         ACR_T2COUNT     EQU     $20             ; ACR bit 5: Timer 2 counts pulses
+     4E20             (       consts.inc):00039         TICK            EQU     20000           ; one 50Hz tick in VIA clocks (1MHz)
                       (      src/tgl.asm):00023                         INCLUDE "ws.inc"
                       (           ws.inc):00001         ; ---------------------------------------------------------------------------
                       (           ws.inc):00002         ; Workspace - lives in the direct page. Callers must enter every library
@@ -338,83 +348,111 @@
                       (          cls.asm):00001         ; ---------------------------------------------------------------------------
                       (          cls.asm):00002         ; T_CLS - clear the off-screen buffer
                       (          cls.asm):00003         ;   Each row: its graphics colour code in column 0 (white unless changed
-                      (          cls.asm):00004         ;   with TGL_COLOUR), blank sixel cells in 1-39.
-                      (          cls.asm):00005         ;   Fills the whole buffer with blank cells using PSHU from three registers
-                      (          cls.asm):00006         ;   (six bytes per instruction, working down from the end), then writes the
-                      (          cls.asm):00007         ;   colour code into column 0 of each row. Roughly 2,100 cycles, about a
-                      (          cls.asm):00008         ;   fifth of a simple byte loop.
-                      (          cls.asm):00009         ;   Entry: DP = $00            Exit: all registers preserved
-                      (          cls.asm):00010         ; ---------------------------------------------------------------------------
-109F 3476             (          cls.asm):00011         T_CLS           PSHS    D,X,Y,U
-10A1 8614             (          cls.asm):00012                         LDA     #BUFSIZE/48     ; 20 iterations x 48 bytes
-10A3 9704             (          cls.asm):00013                         STA     <W_COUNT
-10A5 DE00             (          cls.asm):00014                         LDU     <W_BUF
-10A7 33C903C0         (          cls.asm):00015                         LEAU    BUFSIZE,U       ; PSHU fills downwards from the end
-10AB CC2020           (          cls.asm):00016                         LDD     #SIXEL_BLANK*$101
-10AE 1F01             (          cls.asm):00017                         TFR     D,X
-10B0 1F02             (          cls.asm):00018                         TFR     D,Y
-10B2                  (          cls.asm):00019         CLS_FILL
-10B2 3636             (          cls.asm):00020                         PSHU    D,X,Y
-10B4 3636             (          cls.asm):00021                         PSHU    D,X,Y
-10B6 3636             (          cls.asm):00022                         PSHU    D,X,Y
-10B8 3636             (          cls.asm):00023                         PSHU    D,X,Y
-10BA 3636             (          cls.asm):00024                         PSHU    D,X,Y
-10BC 3636             (          cls.asm):00025                         PSHU    D,X,Y
-10BE 3636             (          cls.asm):00026                         PSHU    D,X,Y
-10C0 3636             (          cls.asm):00027                         PSHU    D,X,Y
-10C2 0A04             (          cls.asm):00028                         DEC     <W_COUNT
-10C4 26EC             (          cls.asm):00029                         BNE     CLS_FILL
-                      (          cls.asm):00030                                                 ; U = buffer start: put each row's
-                      (          cls.asm):00031                                                 ;  colour code in column 0
-10C6 9643             (          cls.asm):00032                         LDA     <ROWCOL+0
-10C8 A7C4             (          cls.asm):00033                         STA     0*COLS,U
-10CA 9644             (          cls.asm):00034                         LDA     <ROWCOL+1
-10CC A7C828           (          cls.asm):00035                         STA     1*COLS,U
-10CF 9645             (          cls.asm):00036                         LDA     <ROWCOL+2
-10D1 A7C850           (          cls.asm):00037                         STA     2*COLS,U
-10D4 9646             (          cls.asm):00038                         LDA     <ROWCOL+3
-10D6 A7C878           (          cls.asm):00039                         STA     3*COLS,U
-10D9 9647             (          cls.asm):00040                         LDA     <ROWCOL+4
-10DB A7C900A0         (          cls.asm):00041                         STA     4*COLS,U
-10DF 9648             (          cls.asm):00042                         LDA     <ROWCOL+5
-10E1 A7C900C8         (          cls.asm):00043                         STA     5*COLS,U
-10E5 9649             (          cls.asm):00044                         LDA     <ROWCOL+6
-10E7 A7C900F0         (          cls.asm):00045                         STA     6*COLS,U
-10EB 964A             (          cls.asm):00046                         LDA     <ROWCOL+7
-10ED A7C90118         (          cls.asm):00047                         STA     7*COLS,U
-10F1 964B             (          cls.asm):00048                         LDA     <ROWCOL+8
-10F3 A7C90140         (          cls.asm):00049                         STA     8*COLS,U
-10F7 964C             (          cls.asm):00050                         LDA     <ROWCOL+9
-10F9 A7C90168         (          cls.asm):00051                         STA     9*COLS,U
-10FD 964D             (          cls.asm):00052                         LDA     <ROWCOL+10
-10FF A7C90190         (          cls.asm):00053                         STA     10*COLS,U
-1103 964E             (          cls.asm):00054                         LDA     <ROWCOL+11
-1105 A7C901B8         (          cls.asm):00055                         STA     11*COLS,U
-1109 964F             (          cls.asm):00056                         LDA     <ROWCOL+12
-110B A7C901E0         (          cls.asm):00057                         STA     12*COLS,U
-110F 9650             (          cls.asm):00058                         LDA     <ROWCOL+13
-1111 A7C90208         (          cls.asm):00059                         STA     13*COLS,U
-1115 9651             (          cls.asm):00060                         LDA     <ROWCOL+14
-1117 A7C90230         (          cls.asm):00061                         STA     14*COLS,U
-111B 9652             (          cls.asm):00062                         LDA     <ROWCOL+15
-111D A7C90258         (          cls.asm):00063                         STA     15*COLS,U
-1121 9653             (          cls.asm):00064                         LDA     <ROWCOL+16
-1123 A7C90280         (          cls.asm):00065                         STA     16*COLS,U
-1127 9654             (          cls.asm):00066                         LDA     <ROWCOL+17
-1129 A7C902A8         (          cls.asm):00067                         STA     17*COLS,U
-112D 9655             (          cls.asm):00068                         LDA     <ROWCOL+18
-112F A7C902D0         (          cls.asm):00069                         STA     18*COLS,U
-1133 9656             (          cls.asm):00070                         LDA     <ROWCOL+19
-1135 A7C902F8         (          cls.asm):00071                         STA     19*COLS,U
-1139 9657             (          cls.asm):00072                         LDA     <ROWCOL+20
-113B A7C90320         (          cls.asm):00073                         STA     20*COLS,U
-113F 9658             (          cls.asm):00074                         LDA     <ROWCOL+21
-1141 A7C90348         (          cls.asm):00075                         STA     21*COLS,U
-1145 9659             (          cls.asm):00076                         LDA     <ROWCOL+22
-1147 A7C90370         (          cls.asm):00077                         STA     22*COLS,U
-114B 965A             (          cls.asm):00078                         LDA     <ROWCOL+23
-114D A7C90398         (          cls.asm):00079                         STA     23*COLS,U
-1151 35F6             (          cls.asm):00080                         PULS    D,X,Y,U,PC
+                      (          cls.asm):00004         ;   with TGL_COLOUR), blank sixel cells in 1-39. In a separated build,
+                      (          cls.asm):00005         ;   column 1 holds the separated-graphics code instead.
+                      (          cls.asm):00006         ;   Fills the whole buffer with blank cells using PSHU from three registers
+                      (          cls.asm):00007         ;   (six bytes per instruction, working down from the end), then writes the
+                      (          cls.asm):00008         ;   colour code into column 0 of each row. Roughly 2,100 cycles, about a
+                      (          cls.asm):00009         ;   fifth of a simple byte loop.
+                      (          cls.asm):00010         ;   Entry: DP = $00            Exit: all registers preserved
+                      (          cls.asm):00011         ; ---------------------------------------------------------------------------
+109F 3476             (          cls.asm):00012         T_CLS           PSHS    D,X,Y,U
+10A1 8614             (          cls.asm):00013                         LDA     #BUFSIZE/48     ; 20 iterations x 48 bytes
+10A3 9704             (          cls.asm):00014                         STA     <W_COUNT
+10A5 DE00             (          cls.asm):00015                         LDU     <W_BUF
+10A7 33C903C0         (          cls.asm):00016                         LEAU    BUFSIZE,U       ; PSHU fills downwards from the end
+10AB CC2020           (          cls.asm):00017                         LDD     #SIXEL_BLANK*$101
+10AE 1F01             (          cls.asm):00018                         TFR     D,X
+10B0 1F02             (          cls.asm):00019                         TFR     D,Y
+10B2                  (          cls.asm):00020         CLS_FILL
+10B2 3636             (          cls.asm):00021                         PSHU    D,X,Y
+10B4 3636             (          cls.asm):00022                         PSHU    D,X,Y
+10B6 3636             (          cls.asm):00023                         PSHU    D,X,Y
+10B8 3636             (          cls.asm):00024                         PSHU    D,X,Y
+10BA 3636             (          cls.asm):00025                         PSHU    D,X,Y
+10BC 3636             (          cls.asm):00026                         PSHU    D,X,Y
+10BE 3636             (          cls.asm):00027                         PSHU    D,X,Y
+10C0 3636             (          cls.asm):00028                         PSHU    D,X,Y
+10C2 0A04             (          cls.asm):00029                         DEC     <W_COUNT
+10C4 26EC             (          cls.asm):00030                         BNE     CLS_FILL
+                      (          cls.asm):00031                                                 ; U = buffer start: put each row's
+                      (          cls.asm):00032                                                 ;  colour code in column 0
+10C6 9643             (          cls.asm):00033                         LDA     <ROWCOL+0
+10C8 A7C4             (          cls.asm):00034                         STA     0*COLS,U
+10CA 9644             (          cls.asm):00035                         LDA     <ROWCOL+1
+10CC A7C828           (          cls.asm):00036                         STA     1*COLS,U
+10CF 9645             (          cls.asm):00037                         LDA     <ROWCOL+2
+10D1 A7C850           (          cls.asm):00038                         STA     2*COLS,U
+10D4 9646             (          cls.asm):00039                         LDA     <ROWCOL+3
+10D6 A7C878           (          cls.asm):00040                         STA     3*COLS,U
+10D9 9647             (          cls.asm):00041                         LDA     <ROWCOL+4
+10DB A7C900A0         (          cls.asm):00042                         STA     4*COLS,U
+10DF 9648             (          cls.asm):00043                         LDA     <ROWCOL+5
+10E1 A7C900C8         (          cls.asm):00044                         STA     5*COLS,U
+10E5 9649             (          cls.asm):00045                         LDA     <ROWCOL+6
+10E7 A7C900F0         (          cls.asm):00046                         STA     6*COLS,U
+10EB 964A             (          cls.asm):00047                         LDA     <ROWCOL+7
+10ED A7C90118         (          cls.asm):00048                         STA     7*COLS,U
+10F1 964B             (          cls.asm):00049                         LDA     <ROWCOL+8
+10F3 A7C90140         (          cls.asm):00050                         STA     8*COLS,U
+10F7 964C             (          cls.asm):00051                         LDA     <ROWCOL+9
+10F9 A7C90168         (          cls.asm):00052                         STA     9*COLS,U
+10FD 964D             (          cls.asm):00053                         LDA     <ROWCOL+10
+10FF A7C90190         (          cls.asm):00054                         STA     10*COLS,U
+1103 964E             (          cls.asm):00055                         LDA     <ROWCOL+11
+1105 A7C901B8         (          cls.asm):00056                         STA     11*COLS,U
+1109 964F             (          cls.asm):00057                         LDA     <ROWCOL+12
+110B A7C901E0         (          cls.asm):00058                         STA     12*COLS,U
+110F 9650             (          cls.asm):00059                         LDA     <ROWCOL+13
+1111 A7C90208         (          cls.asm):00060                         STA     13*COLS,U
+1115 9651             (          cls.asm):00061                         LDA     <ROWCOL+14
+1117 A7C90230         (          cls.asm):00062                         STA     14*COLS,U
+111B 9652             (          cls.asm):00063                         LDA     <ROWCOL+15
+111D A7C90258         (          cls.asm):00064                         STA     15*COLS,U
+1121 9653             (          cls.asm):00065                         LDA     <ROWCOL+16
+1123 A7C90280         (          cls.asm):00066                         STA     16*COLS,U
+1127 9654             (          cls.asm):00067                         LDA     <ROWCOL+17
+1129 A7C902A8         (          cls.asm):00068                         STA     17*COLS,U
+112D 9655             (          cls.asm):00069                         LDA     <ROWCOL+18
+112F A7C902D0         (          cls.asm):00070                         STA     18*COLS,U
+1133 9656             (          cls.asm):00071                         LDA     <ROWCOL+19
+1135 A7C902F8         (          cls.asm):00072                         STA     19*COLS,U
+1139 9657             (          cls.asm):00073                         LDA     <ROWCOL+20
+113B A7C90320         (          cls.asm):00074                         STA     20*COLS,U
+113F 9658             (          cls.asm):00075                         LDA     <ROWCOL+21
+1141 A7C90348         (          cls.asm):00076                         STA     21*COLS,U
+1145 9659             (          cls.asm):00077                         LDA     <ROWCOL+22
+1147 A7C90370         (          cls.asm):00078                         STA     22*COLS,U
+114B 965A             (          cls.asm):00079                         LDA     <ROWCOL+23
+114D A7C90398         (          cls.asm):00080                         STA     23*COLS,U
+                      (          cls.asm):00081                         IFDEF   TGL_SEPARATED   ; and the separated code in column 1
+                      (          cls.asm):00082                         LDA     #GFX_SEP
+                      (          cls.asm):00083                         STA     0*COLS+1,U
+                      (          cls.asm):00084                         STA     1*COLS+1,U
+                      (          cls.asm):00085                         STA     2*COLS+1,U
+                      (          cls.asm):00086                         STA     3*COLS+1,U
+                      (          cls.asm):00087                         STA     4*COLS+1,U
+                      (          cls.asm):00088                         STA     5*COLS+1,U
+                      (          cls.asm):00089                         STA     6*COLS+1,U
+                      (          cls.asm):00090                         STA     7*COLS+1,U
+                      (          cls.asm):00091                         STA     8*COLS+1,U
+                      (          cls.asm):00092                         STA     9*COLS+1,U
+                      (          cls.asm):00093                         STA     10*COLS+1,U
+                      (          cls.asm):00094                         STA     11*COLS+1,U
+                      (          cls.asm):00095                         STA     12*COLS+1,U
+                      (          cls.asm):00096                         STA     13*COLS+1,U
+                      (          cls.asm):00097                         STA     14*COLS+1,U
+                      (          cls.asm):00098                         STA     15*COLS+1,U
+                      (          cls.asm):00099                         STA     16*COLS+1,U
+                      (          cls.asm):00100                         STA     17*COLS+1,U
+                      (          cls.asm):00101                         STA     18*COLS+1,U
+                      (          cls.asm):00102                         STA     19*COLS+1,U
+                      (          cls.asm):00103                         STA     20*COLS+1,U
+                      (          cls.asm):00104                         STA     21*COLS+1,U
+                      (          cls.asm):00105                         STA     22*COLS+1,U
+                      (          cls.asm):00106                         STA     23*COLS+1,U
+                      (          cls.asm):00107                         ENDC
+1151 35F6             (          cls.asm):00108                         PULS    D,X,Y,U,PC
                       (      src/tgl.asm):00096                         INCLUDE "plot.asm"
                       (         plot.asm):00001         ; ---------------------------------------------------------------------------
                       (         plot.asm):00002         ; T_SETMODE - select plot mode
@@ -2247,10 +2285,10 @@
 1AA1 20F7             (      polygon.asm):00269                         BRA     CS3_LOOP
 1AA3 9724             (      polygon.asm):00270         CS3_DONE        STA     <CR_S
 1AA5 D723             (      polygon.asm):00271                         STB     <CR_IDX
-1AA7 8628             (      polygon.asm):00272                         LDA     #COLS           ; address = buffer + 1 + row * 40
+1AA7 8628             (      polygon.asm):00272                         LDA     #COLS           ; address = buffer + COL1 + row * 40
 1AA9 3D               (      polygon.asm):00273                         MUL
 1AAA D300             (      polygon.asm):00274                         ADDD    <W_BUF
-1AAC C30001           (      polygon.asm):00275                         ADDD    #1
+1AAC C30001           (      polygon.asm):00275                         ADDD    #COL1
 1AAF DD28             (      polygon.asm):00276                         STD     <CR_ROW
 1AB1 2009             (      polygon.asm):00277                         BRA     CR_CLEAR
                       (      polygon.asm):00278         
@@ -2630,343 +2668,353 @@
                       (         flip.asm):00015         ;
                       (         flip.asm):00016         ;   Each frame, the width follows a cosine curve (the way a turning card
                       (         flip.asm):00017         ;   looks), so screen pixel column X shows source column
-                      (         flip.asm):00018         ;       38.5 + (X - 38.5) * s,   s = 1 / cos(angle)
-                      (         flip.asm):00019         ;   with s < 0 in the second half giving the mirror image. FL_MAP works
-                      (         flip.asm):00020         ;   this out for all 78 columns into a table on the stack, stepping out
-                      (         flip.asm):00021         ;   from the centre by s each column (no division). FL_DRAW then builds
-                      (         flip.asm):00022         ;   each screen cell from its two source pixels using four lookup tables -
-                      (         flip.asm):00023         ;   left pixel to left, right to left, left to right, right to right - in
-                      (         flip.asm):00024         ;   a row loop whose offsets are patched in for each column.
-                      (         flip.asm):00025         ;
-                      (         flip.asm):00026         ;   Workspace borrowed from routines that never run at the same time:
-     001A             (         flip.asm):00027         FL_TICKS        EQU     R_X1            ; frame length (for TGL_PACE)
-     001B             (         flip.asm):00028         FL_K            EQU     R_Y1            ; frame number, 1-15
-     000F             (         flip.asm):00029         FL_S            EQU     I_U0            ; 2  this frame's s (8.8 fixed point)
-     0011             (         flip.asm):00030         FL_O            EQU     I_V0            ; 2  distance from the centre, source
-     0013             (         flip.asm):00031         FL_J            EQU     I_E             ; column counter
-     0014             (         flip.asm):00032         FL_COL          EQU     I_SGN           ; screen cell column, 0-38
-     0015             (         flip.asm):00033         FL_CNT          EQU     I_DU            ; row counter
-     001D             (         flip.asm):00034         FL_PL           EQU     F_CX1           ; source pixel for a cell's left half
-     001E             (         flip.asm):00035         FL_PR           EQU     F_PL            ;  ... and its right half
-     0028             (         flip.asm):00036         FL_SRC          EQU     F_ROW           ; 2  address of the column map
-                      (         flip.asm):00037         ; ---------------------------------------------------------------------------
-1CB0 3476             (         flip.asm):00038         T_FLIPH         PSHS    D,X,Y,U
-1CB2 971A             (         flip.asm):00039                         STA     <FL_TICKS
-1CB4 32E8B2           (         flip.asm):00040                         LEAS    -78,S           ; the column map: 78 bytes of stack
-1CB7 10DF28           (         flip.asm):00041                         STS     <FL_SRC
-1CBA 9E00             (         flip.asm):00042                         LDX     <W_BUF          ; row colour codes onto the screen
-1CBC CEE400           (         flip.asm):00043                         LDU     #VDU_BASE       ;  (column 0 never changes)
-1CBF C618             (         flip.asm):00044                         LDB     #ROWS
-1CC1 A684             (         flip.asm):00045         FL_C0           LDA     ,X
-1CC3 A7C4             (         flip.asm):00046                         STA     ,U
-1CC5 308828           (         flip.asm):00047                         LEAX    COLS,X
-1CC8 33C828           (         flip.asm):00048                         LEAU    COLS,U
-1CCB 5A               (         flip.asm):00049                         DECB
-1CCC 26F3             (         flip.asm):00050                         BNE     FL_C0
-1CCE 8601             (         flip.asm):00051                         LDA     #1
-1CD0 971B             (         flip.asm):00052                         STA     <FL_K
-1CD2 308D01A2         (         flip.asm):00053         FL_FRAME        LEAX    FL_STAB-2,PCR   ; s for this frame
-1CD6 D61B             (         flip.asm):00054                         LDB     <FL_K
-1CD8 58               (         flip.asm):00055                         ASLB
-1CD9 3A               (         flip.asm):00056                         ABX
-1CDA EC84             (         flip.asm):00057                         LDD     ,X
-1CDC DD0F             (         flip.asm):00058                         STD     <FL_S
-1CDE 17001B           (         flip.asm):00059                         LBSR    FL_MAP          ; which source column for each column
-1CE1 170074           (         flip.asm):00060                         LBSR    FL_DRAW         ; draw the frame on the screen
-1CE4 961A             (         flip.asm):00061                         LDA     <FL_TICKS       ; and pace it
-1CE6 17FC2C           (         flip.asm):00062                         LBSR    T_PACE
-1CE9 0C1B             (         flip.asm):00063                         INC     <FL_K
-1CEB 961B             (         flip.asm):00064                         LDA     <FL_K
-1CED 8110             (         flip.asm):00065                         CMPA    #16
-1CEF 25E1             (         flip.asm):00066                         BLO     FL_FRAME
-1CF1 17013F           (         flip.asm):00067                         LBSR    FL_MIRROR       ; the buffer becomes the mirror image
-1CF4 32E84E           (         flip.asm):00068                         LEAS    78,S
-1CF7 17F67A           (         flip.asm):00069                         LBSR    T_BLIT          ; and the screen shows it
-1CFA 35F6             (         flip.asm):00070                         PULS    D,X,Y,U,PC
-                      (         flip.asm):00071         
-                      (         flip.asm):00072         ; ---------------------------------------------------------------------------
-                      (         flip.asm):00073         ; FL_MAP - fill the column map: for each screen pixel column X (0-77), the
-                      (         flip.asm):00074         ;   source pixel column it shows, or $FF for none (beyond the picture).
-                      (         flip.asm):00075         ;   Works out from the centre: at distance j + 0.5 the source is at
-                      (         flip.asm):00076         ;   38.5 +/- o with o = (j + 0.5) * s, so o starts at s/2 and grows by s
-                      (         flip.asm):00077         ;   each column. Rounded to the nearest column: source = (39*256 +/- o) / 256
-                      (         flip.asm):00078         ;   in 8.8 fixed point. Stops once o is beyond the picture's edge.
-                      (         flip.asm):00079         ; ---------------------------------------------------------------------------
-1CFC 9E28             (         flip.asm):00080         FL_MAP          LDX     <FL_SRC         ; start with every column blank
-1CFE 86FF             (         flip.asm):00081                         LDA     #$FF
-1D00 C64E             (         flip.asm):00082                         LDB     #78
-1D02 A780             (         flip.asm):00083         FM_CLR          STA     ,X+
-1D04 5A               (         flip.asm):00084                         DECB
-1D05 26FB             (         flip.asm):00085                         BNE     FM_CLR
-1D07 DC0F             (         flip.asm):00086                         LDD     <FL_S           ; o = s / 2
-1D09 47               (         flip.asm):00087                         ASRA
-1D0A 56               (         flip.asm):00088                         RORB
-1D0B DD11             (         flip.asm):00089                         STD     <FL_O
-1D0D 0F13             (         flip.asm):00090                         CLR     <FL_J
-1D0F DC11             (         flip.asm):00091         FM_LOOP         LDD     <FL_O           ; |o| beyond the picture? stop
-1D11 2A05             (         flip.asm):00092                         BPL     FM_1
-1D13 43               (         flip.asm):00093                         COMA
-1D14 53               (         flip.asm):00094                         COMB
-1D15 C30001           (         flip.asm):00095                         ADDD    #1
-1D18 10832800         (         flip.asm):00096         FM_1            CMPD    #40*256
-1D1C 2239             (         flip.asm):00097                         BHI     FM_X
-1D1E CC2700           (         flip.asm):00098                         LDD     #39*256         ; right side: X = 39 + j shows
-1D21 D311             (         flip.asm):00099                         ADDD    <FL_O           ;  39*256 + o
-1D23 2B0E             (         flip.asm):00100                         BMI     FM_2            ;  (off the left of the picture)
-1D25 10834E00         (         flip.asm):00101                         CMPD    #78*256
-1D29 2C08             (         flip.asm):00102                         BGE     FM_2            ;  (off the right)
-1D2B 9E28             (         flip.asm):00103                         LDX     <FL_SRC         ; A = source column
-1D2D D613             (         flip.asm):00104                         LDB     <FL_J
-1D2F 3A               (         flip.asm):00105                         ABX
-1D30 A78827           (         flip.asm):00106                         STA     39,X
-1D33 CC2700           (         flip.asm):00107         FM_2            LDD     #39*256         ; left side: X = 38 - j shows
-1D36 9311             (         flip.asm):00108                         SUBD    <FL_O           ;  39*256 - o
-1D38 2B0F             (         flip.asm):00109                         BMI     FM_3
-1D3A 10834E00         (         flip.asm):00110                         CMPD    #78*256
-1D3E 2C09             (         flip.asm):00111                         BGE     FM_3
-1D40 9E28             (         flip.asm):00112                         LDX     <FL_SRC
-1D42 C626             (         flip.asm):00113                         LDB     #38
-1D44 D013             (         flip.asm):00114                         SUBB    <FL_J
-1D46 3A               (         flip.asm):00115                         ABX
-1D47 A784             (         flip.asm):00116                         STA     ,X
-1D49 DC11             (         flip.asm):00117         FM_3            LDD     <FL_O           ; next column out
-1D4B D30F             (         flip.asm):00118                         ADDD    <FL_S
-1D4D DD11             (         flip.asm):00119                         STD     <FL_O
-1D4F 0C13             (         flip.asm):00120                         INC     <FL_J
-1D51 9613             (         flip.asm):00121                         LDA     <FL_J
-1D53 8127             (         flip.asm):00122                         CMPA    #39
-1D55 25B8             (         flip.asm):00123                         BLO     FM_LOOP
-1D57 39               (         flip.asm):00124         FM_X            RTS
-                      (         flip.asm):00125         
-                      (         flip.asm):00126         ; ---------------------------------------------------------------------------
-                      (         flip.asm):00127         ; FL_DRAW - draw one frame onto the screen from the buffer and column map
-                      (         flip.asm):00128         ;   For each screen cell column: its left pixel shows source pixel PL and
-                      (         flip.asm):00129         ;   its right pixel source pixel PR. Source pixel p is the left (p even) or
-                      (         flip.asm):00130         ;   right (p odd) pixel of source cell p/2, so the left half of each screen
-                      (         flip.asm):00131         ;   cell is LLT[byte] or RLT[byte] of that source cell (U points at the
-                      (         flip.asm):00132         ;   table) and the right half LRT[byte] or RRT[byte] (Y). A blank half uses
-                      (         flip.asm):00133         ;   a table of constants instead (all $20 on the left, all 0 on the right).
-                      (         flip.asm):00134         ;   The cell offsets and screen offsets are patched into a row loop that
-                      (         flip.asm):00135         ;   does three rows per pass; columns with both halves blank just get
-                      (         flip.asm):00136         ;   spaces.
-                      (         flip.asm):00137         ; ---------------------------------------------------------------------------
-1D58 0F14             (         flip.asm):00138         FL_DRAW         CLR     <FL_COL
-1D5A 9E28             (         flip.asm):00139         FD_COL          LDX     <FL_SRC         ; PL, PR for this cell column
-1D5C D614             (         flip.asm):00140                         LDB     <FL_COL
-1D5E 58               (         flip.asm):00141                         ASLB
-1D5F 3A               (         flip.asm):00142                         ABX
-1D60 EC84             (         flip.asm):00143                         LDD     ,X
-1D62 DD1D             (         flip.asm):00144                         STD     <FL_PL
-1D64 CCE400           (         flip.asm):00145                         LDD     #VDU_BASE       ; screen offset from the buffer row:
-1D67 9300             (         flip.asm):00146                         SUBD    <W_BUF          ;  VDU_BASE + column - W_BUF (it can
-1D69 DB14             (         flip.asm):00147                         ADDB    <FL_COL         ;  wrap round 64K, which is fine)
-1D6B 8900             (         flip.asm):00148                         ADCA    #0
-1D6D 9E00             (         flip.asm):00149                         LDX     <W_BUF          ; X -> column 1 of buffer row 0
-1D6F 3001             (         flip.asm):00150                         LEAX    1,X
-1D71 DE1D             (         flip.asm):00151                         LDU     <FL_PL          ; both halves blank: spaces
-1D73 1183FFFF         (         flip.asm):00152                         CMPU    #$FFFF
-1D77 102700A2         (         flip.asm):00153                         LBEQ    FD_BLANK
-1D7B ED8D006E         (         flip.asm):00154                         STD     FG_D0+2,PCR     ; screen offsets for the 3 rows
-1D7F C30028           (         flip.asm):00155                         ADDD    #COLS
-1D82 ED8D0075         (         flip.asm):00156                         STD     FG_D1+2,PCR
-1D86 C30028           (         flip.asm):00157                         ADDD    #COLS
-1D89 ED8D007C         (         flip.asm):00158                         STD     FG_D2+2,PCR
-                      (         flip.asm):00159         
-1D8D 961D             (         flip.asm):00160                         LDA     <FL_PL          ; left half
-1D8F 81FF             (         flip.asm):00161                         CMPA    #$FF
-1D91 2607             (         flip.asm):00162                         BNE     FD_L1
-1D93 338D00E1         (         flip.asm):00163                         LEAU    FL_K20-$20,PCR  ; blank: a constant $20
-1D97 4F               (         flip.asm):00164                         CLRA                    ;  (any cell will do)
-1D98 200B             (         flip.asm):00165                         BRA     FD_L2
-1D9A 44               (         flip.asm):00166         FD_L1           LSRA                    ; A = source cell, carry = right pixel
-1D9B 338D0199         (         flip.asm):00167                         LEAU    FL_LLT-$20,PCR  ; source left pixel -> left (LEA
-1D9F 2404             (         flip.asm):00168                         BCC     FD_L2           ;  leaves the carry)
-1DA1 338D01F3         (         flip.asm):00169                         LEAU    FL_RLT-$20,PCR  ; source right pixel -> left
-1DA5 A78D003A         (         flip.asm):00170         FD_L2           STA     FG_L0+2,PCR     ; patch the source offsets for the
-1DA9 8B28             (         flip.asm):00171                         ADDA    #COLS           ;  3 rows
-1DAB A78D0042         (         flip.asm):00172                         STA     FG_L1+2,PCR
-1DAF 8B28             (         flip.asm):00173                         ADDA    #COLS
-1DB1 A78D004A         (         flip.asm):00174                         STA     FG_L2+2,PCR
-                      (         flip.asm):00175         
-1DB5 961E             (         flip.asm):00176                         LDA     <FL_PR          ; right half
-1DB7 81FF             (         flip.asm):00177                         CMPA    #$FF
-1DB9 2607             (         flip.asm):00178                         BNE     FD_R1
-1DBB 318D0119         (         flip.asm):00179                         LEAY    FL_K00-$20,PCR  ; blank: a constant 0
-1DBF 4F               (         flip.asm):00180                         CLRA
-1DC0 200B             (         flip.asm):00181                         BRA     FD_R2
-1DC2 44               (         flip.asm):00182         FD_R1           LSRA
-1DC3 318D0231         (         flip.asm):00183                         LEAY    FL_LRT-$20,PCR  ; source left pixel -> right
-1DC7 2404             (         flip.asm):00184                         BCC     FD_R2
-1DC9 318D028B         (         flip.asm):00185                         LEAY    FL_RRT-$20,PCR  ; source right pixel -> right
-1DCD A78D0017         (         flip.asm):00186         FD_R2           STA     FG_R0+2,PCR
-1DD1 8B28             (         flip.asm):00187                         ADDA    #COLS
-1DD3 A78D001F         (         flip.asm):00188                         STA     FG_R1+2,PCR
-1DD7 8B28             (         flip.asm):00189                         ADDA    #COLS
-1DD9 A78D0027         (         flip.asm):00190                         STA     FG_R2+2,PCR
-                      (         flip.asm):00191         
-1DDD 8608             (         flip.asm):00192                         LDA     #ROWS/3         ; 8 passes of 3 rows
-1DDF 9715             (         flip.asm):00193                         STA     <FL_CNT
-1DE1                  (         flip.asm):00194         FG_LOOP
-1DE1 E68800           (         flip.asm):00195         FG_L0           LDB     <0,X            ; row 0: left half from its table ...
-1DE4 A6C5             (         flip.asm):00196                         LDA     B,U
-1DE6 E68800           (         flip.asm):00197         FG_R0           LDB     <0,X            ; ... OR the right half from its
-1DE9 AAA5             (         flip.asm):00198                         ORA     B,Y             ;  table ...
-1DEB A7890000         (         flip.asm):00199         FG_D0           STA     >0,X            ; ... onto the screen
-1DEF E68828           (         flip.asm):00200         FG_L1           LDB     <COLS,X         ; row 1
-1DF2 A6C5             (         flip.asm):00201                         LDA     B,U
-1DF4 E68828           (         flip.asm):00202         FG_R1           LDB     <COLS,X
-1DF7 AAA5             (         flip.asm):00203                         ORA     B,Y
-1DF9 A7890028         (         flip.asm):00204         FG_D1           STA     >COLS,X
-1DFD E68850           (         flip.asm):00205         FG_L2           LDB     <2*COLS,X       ; row 2
-1E00 A6C5             (         flip.asm):00206                         LDA     B,U
-1E02 E68850           (         flip.asm):00207         FG_R2           LDB     <2*COLS,X
-1E05 AAA5             (         flip.asm):00208                         ORA     B,Y
-1E07 A7890050         (         flip.asm):00209         FG_D2           STA     >2*COLS,X
-1E0B 308878           (         flip.asm):00210                         LEAX    3*COLS,X        ; next 3 rows
-1E0E 0A15             (         flip.asm):00211                         DEC     <FL_CNT
-1E10 26CF             (         flip.asm):00212                         BNE     FG_LOOP
-1E12 0C14             (         flip.asm):00213         FD_NEXT         INC     <FL_COL
-1E14 9614             (         flip.asm):00214                         LDA     <FL_COL
-1E16 8127             (         flip.asm):00215                         CMPA    #COLS-1
-1E18 1025FF3E         (         flip.asm):00216                         LBLO    FD_COL
-1E1C 39               (         flip.asm):00217                         RTS
-                      (         flip.asm):00218         
-1E1D 308B             (         flip.asm):00219         FD_BLANK        LEAX    D,X             ; X -> the screen cell in row 0
-1E1F 8620             (         flip.asm):00220                         LDA     #$20            ; 24 spaces down the column
-1E21 C608             (         flip.asm):00221                         LDB     #ROWS/3
-1E23 A784             (         flip.asm):00222         FB_LOOP         STA     ,X
-1E25 A78828           (         flip.asm):00223                         STA     COLS,X
-1E28 A78850           (         flip.asm):00224                         STA     2*COLS,X
-1E2B 308878           (         flip.asm):00225                         LEAX    3*COLS,X
-1E2E 5A               (         flip.asm):00226                         DECB
-1E2F 26F2             (         flip.asm):00227                         BNE     FB_LOOP
-1E31 20DF             (         flip.asm):00228                         BRA     FD_NEXT
-                      (         flip.asm):00229         
-                      (         flip.asm):00230         ; ---------------------------------------------------------------------------
-                      (         flip.asm):00231         ; FL_MIRROR - mirror the buffer left-to-right in place: in each row, swap
-                      (         flip.asm):00232         ;   cells 1-19 with 39-21, mirroring each (its left and right pixels
-                      (         flip.asm):00233         ;   swapped), and mirror cell 20 where it is
-                      (         flip.asm):00234         ; ---------------------------------------------------------------------------
-1E33 9E00             (         flip.asm):00235         FL_MIRROR       LDX     <W_BUF
-1E35 8618             (         flip.asm):00236                         LDA     #ROWS
-1E37 9715             (         flip.asm):00237                         STA     <FL_CNT
-1E39 3410             (         flip.asm):00238         MR_ROW          PSHS    X
-1E3B 318827           (         flip.asm):00239                         LEAY    39,X            ; Y -> column 39
-1E3E 3001             (         flip.asm):00240                         LEAX    1,X             ; X -> column 1
-1E40 8613             (         flip.asm):00241                         LDA     #19
-1E42 9713             (         flip.asm):00242                         STA     <FL_J
-1E44 E6A4             (         flip.asm):00243         MR_LOOP         LDB     ,Y              ; mirror of the right-hand cell ...
-1E46 8D22             (         flip.asm):00244                         BSR     MIRB
-1E48 3402             (         flip.asm):00245                         PSHS    A
-1E4A E684             (         flip.asm):00246                         LDB     ,X              ; ... and of the left-hand one
-1E4C 8D1C             (         flip.asm):00247                         BSR     MIRB
-1E4E A7A4             (         flip.asm):00248                         STA     ,Y              ; swap them
-1E50 3502             (         flip.asm):00249                         PULS    A
-1E52 A780             (         flip.asm):00250                         STA     ,X+
-1E54 313F             (         flip.asm):00251                         LEAY    -1,Y
-1E56 0A13             (         flip.asm):00252                         DEC     <FL_J
-1E58 26EA             (         flip.asm):00253                         BNE     MR_LOOP
-1E5A E684             (         flip.asm):00254                         LDB     ,X              ; the middle cell (column 20)
-1E5C 8D0C             (         flip.asm):00255                         BSR     MIRB
-1E5E A784             (         flip.asm):00256                         STA     ,X
-1E60 3510             (         flip.asm):00257                         PULS    X
-1E62 308828           (         flip.asm):00258                         LEAX    COLS,X
-1E65 0A15             (         flip.asm):00259                         DEC     <FL_CNT
-1E67 26D0             (         flip.asm):00260                         BNE     MR_ROW
-1E69 39               (         flip.asm):00261                         RTS
-                      (         flip.asm):00262         
-                      (         flip.asm):00263         ; MIRB - Entry: B = sixel cell   Exit: A = its mirror image
-1E6A 3440             (         flip.asm):00264         MIRB            PSHS    U
-1E6C 338D0128         (         flip.asm):00265                         LEAU    FL_RLT-$20,PCR  ; right pixels moved left (with
-1E70 A6C5             (         flip.asm):00266                         LDA     B,U             ;  bit 5) ...
-1E72 338D0182         (         flip.asm):00267                         LEAU    FL_LRT-$20,PCR  ; ... and left pixels moved right
-1E76 AAC5             (         flip.asm):00268                         ORA     B,U
-1E78 35C0             (         flip.asm):00269                         PULS    U,PC
-                      (         flip.asm):00270         
-                      (         flip.asm):00271         ; s = 1 / cos(angle) for frames 1-15 (angle = 180 degrees * frame / 16), in
-                      (         flip.asm):00272         ; 8.8 fixed point, limited to +/-80 near edge-on (frame 8)
-1E7A 010501150134016A (         flip.asm):00273         FL_STAB         FDB     261,277,308,362,461,669,1312,20480,-1312,-669,-461,-362,-308,-277,-261
+                      (         flip.asm):00018         ;       c + (X - c) * s,   s = 1 / cos(angle)
+                      (         flip.asm):00019         ;   where c is the centre: 38.5 (or 37.5 in a separated build, 76 pixels
+                      (         flip.asm):00020         ;   wide). CELLS, COL1 and XMAX (consts.inc) give the geometry.
+                      (         flip.asm):00021         ;   with s < 0 in the second half giving the mirror image. FL_MAP works
+                      (         flip.asm):00022         ;   this out for all 78 columns into a table on the stack, stepping out
+                      (         flip.asm):00023         ;   from the centre by s each column (no division). FL_DRAW then builds
+                      (         flip.asm):00024         ;   each screen cell from its two source pixels using four lookup tables -
+                      (         flip.asm):00025         ;   left pixel to left, right to left, left to right, right to right - in
+                      (         flip.asm):00026         ;   a row loop whose offsets are patched in for each column.
+                      (         flip.asm):00027         ;
+                      (         flip.asm):00028         ;   Workspace borrowed from routines that never run at the same time:
+     001A             (         flip.asm):00029         FL_TICKS        EQU     R_X1            ; frame length (for TGL_PACE)
+     001B             (         flip.asm):00030         FL_K            EQU     R_Y1            ; frame number, 1-15
+     000F             (         flip.asm):00031         FL_S            EQU     I_U0            ; 2  this frame's s (8.8 fixed point)
+     0011             (         flip.asm):00032         FL_O            EQU     I_V0            ; 2  distance from the centre, source
+     0013             (         flip.asm):00033         FL_J            EQU     I_E             ; column counter
+     0014             (         flip.asm):00034         FL_COL          EQU     I_SGN           ; screen cell column, 0 .. CELLS-1
+     0015             (         flip.asm):00035         FL_CNT          EQU     I_DU            ; row counter
+     001D             (         flip.asm):00036         FL_PL           EQU     F_CX1           ; source pixel for a cell's left half
+     001E             (         flip.asm):00037         FL_PR           EQU     F_PL            ;  ... and its right half
+     0028             (         flip.asm):00038         FL_SRC          EQU     F_ROW           ; 2  address of the column map
+                      (         flip.asm):00039         ; ---------------------------------------------------------------------------
+1CB0 3476             (         flip.asm):00040         T_FLIPH         PSHS    D,X,Y,U
+1CB2 971A             (         flip.asm):00041                         STA     <FL_TICKS
+1CB4 32E8B2           (         flip.asm):00042                         LEAS    -78,S           ; the column map: 78 bytes of stack
+1CB7 10DF28           (         flip.asm):00043                         STS     <FL_SRC
+1CBA 9E00             (         flip.asm):00044                         LDX     <W_BUF          ; row control codes onto the screen
+1CBC CEE400           (         flip.asm):00045                         LDU     #VDU_BASE       ;  (columns before COL1 never change)
+1CBF C618             (         flip.asm):00046                         LDB     #ROWS
+1CC1 A684             (         flip.asm):00047         FL_C0           LDA     ,X
+1CC3 A7C4             (         flip.asm):00048                         STA     ,U
+                      (         flip.asm):00049                         IFDEF   TGL_SEPARATED
+                      (         flip.asm):00050                         LDA     1,X
+                      (         flip.asm):00051                         STA     1,U
+                      (         flip.asm):00052                         ENDC
+1CC5 308828           (         flip.asm):00053                         LEAX    COLS,X
+1CC8 33C828           (         flip.asm):00054                         LEAU    COLS,U
+1CCB 5A               (         flip.asm):00055                         DECB
+1CCC 26F3             (         flip.asm):00056                         BNE     FL_C0
+1CCE 8601             (         flip.asm):00057                         LDA     #1
+1CD0 971B             (         flip.asm):00058                         STA     <FL_K
+1CD2 308D01A2         (         flip.asm):00059         FL_FRAME        LEAX    FL_STAB-2,PCR   ; s for this frame
+1CD6 D61B             (         flip.asm):00060                         LDB     <FL_K
+1CD8 58               (         flip.asm):00061                         ASLB
+1CD9 3A               (         flip.asm):00062                         ABX
+1CDA EC84             (         flip.asm):00063                         LDD     ,X
+1CDC DD0F             (         flip.asm):00064                         STD     <FL_S
+1CDE 17001B           (         flip.asm):00065                         LBSR    FL_MAP          ; which source column for each column
+1CE1 170074           (         flip.asm):00066                         LBSR    FL_DRAW         ; draw the frame on the screen
+1CE4 961A             (         flip.asm):00067                         LDA     <FL_TICKS       ; and pace it
+1CE6 17FC2C           (         flip.asm):00068                         LBSR    T_PACE
+1CE9 0C1B             (         flip.asm):00069                         INC     <FL_K
+1CEB 961B             (         flip.asm):00070                         LDA     <FL_K
+1CED 8110             (         flip.asm):00071                         CMPA    #16
+1CEF 25E1             (         flip.asm):00072                         BLO     FL_FRAME
+1CF1 17013F           (         flip.asm):00073                         LBSR    FL_MIRROR       ; the buffer becomes the mirror image
+1CF4 32E84E           (         flip.asm):00074                         LEAS    78,S
+1CF7 17F67A           (         flip.asm):00075                         LBSR    T_BLIT          ; and the screen shows it
+1CFA 35F6             (         flip.asm):00076                         PULS    D,X,Y,U,PC
+                      (         flip.asm):00077         
+                      (         flip.asm):00078         ; ---------------------------------------------------------------------------
+                      (         flip.asm):00079         ; FL_MAP - fill the column map: for each screen pixel column X (0-XMAX),
+                      (         flip.asm):00080         ;   the source pixel column it shows, or $FF for none (beyond the picture).
+                      (         flip.asm):00081         ;   Works out from the centre c (= CELLS - 0.5): at distance j + 0.5 the
+                      (         flip.asm):00082         ;   source is at c +/- o with o = (j + 0.5) * s, so o starts at s/2 and
+                      (         flip.asm):00083         ;   grows by s each column. Rounded to the nearest column:
+                      (         flip.asm):00084         ;   source = (CELLS*256 +/- o) / 256 in 8.8 fixed point. Stops once o is
+                      (         flip.asm):00085         ;   beyond the picture's edge.
+                      (         flip.asm):00086         ; ---------------------------------------------------------------------------
+1CFC 9E28             (         flip.asm):00087         FL_MAP          LDX     <FL_SRC         ; start with every column blank
+1CFE 86FF             (         flip.asm):00088                         LDA     #$FF
+1D00 C64E             (         flip.asm):00089                         LDB     #2*CELLS
+1D02 A780             (         flip.asm):00090         FM_CLR          STA     ,X+
+1D04 5A               (         flip.asm):00091                         DECB
+1D05 26FB             (         flip.asm):00092                         BNE     FM_CLR
+1D07 DC0F             (         flip.asm):00093                         LDD     <FL_S           ; o = s / 2
+1D09 47               (         flip.asm):00094                         ASRA
+1D0A 56               (         flip.asm):00095                         RORB
+1D0B DD11             (         flip.asm):00096                         STD     <FL_O
+1D0D 0F13             (         flip.asm):00097                         CLR     <FL_J
+1D0F DC11             (         flip.asm):00098         FM_LOOP         LDD     <FL_O           ; |o| beyond the picture? stop
+1D11 2A05             (         flip.asm):00099                         BPL     FM_1
+1D13 43               (         flip.asm):00100                         COMA
+1D14 53               (         flip.asm):00101                         COMB
+1D15 C30001           (         flip.asm):00102                         ADDD    #1
+1D18 10832800         (         flip.asm):00103         FM_1            CMPD    #(CELLS+1)*256
+1D1C 2239             (         flip.asm):00104                         BHI     FM_X
+1D1E CC2700           (         flip.asm):00105                         LDD     #CELLS*256      ; right side: X = CELLS + j shows
+1D21 D311             (         flip.asm):00106                         ADDD    <FL_O           ;  CELLS*256 + o
+1D23 2B0E             (         flip.asm):00107                         BMI     FM_2            ;  (off the left of the picture)
+1D25 10834E00         (         flip.asm):00108                         CMPD    #2*CELLS*256
+1D29 2C08             (         flip.asm):00109                         BGE     FM_2            ;  (off the right)
+1D2B 9E28             (         flip.asm):00110                         LDX     <FL_SRC         ; A = source column
+1D2D D613             (         flip.asm):00111                         LDB     <FL_J
+1D2F 3A               (         flip.asm):00112                         ABX
+1D30 A78827           (         flip.asm):00113                         STA     CELLS,X
+1D33 CC2700           (         flip.asm):00114         FM_2            LDD     #CELLS*256      ; left side: X = CELLS - 1 - j shows
+1D36 9311             (         flip.asm):00115                         SUBD    <FL_O           ;  CELLS*256 - o
+1D38 2B0F             (         flip.asm):00116                         BMI     FM_3
+1D3A 10834E00         (         flip.asm):00117                         CMPD    #2*CELLS*256
+1D3E 2C09             (         flip.asm):00118                         BGE     FM_3
+1D40 9E28             (         flip.asm):00119                         LDX     <FL_SRC
+1D42 C626             (         flip.asm):00120                         LDB     #CELLS-1
+1D44 D013             (         flip.asm):00121                         SUBB    <FL_J
+1D46 3A               (         flip.asm):00122                         ABX
+1D47 A784             (         flip.asm):00123                         STA     ,X
+1D49 DC11             (         flip.asm):00124         FM_3            LDD     <FL_O           ; next column out
+1D4B D30F             (         flip.asm):00125                         ADDD    <FL_S
+1D4D DD11             (         flip.asm):00126                         STD     <FL_O
+1D4F 0C13             (         flip.asm):00127                         INC     <FL_J
+1D51 9613             (         flip.asm):00128                         LDA     <FL_J
+1D53 8127             (         flip.asm):00129                         CMPA    #CELLS
+1D55 25B8             (         flip.asm):00130                         BLO     FM_LOOP
+1D57 39               (         flip.asm):00131         FM_X            RTS
+                      (         flip.asm):00132         
+                      (         flip.asm):00133         ; ---------------------------------------------------------------------------
+                      (         flip.asm):00134         ; FL_DRAW - draw one frame onto the screen from the buffer and column map
+                      (         flip.asm):00135         ;   For each screen cell column: its left pixel shows source pixel PL and
+                      (         flip.asm):00136         ;   its right pixel source pixel PR. Source pixel p is the left (p even) or
+                      (         flip.asm):00137         ;   right (p odd) pixel of source cell p/2, so the left half of each screen
+                      (         flip.asm):00138         ;   cell is LLT[byte] or RLT[byte] of that source cell (U points at the
+                      (         flip.asm):00139         ;   table) and the right half LRT[byte] or RRT[byte] (Y). A blank half uses
+                      (         flip.asm):00140         ;   a table of constants instead (all $20 on the left, all 0 on the right).
+                      (         flip.asm):00141         ;   The cell offsets and screen offsets are patched into a row loop that
+                      (         flip.asm):00142         ;   does three rows per pass; columns with both halves blank just get
+                      (         flip.asm):00143         ;   spaces.
+                      (         flip.asm):00144         ; ---------------------------------------------------------------------------
+1D58 0F14             (         flip.asm):00145         FL_DRAW         CLR     <FL_COL
+1D5A 9E28             (         flip.asm):00146         FD_COL          LDX     <FL_SRC         ; PL, PR for this cell column
+1D5C D614             (         flip.asm):00147                         LDB     <FL_COL
+1D5E 58               (         flip.asm):00148                         ASLB
+1D5F 3A               (         flip.asm):00149                         ABX
+1D60 EC84             (         flip.asm):00150                         LDD     ,X
+1D62 DD1D             (         flip.asm):00151                         STD     <FL_PL
+1D64 CCE400           (         flip.asm):00152                         LDD     #VDU_BASE       ; screen offset from the buffer row:
+1D67 9300             (         flip.asm):00153                         SUBD    <W_BUF          ;  VDU_BASE + column - W_BUF (it can
+1D69 DB14             (         flip.asm):00154                         ADDB    <FL_COL         ;  wrap round 64K, which is fine)
+1D6B 8900             (         flip.asm):00155                         ADCA    #0
+1D6D 9E00             (         flip.asm):00156                         LDX     <W_BUF          ; X -> first pixel column of buffer
+1D6F 3001             (         flip.asm):00157                         LEAX    COL1,X          ;  row 0
+1D71 DE1D             (         flip.asm):00158                         LDU     <FL_PL          ; both halves blank: spaces
+1D73 1183FFFF         (         flip.asm):00159                         CMPU    #$FFFF
+1D77 102700A2         (         flip.asm):00160                         LBEQ    FD_BLANK
+1D7B ED8D006E         (         flip.asm):00161                         STD     FG_D0+2,PCR     ; screen offsets for the 3 rows
+1D7F C30028           (         flip.asm):00162                         ADDD    #COLS
+1D82 ED8D0075         (         flip.asm):00163                         STD     FG_D1+2,PCR
+1D86 C30028           (         flip.asm):00164                         ADDD    #COLS
+1D89 ED8D007C         (         flip.asm):00165                         STD     FG_D2+2,PCR
+                      (         flip.asm):00166         
+1D8D 961D             (         flip.asm):00167                         LDA     <FL_PL          ; left half
+1D8F 81FF             (         flip.asm):00168                         CMPA    #$FF
+1D91 2607             (         flip.asm):00169                         BNE     FD_L1
+1D93 338D00E1         (         flip.asm):00170                         LEAU    FL_K20-$20,PCR  ; blank: a constant $20
+1D97 4F               (         flip.asm):00171                         CLRA                    ;  (any cell will do)
+1D98 200B             (         flip.asm):00172                         BRA     FD_L2
+1D9A 44               (         flip.asm):00173         FD_L1           LSRA                    ; A = source cell, carry = right pixel
+1D9B 338D0199         (         flip.asm):00174                         LEAU    FL_LLT-$20,PCR  ; source left pixel -> left (LEA
+1D9F 2404             (         flip.asm):00175                         BCC     FD_L2           ;  leaves the carry)
+1DA1 338D01F3         (         flip.asm):00176                         LEAU    FL_RLT-$20,PCR  ; source right pixel -> left
+1DA5 A78D003A         (         flip.asm):00177         FD_L2           STA     FG_L0+2,PCR     ; patch the source offsets for the
+1DA9 8B28             (         flip.asm):00178                         ADDA    #COLS           ;  3 rows
+1DAB A78D0042         (         flip.asm):00179                         STA     FG_L1+2,PCR
+1DAF 8B28             (         flip.asm):00180                         ADDA    #COLS
+1DB1 A78D004A         (         flip.asm):00181                         STA     FG_L2+2,PCR
+                      (         flip.asm):00182         
+1DB5 961E             (         flip.asm):00183                         LDA     <FL_PR          ; right half
+1DB7 81FF             (         flip.asm):00184                         CMPA    #$FF
+1DB9 2607             (         flip.asm):00185                         BNE     FD_R1
+1DBB 318D0119         (         flip.asm):00186                         LEAY    FL_K00-$20,PCR  ; blank: a constant 0
+1DBF 4F               (         flip.asm):00187                         CLRA
+1DC0 200B             (         flip.asm):00188                         BRA     FD_R2
+1DC2 44               (         flip.asm):00189         FD_R1           LSRA
+1DC3 318D0231         (         flip.asm):00190                         LEAY    FL_LRT-$20,PCR  ; source left pixel -> right
+1DC7 2404             (         flip.asm):00191                         BCC     FD_R2
+1DC9 318D028B         (         flip.asm):00192                         LEAY    FL_RRT-$20,PCR  ; source right pixel -> right
+1DCD A78D0017         (         flip.asm):00193         FD_R2           STA     FG_R0+2,PCR
+1DD1 8B28             (         flip.asm):00194                         ADDA    #COLS
+1DD3 A78D001F         (         flip.asm):00195                         STA     FG_R1+2,PCR
+1DD7 8B28             (         flip.asm):00196                         ADDA    #COLS
+1DD9 A78D0027         (         flip.asm):00197                         STA     FG_R2+2,PCR
+                      (         flip.asm):00198         
+1DDD 8608             (         flip.asm):00199                         LDA     #ROWS/3         ; 8 passes of 3 rows
+1DDF 9715             (         flip.asm):00200                         STA     <FL_CNT
+1DE1                  (         flip.asm):00201         FG_LOOP
+1DE1 E68800           (         flip.asm):00202         FG_L0           LDB     <0,X            ; row 0: left half from its table ...
+1DE4 A6C5             (         flip.asm):00203                         LDA     B,U
+1DE6 E68800           (         flip.asm):00204         FG_R0           LDB     <0,X            ; ... OR the right half from its
+1DE9 AAA5             (         flip.asm):00205                         ORA     B,Y             ;  table ...
+1DEB A7890000         (         flip.asm):00206         FG_D0           STA     >0,X            ; ... onto the screen
+1DEF E68828           (         flip.asm):00207         FG_L1           LDB     <COLS,X         ; row 1
+1DF2 A6C5             (         flip.asm):00208                         LDA     B,U
+1DF4 E68828           (         flip.asm):00209         FG_R1           LDB     <COLS,X
+1DF7 AAA5             (         flip.asm):00210                         ORA     B,Y
+1DF9 A7890028         (         flip.asm):00211         FG_D1           STA     >COLS,X
+1DFD E68850           (         flip.asm):00212         FG_L2           LDB     <2*COLS,X       ; row 2
+1E00 A6C5             (         flip.asm):00213                         LDA     B,U
+1E02 E68850           (         flip.asm):00214         FG_R2           LDB     <2*COLS,X
+1E05 AAA5             (         flip.asm):00215                         ORA     B,Y
+1E07 A7890050         (         flip.asm):00216         FG_D2           STA     >2*COLS,X
+1E0B 308878           (         flip.asm):00217                         LEAX    3*COLS,X        ; next 3 rows
+1E0E 0A15             (         flip.asm):00218                         DEC     <FL_CNT
+1E10 26CF             (         flip.asm):00219                         BNE     FG_LOOP
+1E12 0C14             (         flip.asm):00220         FD_NEXT         INC     <FL_COL
+1E14 9614             (         flip.asm):00221                         LDA     <FL_COL
+1E16 8127             (         flip.asm):00222                         CMPA    #CELLS
+1E18 1025FF3E         (         flip.asm):00223                         LBLO    FD_COL
+1E1C 39               (         flip.asm):00224                         RTS
+                      (         flip.asm):00225         
+1E1D 308B             (         flip.asm):00226         FD_BLANK        LEAX    D,X             ; X -> the screen cell in row 0
+1E1F 8620             (         flip.asm):00227                         LDA     #$20            ; 24 spaces down the column
+1E21 C608             (         flip.asm):00228                         LDB     #ROWS/3
+1E23 A784             (         flip.asm):00229         FB_LOOP         STA     ,X
+1E25 A78828           (         flip.asm):00230                         STA     COLS,X
+1E28 A78850           (         flip.asm):00231                         STA     2*COLS,X
+1E2B 308878           (         flip.asm):00232                         LEAX    3*COLS,X
+1E2E 5A               (         flip.asm):00233                         DECB
+1E2F 26F2             (         flip.asm):00234                         BNE     FB_LOOP
+1E31 20DF             (         flip.asm):00235                         BRA     FD_NEXT
+                      (         flip.asm):00236         
+                      (         flip.asm):00237         ; ---------------------------------------------------------------------------
+                      (         flip.asm):00238         ; FL_MIRROR - mirror the buffer left-to-right in place: in each row, swap
+                      (         flip.asm):00239         ;   the pixel cells in pairs from the outside in (1-19 with 39-21, or in a
+                      (         flip.asm):00240         ;   separated build 2-20 with 39-21), mirroring each (its left and right
+                      (         flip.asm):00241         ;   pixels swapped), and mirror the middle cell, if there is one (cell 20)
+                      (         flip.asm):00242         ; ---------------------------------------------------------------------------
+1E33 9E00             (         flip.asm):00243         FL_MIRROR       LDX     <W_BUF
+1E35 8618             (         flip.asm):00244                         LDA     #ROWS
+1E37 9715             (         flip.asm):00245                         STA     <FL_CNT
+1E39 3410             (         flip.asm):00246         MR_ROW          PSHS    X
+1E3B 318827           (         flip.asm):00247                         LEAY    COLS-1,X        ; Y -> column 39
+1E3E 3001             (         flip.asm):00248                         LEAX    COL1,X          ; X -> the first pixel column
+1E40 8613             (         flip.asm):00249                         LDA     #CELLS/2
+1E42 9713             (         flip.asm):00250                         STA     <FL_J
+1E44 E6A4             (         flip.asm):00251         MR_LOOP         LDB     ,Y              ; mirror of the right-hand cell ...
+1E46 8D22             (         flip.asm):00252                         BSR     MIRB
+1E48 3402             (         flip.asm):00253                         PSHS    A
+1E4A E684             (         flip.asm):00254                         LDB     ,X              ; ... and of the left-hand one
+1E4C 8D1C             (         flip.asm):00255                         BSR     MIRB
+1E4E A7A4             (         flip.asm):00256                         STA     ,Y              ; swap them
+1E50 3502             (         flip.asm):00257                         PULS    A
+1E52 A780             (         flip.asm):00258                         STA     ,X+
+1E54 313F             (         flip.asm):00259                         LEAY    -1,Y
+1E56 0A13             (         flip.asm):00260                         DEC     <FL_J
+1E58 26EA             (         flip.asm):00261                         BNE     MR_LOOP
+                      (         flip.asm):00262                         IFNE    CELLS&1         ; an odd number of cells: the middle
+1E5A E684             (         flip.asm):00263                         LDB     ,X              ;  one (column 20)
+1E5C 8D0C             (         flip.asm):00264                         BSR     MIRB
+1E5E A784             (         flip.asm):00265                         STA     ,X
+                      (         flip.asm):00266                         ENDC
+1E60 3510             (         flip.asm):00267                         PULS    X
+1E62 308828           (         flip.asm):00268                         LEAX    COLS,X
+1E65 0A15             (         flip.asm):00269                         DEC     <FL_CNT
+1E67 26D0             (         flip.asm):00270                         BNE     MR_ROW
+1E69 39               (         flip.asm):00271                         RTS
+                      (         flip.asm):00272         
+                      (         flip.asm):00273         ; MIRB - Entry: B = sixel cell   Exit: A = its mirror image
+1E6A 3440             (         flip.asm):00274         MIRB            PSHS    U
+1E6C 338D0128         (         flip.asm):00275                         LEAU    FL_RLT-$20,PCR  ; right pixels moved left (with
+1E70 A6C5             (         flip.asm):00276                         LDA     B,U             ;  bit 5) ...
+1E72 338D0182         (         flip.asm):00277                         LEAU    FL_LRT-$20,PCR  ; ... and left pixels moved right
+1E76 AAC5             (         flip.asm):00278                         ORA     B,U
+1E78 35C0             (         flip.asm):00279                         PULS    U,PC
+                      (         flip.asm):00280         
+                      (         flip.asm):00281         ; s = 1 / cos(angle) for frames 1-15 (angle = 180 degrees * frame / 16), in
+                      (         flip.asm):00282         ; 8.8 fixed point, limited to +/-80 near edge-on (frame 8)
+1E7A 010501150134016A (         flip.asm):00283         FL_STAB         FDB     261,277,308,362,461,669,1312,20480,-1312,-669,-461,-362,-308,-277,-261
      01CD029D05205000
      FAE0FD63FE33FE96
      FECCFEEBFEFB
-                      (         flip.asm):00274         
-                      (         flip.asm):00275         ; Constant tables for blank halves: $20 (bit 5, no pixels) and 0
-1E98 2020202020202020 (         flip.asm):00276         FL_K20          FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
+                      (         flip.asm):00284         
+                      (         flip.asm):00285         ; Constant tables for blank halves: $20 (bit 5, no pixels) and 0
+1E98 2020202020202020 (         flip.asm):00286         FL_K20          FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
      2020202020202020
-1EA8 2020202020202020 (         flip.asm):00277                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
+1EA8 2020202020202020 (         flip.asm):00287                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
      2020202020202020
-1EB8 2020202020202020 (         flip.asm):00278                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
+1EB8 2020202020202020 (         flip.asm):00288                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
      2020202020202020
-1EC8 2020202020202020 (         flip.asm):00279                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
+1EC8 2020202020202020 (         flip.asm):00289                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
      2020202020202020
-1ED8 2020202020202020 (         flip.asm):00280                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
+1ED8 2020202020202020 (         flip.asm):00290                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
      2020202020202020
-1EE8 2020202020202020 (         flip.asm):00281                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
+1EE8 2020202020202020 (         flip.asm):00291                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20
      2020202020202020
-1EF8 0000000000000000 (         flip.asm):00282         FL_K00          FCB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+1EF8 0000000000000000 (         flip.asm):00292         FL_K00          FCB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
      0000000000000000
-1F08 0000000000000000 (         flip.asm):00283                         FCB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+1F08 0000000000000000 (         flip.asm):00293                         FCB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
      0000000000000000
-1F18 0000000000000000 (         flip.asm):00284                         FCB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+1F18 0000000000000000 (         flip.asm):00294                         FCB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
      0000000000000000
-1F28 0000000000000000 (         flip.asm):00285                         FCB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+1F28 0000000000000000 (         flip.asm):00295                         FCB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
      0000000000000000
-1F38 0000000000000000 (         flip.asm):00286                         FCB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+1F38 0000000000000000 (         flip.asm):00296                         FCB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
      0000000000000000
-1F48 0000000000000000 (         flip.asm):00287                         FCB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+1F48 0000000000000000 (         flip.asm):00297                         FCB     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
      0000000000000000
-                      (         flip.asm):00288         
-                      (         flip.asm):00289         ; Pixel-moving tables, for cells $20-$7F (each is indexed from $20).
-                      (         flip.asm):00290         ; LLT: left pixels, kept on the left (plus bit 5). RLT: right pixels,
-                      (         flip.asm):00291         ; moved to the left (plus bit 5). LRT: left pixels moved to the right.
-                      (         flip.asm):00292         ; RRT: right pixels, kept on the right.
-1F58 2021202124252425 (         flip.asm):00293         FL_LLT          FCB     $20,$21,$20,$21,$24,$25,$24,$25,$20,$21,$20,$21,$24,$25,$24,$25
+                      (         flip.asm):00298         
+                      (         flip.asm):00299         ; Pixel-moving tables, for cells $20-$7F (each is indexed from $20).
+                      (         flip.asm):00300         ; LLT: left pixels, kept on the left (plus bit 5). RLT: right pixels,
+                      (         flip.asm):00301         ; moved to the left (plus bit 5). LRT: left pixels moved to the right.
+                      (         flip.asm):00302         ; RRT: right pixels, kept on the right.
+1F58 2021202124252425 (         flip.asm):00303         FL_LLT          FCB     $20,$21,$20,$21,$24,$25,$24,$25,$20,$21,$20,$21,$24,$25,$24,$25
      2021202124252425
-1F68 3031303134353435 (         flip.asm):00294                         FCB     $30,$31,$30,$31,$34,$35,$34,$35,$30,$31,$30,$31,$34,$35,$34,$35
+1F68 3031303134353435 (         flip.asm):00304                         FCB     $30,$31,$30,$31,$34,$35,$34,$35,$30,$31,$30,$31,$34,$35,$34,$35
      3031303134353435
-1F78 2021202124252425 (         flip.asm):00295                         FCB     $20,$21,$20,$21,$24,$25,$24,$25,$20,$21,$20,$21,$24,$25,$24,$25
+1F78 2021202124252425 (         flip.asm):00305                         FCB     $20,$21,$20,$21,$24,$25,$24,$25,$20,$21,$20,$21,$24,$25,$24,$25
      2021202124252425
-1F88 3031303134353435 (         flip.asm):00296                         FCB     $30,$31,$30,$31,$34,$35,$34,$35,$30,$31,$30,$31,$34,$35,$34,$35
+1F88 3031303134353435 (         flip.asm):00306                         FCB     $30,$31,$30,$31,$34,$35,$34,$35,$30,$31,$30,$31,$34,$35,$34,$35
      3031303134353435
-1F98 2021202124252425 (         flip.asm):00297                         FCB     $20,$21,$20,$21,$24,$25,$24,$25,$20,$21,$20,$21,$24,$25,$24,$25
+1F98 2021202124252425 (         flip.asm):00307                         FCB     $20,$21,$20,$21,$24,$25,$24,$25,$20,$21,$20,$21,$24,$25,$24,$25
      2021202124252425
-1FA8 3031303134353435 (         flip.asm):00298                         FCB     $30,$31,$30,$31,$34,$35,$34,$35,$30,$31,$30,$31,$34,$35,$34,$35
+1FA8 3031303134353435 (         flip.asm):00308                         FCB     $30,$31,$30,$31,$34,$35,$34,$35,$30,$31,$30,$31,$34,$35,$34,$35
      3031303134353435
-1FB8 2020212120202121 (         flip.asm):00299         FL_RLT          FCB     $20,$20,$21,$21,$20,$20,$21,$21,$24,$24,$25,$25,$24,$24,$25,$25
+1FB8 2020212120202121 (         flip.asm):00309         FL_RLT          FCB     $20,$20,$21,$21,$20,$20,$21,$21,$24,$24,$25,$25,$24,$24,$25,$25
      2424252524242525
-1FC8 2020212120202121 (         flip.asm):00300                         FCB     $20,$20,$21,$21,$20,$20,$21,$21,$24,$24,$25,$25,$24,$24,$25,$25
+1FC8 2020212120202121 (         flip.asm):00310                         FCB     $20,$20,$21,$21,$20,$20,$21,$21,$24,$24,$25,$25,$24,$24,$25,$25
      2424252524242525
-1FD8 3030313130303131 (         flip.asm):00301                         FCB     $30,$30,$31,$31,$30,$30,$31,$31,$34,$34,$35,$35,$34,$34,$35,$35
+1FD8 3030313130303131 (         flip.asm):00311                         FCB     $30,$30,$31,$31,$30,$30,$31,$31,$34,$34,$35,$35,$34,$34,$35,$35
      3434353534343535
-1FE8 3030313130303131 (         flip.asm):00302                         FCB     $30,$30,$31,$31,$30,$30,$31,$31,$34,$34,$35,$35,$34,$34,$35,$35
+1FE8 3030313130303131 (         flip.asm):00312                         FCB     $30,$30,$31,$31,$30,$30,$31,$31,$34,$34,$35,$35,$34,$34,$35,$35
      3434353534343535
-1FF8 3030313130303131 (         flip.asm):00303                         FCB     $30,$30,$31,$31,$30,$30,$31,$31,$34,$34,$35,$35,$34,$34,$35,$35
+1FF8 3030313130303131 (         flip.asm):00313                         FCB     $30,$30,$31,$31,$30,$30,$31,$31,$34,$34,$35,$35,$34,$34,$35,$35
      3434353534343535
-2008 3030313130303131 (         flip.asm):00304                         FCB     $30,$30,$31,$31,$30,$30,$31,$31,$34,$34,$35,$35,$34,$34,$35,$35
+2008 3030313130303131 (         flip.asm):00314                         FCB     $30,$30,$31,$31,$30,$30,$31,$31,$34,$34,$35,$35,$34,$34,$35,$35
      3434353534343535
-2018 00020002080A080A (         flip.asm):00305         FL_LRT          FCB     $00,$02,$00,$02,$08,$0A,$08,$0A,$00,$02,$00,$02,$08,$0A,$08,$0A
+2018 00020002080A080A (         flip.asm):00315         FL_LRT          FCB     $00,$02,$00,$02,$08,$0A,$08,$0A,$00,$02,$00,$02,$08,$0A,$08,$0A
      00020002080A080A
-2028 40424042484A484A (         flip.asm):00306                         FCB     $40,$42,$40,$42,$48,$4A,$48,$4A,$40,$42,$40,$42,$48,$4A,$48,$4A
+2028 40424042484A484A (         flip.asm):00316                         FCB     $40,$42,$40,$42,$48,$4A,$48,$4A,$40,$42,$40,$42,$48,$4A,$48,$4A
      40424042484A484A
-2038 00020002080A080A (         flip.asm):00307                         FCB     $00,$02,$00,$02,$08,$0A,$08,$0A,$00,$02,$00,$02,$08,$0A,$08,$0A
+2038 00020002080A080A (         flip.asm):00317                         FCB     $00,$02,$00,$02,$08,$0A,$08,$0A,$00,$02,$00,$02,$08,$0A,$08,$0A
      00020002080A080A
-2048 40424042484A484A (         flip.asm):00308                         FCB     $40,$42,$40,$42,$48,$4A,$48,$4A,$40,$42,$40,$42,$48,$4A,$48,$4A
+2048 40424042484A484A (         flip.asm):00318                         FCB     $40,$42,$40,$42,$48,$4A,$48,$4A,$40,$42,$40,$42,$48,$4A,$48,$4A
      40424042484A484A
-2058 00020002080A080A (         flip.asm):00309                         FCB     $00,$02,$00,$02,$08,$0A,$08,$0A,$00,$02,$00,$02,$08,$0A,$08,$0A
+2058 00020002080A080A (         flip.asm):00319                         FCB     $00,$02,$00,$02,$08,$0A,$08,$0A,$00,$02,$00,$02,$08,$0A,$08,$0A
      00020002080A080A
-2068 40424042484A484A (         flip.asm):00310                         FCB     $40,$42,$40,$42,$48,$4A,$48,$4A,$40,$42,$40,$42,$48,$4A,$48,$4A
+2068 40424042484A484A (         flip.asm):00320                         FCB     $40,$42,$40,$42,$48,$4A,$48,$4A,$40,$42,$40,$42,$48,$4A,$48,$4A
      40424042484A484A
-2078 0000020200000202 (         flip.asm):00311         FL_RRT          FCB     $00,$00,$02,$02,$00,$00,$02,$02,$08,$08,$0A,$0A,$08,$08,$0A,$0A
+2078 0000020200000202 (         flip.asm):00321         FL_RRT          FCB     $00,$00,$02,$02,$00,$00,$02,$02,$08,$08,$0A,$0A,$08,$08,$0A,$0A
      08080A0A08080A0A
-2088 0000020200000202 (         flip.asm):00312                         FCB     $00,$00,$02,$02,$00,$00,$02,$02,$08,$08,$0A,$0A,$08,$08,$0A,$0A
+2088 0000020200000202 (         flip.asm):00322                         FCB     $00,$00,$02,$02,$00,$00,$02,$02,$08,$08,$0A,$0A,$08,$08,$0A,$0A
      08080A0A08080A0A
-2098 4040424240404242 (         flip.asm):00313                         FCB     $40,$40,$42,$42,$40,$40,$42,$42,$48,$48,$4A,$4A,$48,$48,$4A,$4A
+2098 4040424240404242 (         flip.asm):00323                         FCB     $40,$40,$42,$42,$40,$40,$42,$42,$48,$48,$4A,$4A,$48,$48,$4A,$4A
      48484A4A48484A4A
-20A8 4040424240404242 (         flip.asm):00314                         FCB     $40,$40,$42,$42,$40,$40,$42,$42,$48,$48,$4A,$4A,$48,$48,$4A,$4A
+20A8 4040424240404242 (         flip.asm):00324                         FCB     $40,$40,$42,$42,$40,$40,$42,$42,$48,$48,$4A,$4A,$48,$48,$4A,$4A
      48484A4A48484A4A
-20B8 4040424240404242 (         flip.asm):00315                         FCB     $40,$40,$42,$42,$40,$40,$42,$42,$48,$48,$4A,$4A,$48,$48,$4A,$4A
+20B8 4040424240404242 (         flip.asm):00325                         FCB     $40,$40,$42,$42,$40,$40,$42,$42,$48,$48,$4A,$4A,$48,$48,$4A,$4A
      48484A4A48484A4A
-20C8 4040424240404242 (         flip.asm):00316                         FCB     $40,$40,$42,$42,$40,$40,$42,$42,$48,$48,$4A,$4A,$48,$48,$4A,$4A
+20C8 4040424240404242 (         flip.asm):00326                         FCB     $40,$40,$42,$42,$40,$40,$42,$42,$48,$48,$4A,$4A,$48,$48,$4A,$4A
      48484A4A48484A4A
                       (      src/tgl.asm):00107                         INCLUDE "dash.asm"
                       (         dash.asm):00001         ; ---------------------------------------------------------------------------
@@ -3435,103 +3483,176 @@
                       (       tables.asm):00002         ; Lookup tables - always referenced with ,PCR
                       (       tables.asm):00003         ;
                       (       tables.asm):00004         ; PTAB: one 4-byte entry per pixel row y (0-71):
-                      (       tables.asm):00005         ;   +0,+1  offset of column 1 of the cell row within the buffer: (y/3)*40+1
-                      (       tables.asm):00006         ;   +2     sixel mask for an even x (left pixel)
-                      (       tables.asm):00007         ;   +3     sixel mask for an odd x (right pixel)
-                      (       tables.asm):00008         ; Sixel bits: top row 0/1, middle row 2/3, bottom row 4/6 (bit 5 always set)
-                      (       tables.asm):00009         ; ---------------------------------------------------------------------------
-235B                  (       tables.asm):00010         PTAB
-235B 00010102         (       tables.asm):00011                         FCB     $00,$01,$01,$02     ; y=0
-235F 00010408         (       tables.asm):00012                         FCB     $00,$01,$04,$08     ; y=1
-2363 00011040         (       tables.asm):00013                         FCB     $00,$01,$10,$40     ; y=2
-2367 00290102         (       tables.asm):00014                         FCB     $00,$29,$01,$02     ; y=3
-236B 00290408         (       tables.asm):00015                         FCB     $00,$29,$04,$08     ; y=4
-236F 00291040         (       tables.asm):00016                         FCB     $00,$29,$10,$40     ; y=5
-2373 00510102         (       tables.asm):00017                         FCB     $00,$51,$01,$02     ; y=6
-2377 00510408         (       tables.asm):00018                         FCB     $00,$51,$04,$08     ; y=7
-237B 00511040         (       tables.asm):00019                         FCB     $00,$51,$10,$40     ; y=8
-237F 00790102         (       tables.asm):00020                         FCB     $00,$79,$01,$02     ; y=9
-2383 00790408         (       tables.asm):00021                         FCB     $00,$79,$04,$08     ; y=10
-2387 00791040         (       tables.asm):00022                         FCB     $00,$79,$10,$40     ; y=11
-238B 00A10102         (       tables.asm):00023                         FCB     $00,$A1,$01,$02     ; y=12
-238F 00A10408         (       tables.asm):00024                         FCB     $00,$A1,$04,$08     ; y=13
-2393 00A11040         (       tables.asm):00025                         FCB     $00,$A1,$10,$40     ; y=14
-2397 00C90102         (       tables.asm):00026                         FCB     $00,$C9,$01,$02     ; y=15
-239B 00C90408         (       tables.asm):00027                         FCB     $00,$C9,$04,$08     ; y=16
-239F 00C91040         (       tables.asm):00028                         FCB     $00,$C9,$10,$40     ; y=17
-23A3 00F10102         (       tables.asm):00029                         FCB     $00,$F1,$01,$02     ; y=18
-23A7 00F10408         (       tables.asm):00030                         FCB     $00,$F1,$04,$08     ; y=19
-23AB 00F11040         (       tables.asm):00031                         FCB     $00,$F1,$10,$40     ; y=20
-23AF 01190102         (       tables.asm):00032                         FCB     $01,$19,$01,$02     ; y=21
-23B3 01190408         (       tables.asm):00033                         FCB     $01,$19,$04,$08     ; y=22
-23B7 01191040         (       tables.asm):00034                         FCB     $01,$19,$10,$40     ; y=23
-23BB 01410102         (       tables.asm):00035                         FCB     $01,$41,$01,$02     ; y=24
-23BF 01410408         (       tables.asm):00036                         FCB     $01,$41,$04,$08     ; y=25
-23C3 01411040         (       tables.asm):00037                         FCB     $01,$41,$10,$40     ; y=26
-23C7 01690102         (       tables.asm):00038                         FCB     $01,$69,$01,$02     ; y=27
-23CB 01690408         (       tables.asm):00039                         FCB     $01,$69,$04,$08     ; y=28
-23CF 01691040         (       tables.asm):00040                         FCB     $01,$69,$10,$40     ; y=29
-23D3 01910102         (       tables.asm):00041                         FCB     $01,$91,$01,$02     ; y=30
-23D7 01910408         (       tables.asm):00042                         FCB     $01,$91,$04,$08     ; y=31
-23DB 01911040         (       tables.asm):00043                         FCB     $01,$91,$10,$40     ; y=32
-23DF 01B90102         (       tables.asm):00044                         FCB     $01,$B9,$01,$02     ; y=33
-23E3 01B90408         (       tables.asm):00045                         FCB     $01,$B9,$04,$08     ; y=34
-23E7 01B91040         (       tables.asm):00046                         FCB     $01,$B9,$10,$40     ; y=35
-23EB 01E10102         (       tables.asm):00047                         FCB     $01,$E1,$01,$02     ; y=36
-23EF 01E10408         (       tables.asm):00048                         FCB     $01,$E1,$04,$08     ; y=37
-23F3 01E11040         (       tables.asm):00049                         FCB     $01,$E1,$10,$40     ; y=38
-23F7 02090102         (       tables.asm):00050                         FCB     $02,$09,$01,$02     ; y=39
-23FB 02090408         (       tables.asm):00051                         FCB     $02,$09,$04,$08     ; y=40
-23FF 02091040         (       tables.asm):00052                         FCB     $02,$09,$10,$40     ; y=41
-2403 02310102         (       tables.asm):00053                         FCB     $02,$31,$01,$02     ; y=42
-2407 02310408         (       tables.asm):00054                         FCB     $02,$31,$04,$08     ; y=43
-240B 02311040         (       tables.asm):00055                         FCB     $02,$31,$10,$40     ; y=44
-240F 02590102         (       tables.asm):00056                         FCB     $02,$59,$01,$02     ; y=45
-2413 02590408         (       tables.asm):00057                         FCB     $02,$59,$04,$08     ; y=46
-2417 02591040         (       tables.asm):00058                         FCB     $02,$59,$10,$40     ; y=47
-241B 02810102         (       tables.asm):00059                         FCB     $02,$81,$01,$02     ; y=48
-241F 02810408         (       tables.asm):00060                         FCB     $02,$81,$04,$08     ; y=49
-2423 02811040         (       tables.asm):00061                         FCB     $02,$81,$10,$40     ; y=50
-2427 02A90102         (       tables.asm):00062                         FCB     $02,$A9,$01,$02     ; y=51
-242B 02A90408         (       tables.asm):00063                         FCB     $02,$A9,$04,$08     ; y=52
-242F 02A91040         (       tables.asm):00064                         FCB     $02,$A9,$10,$40     ; y=53
-2433 02D10102         (       tables.asm):00065                         FCB     $02,$D1,$01,$02     ; y=54
-2437 02D10408         (       tables.asm):00066                         FCB     $02,$D1,$04,$08     ; y=55
-243B 02D11040         (       tables.asm):00067                         FCB     $02,$D1,$10,$40     ; y=56
-243F 02F90102         (       tables.asm):00068                         FCB     $02,$F9,$01,$02     ; y=57
-2443 02F90408         (       tables.asm):00069                         FCB     $02,$F9,$04,$08     ; y=58
-2447 02F91040         (       tables.asm):00070                         FCB     $02,$F9,$10,$40     ; y=59
-244B 03210102         (       tables.asm):00071                         FCB     $03,$21,$01,$02     ; y=60
-244F 03210408         (       tables.asm):00072                         FCB     $03,$21,$04,$08     ; y=61
-2453 03211040         (       tables.asm):00073                         FCB     $03,$21,$10,$40     ; y=62
-2457 03490102         (       tables.asm):00074                         FCB     $03,$49,$01,$02     ; y=63
-245B 03490408         (       tables.asm):00075                         FCB     $03,$49,$04,$08     ; y=64
-245F 03491040         (       tables.asm):00076                         FCB     $03,$49,$10,$40     ; y=65
-2463 03710102         (       tables.asm):00077                         FCB     $03,$71,$01,$02     ; y=66
-2467 03710408         (       tables.asm):00078                         FCB     $03,$71,$04,$08     ; y=67
-246B 03711040         (       tables.asm):00079                         FCB     $03,$71,$10,$40     ; y=68
-246F 03990102         (       tables.asm):00080                         FCB     $03,$99,$01,$02     ; y=69
-2473 03990408         (       tables.asm):00081                         FCB     $03,$99,$04,$08     ; y=70
-2477 03991040         (       tables.asm):00082                         FCB     $03,$99,$10,$40     ; y=71
-                      (       tables.asm):00083         
-                      (       tables.asm):00084         ; T_SETMODE patch values: pre-op byte, operation opcode (indexed ,X)
-247B 12AA             (       tables.asm):00085         MODETAB         FCB     $12,$AA         ; MODE_SET:   NOP,  ORA  ,X
-247D 43A4             (       tables.asm):00086                         FCB     $43,$A4         ; MODE_CLEAR: COMA, ANDA ,X
-247F 12A8             (       tables.asm):00087                         FCB     $12,$A8         ; MODE_XOR:   NOP,  EORA ,X
-                      (       tables.asm):00088         
-                      (       tables.asm):00089         ; MASKREAL: internal line mask (1,2,4,8,16,32) -> screen sixel mask
-2481 0001020004000000 (       tables.asm):00090         MASKREAL        FCB     0,$01,$02,0,$04,0,0,0,$08,0,0,0,0,0,0,0
+                      (       tables.asm):00005         ;   +0,+1  offset of the first pixel column (COL1: 1, or 2 in a separated
+                      (       tables.asm):00006         ;          build) of the cell row within the buffer: (y/3)*40+COL1
+                      (       tables.asm):00007         ;   +2     sixel mask for an even x (left pixel)
+                      (       tables.asm):00008         ;   +3     sixel mask for an odd x (right pixel)
+                      (       tables.asm):00009         ; Sixel bits: top row 0/1, middle row 2/3, bottom row 4/6 (bit 5 always set)
+                      (       tables.asm):00010         ; ---------------------------------------------------------------------------
+235B                  (       tables.asm):00011         PTAB
+235B 0001             (       tables.asm):00012                         FDB     0*COLS+COL1
+235D 0102             (       tables.asm):00013                         FCB     $01,$02           ; y=0
+235F 0001             (       tables.asm):00014                         FDB     0*COLS+COL1
+2361 0408             (       tables.asm):00015                         FCB     $04,$08           ; y=1
+2363 0001             (       tables.asm):00016                         FDB     0*COLS+COL1
+2365 1040             (       tables.asm):00017                         FCB     $10,$40           ; y=2
+2367 0029             (       tables.asm):00018                         FDB     1*COLS+COL1
+2369 0102             (       tables.asm):00019                         FCB     $01,$02           ; y=3
+236B 0029             (       tables.asm):00020                         FDB     1*COLS+COL1
+236D 0408             (       tables.asm):00021                         FCB     $04,$08           ; y=4
+236F 0029             (       tables.asm):00022                         FDB     1*COLS+COL1
+2371 1040             (       tables.asm):00023                         FCB     $10,$40           ; y=5
+2373 0051             (       tables.asm):00024                         FDB     2*COLS+COL1
+2375 0102             (       tables.asm):00025                         FCB     $01,$02           ; y=6
+2377 0051             (       tables.asm):00026                         FDB     2*COLS+COL1
+2379 0408             (       tables.asm):00027                         FCB     $04,$08           ; y=7
+237B 0051             (       tables.asm):00028                         FDB     2*COLS+COL1
+237D 1040             (       tables.asm):00029                         FCB     $10,$40           ; y=8
+237F 0079             (       tables.asm):00030                         FDB     3*COLS+COL1
+2381 0102             (       tables.asm):00031                         FCB     $01,$02           ; y=9
+2383 0079             (       tables.asm):00032                         FDB     3*COLS+COL1
+2385 0408             (       tables.asm):00033                         FCB     $04,$08           ; y=10
+2387 0079             (       tables.asm):00034                         FDB     3*COLS+COL1
+2389 1040             (       tables.asm):00035                         FCB     $10,$40           ; y=11
+238B 00A1             (       tables.asm):00036                         FDB     4*COLS+COL1
+238D 0102             (       tables.asm):00037                         FCB     $01,$02           ; y=12
+238F 00A1             (       tables.asm):00038                         FDB     4*COLS+COL1
+2391 0408             (       tables.asm):00039                         FCB     $04,$08           ; y=13
+2393 00A1             (       tables.asm):00040                         FDB     4*COLS+COL1
+2395 1040             (       tables.asm):00041                         FCB     $10,$40           ; y=14
+2397 00C9             (       tables.asm):00042                         FDB     5*COLS+COL1
+2399 0102             (       tables.asm):00043                         FCB     $01,$02           ; y=15
+239B 00C9             (       tables.asm):00044                         FDB     5*COLS+COL1
+239D 0408             (       tables.asm):00045                         FCB     $04,$08           ; y=16
+239F 00C9             (       tables.asm):00046                         FDB     5*COLS+COL1
+23A1 1040             (       tables.asm):00047                         FCB     $10,$40           ; y=17
+23A3 00F1             (       tables.asm):00048                         FDB     6*COLS+COL1
+23A5 0102             (       tables.asm):00049                         FCB     $01,$02           ; y=18
+23A7 00F1             (       tables.asm):00050                         FDB     6*COLS+COL1
+23A9 0408             (       tables.asm):00051                         FCB     $04,$08           ; y=19
+23AB 00F1             (       tables.asm):00052                         FDB     6*COLS+COL1
+23AD 1040             (       tables.asm):00053                         FCB     $10,$40           ; y=20
+23AF 0119             (       tables.asm):00054                         FDB     7*COLS+COL1
+23B1 0102             (       tables.asm):00055                         FCB     $01,$02           ; y=21
+23B3 0119             (       tables.asm):00056                         FDB     7*COLS+COL1
+23B5 0408             (       tables.asm):00057                         FCB     $04,$08           ; y=22
+23B7 0119             (       tables.asm):00058                         FDB     7*COLS+COL1
+23B9 1040             (       tables.asm):00059                         FCB     $10,$40           ; y=23
+23BB 0141             (       tables.asm):00060                         FDB     8*COLS+COL1
+23BD 0102             (       tables.asm):00061                         FCB     $01,$02           ; y=24
+23BF 0141             (       tables.asm):00062                         FDB     8*COLS+COL1
+23C1 0408             (       tables.asm):00063                         FCB     $04,$08           ; y=25
+23C3 0141             (       tables.asm):00064                         FDB     8*COLS+COL1
+23C5 1040             (       tables.asm):00065                         FCB     $10,$40           ; y=26
+23C7 0169             (       tables.asm):00066                         FDB     9*COLS+COL1
+23C9 0102             (       tables.asm):00067                         FCB     $01,$02           ; y=27
+23CB 0169             (       tables.asm):00068                         FDB     9*COLS+COL1
+23CD 0408             (       tables.asm):00069                         FCB     $04,$08           ; y=28
+23CF 0169             (       tables.asm):00070                         FDB     9*COLS+COL1
+23D1 1040             (       tables.asm):00071                         FCB     $10,$40           ; y=29
+23D3 0191             (       tables.asm):00072                         FDB     10*COLS+COL1
+23D5 0102             (       tables.asm):00073                         FCB     $01,$02           ; y=30
+23D7 0191             (       tables.asm):00074                         FDB     10*COLS+COL1
+23D9 0408             (       tables.asm):00075                         FCB     $04,$08           ; y=31
+23DB 0191             (       tables.asm):00076                         FDB     10*COLS+COL1
+23DD 1040             (       tables.asm):00077                         FCB     $10,$40           ; y=32
+23DF 01B9             (       tables.asm):00078                         FDB     11*COLS+COL1
+23E1 0102             (       tables.asm):00079                         FCB     $01,$02           ; y=33
+23E3 01B9             (       tables.asm):00080                         FDB     11*COLS+COL1
+23E5 0408             (       tables.asm):00081                         FCB     $04,$08           ; y=34
+23E7 01B9             (       tables.asm):00082                         FDB     11*COLS+COL1
+23E9 1040             (       tables.asm):00083                         FCB     $10,$40           ; y=35
+23EB 01E1             (       tables.asm):00084                         FDB     12*COLS+COL1
+23ED 0102             (       tables.asm):00085                         FCB     $01,$02           ; y=36
+23EF 01E1             (       tables.asm):00086                         FDB     12*COLS+COL1
+23F1 0408             (       tables.asm):00087                         FCB     $04,$08           ; y=37
+23F3 01E1             (       tables.asm):00088                         FDB     12*COLS+COL1
+23F5 1040             (       tables.asm):00089                         FCB     $10,$40           ; y=38
+23F7 0209             (       tables.asm):00090                         FDB     13*COLS+COL1
+23F9 0102             (       tables.asm):00091                         FCB     $01,$02           ; y=39
+23FB 0209             (       tables.asm):00092                         FDB     13*COLS+COL1
+23FD 0408             (       tables.asm):00093                         FCB     $04,$08           ; y=40
+23FF 0209             (       tables.asm):00094                         FDB     13*COLS+COL1
+2401 1040             (       tables.asm):00095                         FCB     $10,$40           ; y=41
+2403 0231             (       tables.asm):00096                         FDB     14*COLS+COL1
+2405 0102             (       tables.asm):00097                         FCB     $01,$02           ; y=42
+2407 0231             (       tables.asm):00098                         FDB     14*COLS+COL1
+2409 0408             (       tables.asm):00099                         FCB     $04,$08           ; y=43
+240B 0231             (       tables.asm):00100                         FDB     14*COLS+COL1
+240D 1040             (       tables.asm):00101                         FCB     $10,$40           ; y=44
+240F 0259             (       tables.asm):00102                         FDB     15*COLS+COL1
+2411 0102             (       tables.asm):00103                         FCB     $01,$02           ; y=45
+2413 0259             (       tables.asm):00104                         FDB     15*COLS+COL1
+2415 0408             (       tables.asm):00105                         FCB     $04,$08           ; y=46
+2417 0259             (       tables.asm):00106                         FDB     15*COLS+COL1
+2419 1040             (       tables.asm):00107                         FCB     $10,$40           ; y=47
+241B 0281             (       tables.asm):00108                         FDB     16*COLS+COL1
+241D 0102             (       tables.asm):00109                         FCB     $01,$02           ; y=48
+241F 0281             (       tables.asm):00110                         FDB     16*COLS+COL1
+2421 0408             (       tables.asm):00111                         FCB     $04,$08           ; y=49
+2423 0281             (       tables.asm):00112                         FDB     16*COLS+COL1
+2425 1040             (       tables.asm):00113                         FCB     $10,$40           ; y=50
+2427 02A9             (       tables.asm):00114                         FDB     17*COLS+COL1
+2429 0102             (       tables.asm):00115                         FCB     $01,$02           ; y=51
+242B 02A9             (       tables.asm):00116                         FDB     17*COLS+COL1
+242D 0408             (       tables.asm):00117                         FCB     $04,$08           ; y=52
+242F 02A9             (       tables.asm):00118                         FDB     17*COLS+COL1
+2431 1040             (       tables.asm):00119                         FCB     $10,$40           ; y=53
+2433 02D1             (       tables.asm):00120                         FDB     18*COLS+COL1
+2435 0102             (       tables.asm):00121                         FCB     $01,$02           ; y=54
+2437 02D1             (       tables.asm):00122                         FDB     18*COLS+COL1
+2439 0408             (       tables.asm):00123                         FCB     $04,$08           ; y=55
+243B 02D1             (       tables.asm):00124                         FDB     18*COLS+COL1
+243D 1040             (       tables.asm):00125                         FCB     $10,$40           ; y=56
+243F 02F9             (       tables.asm):00126                         FDB     19*COLS+COL1
+2441 0102             (       tables.asm):00127                         FCB     $01,$02           ; y=57
+2443 02F9             (       tables.asm):00128                         FDB     19*COLS+COL1
+2445 0408             (       tables.asm):00129                         FCB     $04,$08           ; y=58
+2447 02F9             (       tables.asm):00130                         FDB     19*COLS+COL1
+2449 1040             (       tables.asm):00131                         FCB     $10,$40           ; y=59
+244B 0321             (       tables.asm):00132                         FDB     20*COLS+COL1
+244D 0102             (       tables.asm):00133                         FCB     $01,$02           ; y=60
+244F 0321             (       tables.asm):00134                         FDB     20*COLS+COL1
+2451 0408             (       tables.asm):00135                         FCB     $04,$08           ; y=61
+2453 0321             (       tables.asm):00136                         FDB     20*COLS+COL1
+2455 1040             (       tables.asm):00137                         FCB     $10,$40           ; y=62
+2457 0349             (       tables.asm):00138                         FDB     21*COLS+COL1
+2459 0102             (       tables.asm):00139                         FCB     $01,$02           ; y=63
+245B 0349             (       tables.asm):00140                         FDB     21*COLS+COL1
+245D 0408             (       tables.asm):00141                         FCB     $04,$08           ; y=64
+245F 0349             (       tables.asm):00142                         FDB     21*COLS+COL1
+2461 1040             (       tables.asm):00143                         FCB     $10,$40           ; y=65
+2463 0371             (       tables.asm):00144                         FDB     22*COLS+COL1
+2465 0102             (       tables.asm):00145                         FCB     $01,$02           ; y=66
+2467 0371             (       tables.asm):00146                         FDB     22*COLS+COL1
+2469 0408             (       tables.asm):00147                         FCB     $04,$08           ; y=67
+246B 0371             (       tables.asm):00148                         FDB     22*COLS+COL1
+246D 1040             (       tables.asm):00149                         FCB     $10,$40           ; y=68
+246F 0399             (       tables.asm):00150                         FDB     23*COLS+COL1
+2471 0102             (       tables.asm):00151                         FCB     $01,$02           ; y=69
+2473 0399             (       tables.asm):00152                         FDB     23*COLS+COL1
+2475 0408             (       tables.asm):00153                         FCB     $04,$08           ; y=70
+2477 0399             (       tables.asm):00154                         FDB     23*COLS+COL1
+2479 1040             (       tables.asm):00155                         FCB     $10,$40           ; y=71
+                      (       tables.asm):00156         
+                      (       tables.asm):00157         ; T_SETMODE patch values: pre-op byte, operation opcode (indexed ,X)
+247B 12AA             (       tables.asm):00158         MODETAB         FCB     $12,$AA         ; MODE_SET:   NOP,  ORA  ,X
+247D 43A4             (       tables.asm):00159                         FCB     $43,$A4         ; MODE_CLEAR: COMA, ANDA ,X
+247F 12A8             (       tables.asm):00160                         FCB     $12,$A8         ; MODE_XOR:   NOP,  EORA ,X
+                      (       tables.asm):00161         
+                      (       tables.asm):00162         ; MASKREAL: internal line mask (1,2,4,8,16,32) -> screen sixel mask
+2481 0001020004000000 (       tables.asm):00163         MASKREAL        FCB     0,$01,$02,0,$04,0,0,0,$08,0,0,0,0,0,0,0
      0800000000000000
-2491 1000000000000000 (       tables.asm):00091                         FCB     $10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+2491 1000000000000000 (       tables.asm):00164                         FCB     $10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
      0000000000000000
-24A1 40               (       tables.asm):00092                         FCB     $40
-                      (       tables.asm):00093         
-                      (       tables.asm):00094         ; LTAB / RTAB: sixel masks covering sixel rows top..bottom of a cell, for
-                      (       tables.asm):00095         ; the left / right pixel column. Index = top*3 + bottom (only top <= bottom
-                      (       tables.asm):00096         ; is used).
-24A2 0105150004140000 (       tables.asm):00097         LTAB            FCB     $01,$05,$15,$00,$04,$14,$00,$00,$10
+24A1 40               (       tables.asm):00165                         FCB     $40
+                      (       tables.asm):00166         
+                      (       tables.asm):00167         ; LTAB / RTAB: sixel masks covering sixel rows top..bottom of a cell, for
+                      (       tables.asm):00168         ; the left / right pixel column. Index = top*3 + bottom (only top <= bottom
+                      (       tables.asm):00169         ; is used).
+24A2 0105150004140000 (       tables.asm):00170         LTAB            FCB     $01,$05,$15,$00,$04,$14,$00,$00,$10
      10
-24AB 020A4A0008480000 (       tables.asm):00098         RTAB            FCB     $02,$0A,$4A,$00,$08,$48,$00,$00,$40
+24AB 020A4A0008480000 (       tables.asm):00171         RTAB            FCB     $02,$0A,$4A,$00,$08,$48,$00,$00,$40
      40
                       (      src/tgl.asm):00110         
 24B4                  (      src/tgl.asm):00111         TGL_END                                 ; default buffer starts here
@@ -3563,6 +3684,7 @@ Symbol Table:
 [ G] CC_X                             1BF6
 [ G] CE_X                             1C8B
 [ G] CELLROW                          1AC3
+[ G] CELLS                            0027
 [ G] CH_CEIL                          1C82
 [ G] CH_CHECK                         1BE8
 [ G] CH_CUR                           0000
@@ -3595,6 +3717,7 @@ Symbol Table:
 [ G] CO_2                             18F1
 [ G] CO_LOOP                          1905
 [ G] CO_X                             1913
+[ G] COL1                             0001
 [ G] COLS                             0028
 [ G] CR0_D                            1B90
 [ G] CR0_N                            1B91
@@ -3763,6 +3886,7 @@ Symbol Table:
 [ G] FS_LOOP                          1624
 [ G] FS_OP                            1626
 [ G] FS_PRE                           1621
+[ G] GFX_SEP                          009A
 [ G] GFX_WHITE                        0097
 [ G] H_PAT                            005C
 [ G] HS_1                             175A

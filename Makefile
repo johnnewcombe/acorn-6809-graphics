@@ -1,8 +1,9 @@
 # Acorn System 3 Teletext Graphics Library - build
 #
 #   make            build library for both targets, plus the demos
-#   make sys3       standard Acorn System 3 (VDU at $0400)
-#   make flex       FLEX machine (VDU at $E400)
+#   make sys3       standard Acorn System 3 (VDU at $0400): tgl.bin and
+#                   the separated-graphics build tgls.bin
+#   make flex       FLEX machine (VDU at $E400): tgl.bin and tgls.bin
 #   make SAFE=1     range-checked TGL_PLOT/TGL_LINE
 #   make NOPACE=1   TGL_PACE does nothing and never touches the VIA timer
 #                   (use make -B or clean first when switching build options)
@@ -34,6 +35,7 @@ FLIP	 = ./build/flip.bin
 ANTS	 = ./build/ants.bin
 LOGO	 = ./build/logo.bin
 TGL 	 = ./build/flex/tgl.bin
+TGLS	 = ./build/flex/tgls.bin
 DESTDISK = ./mame/disks/TGL.dsk
 TOOLS	 = ./tools
 
@@ -45,8 +47,8 @@ PIC_B    = 0x2345
 
 all: sys3 flex demo cube cubep cubed ship boxes circles flip ants logo
 
-sys3: build/sys3/tgl.bin
-flex: build/flex/tgl.bin
+sys3: build/sys3/tgl.bin build/sys3/tgls.bin
+flex: build/flex/tgl.bin build/flex/tgls.bin
 demo: build/demo.bin
 cube: build/cube.bin
 cubep: build/cubep.bin
@@ -77,6 +79,27 @@ build/flex/tgl.bin: $(SRC)
 	  { echo "ERROR: flex build is not position-independent"; rm -f $@; exit 1; }
 	@rm -f $(@D)/pic_a.bin $(@D)/pic_b.bin
 	@echo "flex: $$(stat -c %s $@) bytes, position-independent$(BUILDTYPE)"
+
+# Separated-graphics builds: column 1 holds the separated code, 76 pixels wide
+build/sys3/tgls.bin: $(SRC)
+	@mkdir -p $(@D)
+	$(LWASM) $(LWFLAGS) -D TGL_SEPARATED --output=$@ --list=$(@D)/tgls.lst --symbols src/tgl.asm
+	@$(LWASM) $(LWFLAGS) -D TGL_SEPARATED -D TGL_ORG=$(PIC_A) --output=$(@D)/pics_a.bin src/tgl.asm
+	@$(LWASM) $(LWFLAGS) -D TGL_SEPARATED -D TGL_ORG=$(PIC_B) --output=$(@D)/pics_b.bin src/tgl.asm
+	@cmp -s $(@D)/pics_a.bin $(@D)/pics_b.bin || \
+	  { echo "ERROR: sys3 separated build is not position-independent"; rm -f $@; exit 1; }
+	@rm -f $(@D)/pics_a.bin $(@D)/pics_b.bin
+	@echo "sys3 separated: $$(stat -c %s $@) bytes, position-independent$(BUILDTYPE)"
+
+build/flex/tgls.bin: $(SRC)
+	@mkdir -p $(@D)
+	$(LWASM) $(LWFLAGS) -D TARGET_FLEX -D TGL_SEPARATED --output=$@ --list=$(@D)/tgls.lst --symbols src/tgl.asm
+	@$(LWASM) $(LWFLAGS) -D TARGET_FLEX -D TGL_SEPARATED -D TGL_ORG=$(PIC_A) --output=$(@D)/pics_a.bin src/tgl.asm
+	@$(LWASM) $(LWFLAGS) -D TARGET_FLEX -D TGL_SEPARATED -D TGL_ORG=$(PIC_B) --output=$(@D)/pics_b.bin src/tgl.asm
+	@cmp -s $(@D)/pics_a.bin $(@D)/pics_b.bin || \
+	  { echo "ERROR: flex separated build is not position-independent"; rm -f $@; exit 1; }
+	@rm -f $(@D)/pics_a.bin $(@D)/pics_b.bin
+	@echo "flex separated: $$(stat -c %s $@) bytes, position-independent$(BUILDTYPE)"
 
 build/demo.bin: demo/demo.asm src/tgl_api.inc
 	@mkdir -p $(@D)
@@ -135,6 +158,7 @@ test: flex demo cube cubep cubed ship boxes circles flip ants logo
 	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(ANTS)
 	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(LOGO)
 	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(TGL)
+	-$(TOOLS)/aflex-du delete-file -d $(DESTDISK) -f $(TGLS)
 
 	# add the newly built file, this will be in raw binary format
 	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(DEMO) -l 0x2800 -t 0x2800
@@ -148,6 +172,7 @@ test: flex demo cube cubep cubed ship boxes circles flip ants logo
 	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(ANTS) -l 0x2800 -t 0x2800
 	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(LOGO) -l 0x2800 -t 0x2800
 	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(TGL) -l 0x1000 -t 0x1000
+	$(TOOLS)/aflex-du add-binary-file -d $(DESTDISK) -f $(TGLS) -l 0x1000 -t 0x1000
 
 	# validate the disk
 	$(TOOLS)/aflex-du validate -d $(DESTDISK)

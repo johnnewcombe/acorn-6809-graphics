@@ -1,7 +1,8 @@
 ; ---------------------------------------------------------------------------
 ; T_CLS - clear the off-screen buffer
 ;   Each row: its graphics colour code in column 0 (white unless changed
-;   with TGL_COLOUR), blank sixel cells in 1-39.
+;   with TGL_COLOUR), blank sixel cells in 1-39. In a separated build,
+;   column 1 holds the separated-graphics code instead.
 ;   Fills the whole buffer with blank cells using PSHU from three registers
 ;   (six bytes per instruction, working down from the end), then writes the
 ;   colour code into column 0 of each row. Roughly 2,100 cycles, about a
@@ -77,4 +78,31 @@ CLS_FILL
                 STA     22*COLS,U
                 LDA     <ROWCOL+23
                 STA     23*COLS,U
+                IFDEF   TGL_SEPARATED   ; and the separated code in column 1
+                LDA     #GFX_SEP
+                STA     0*COLS+1,U
+                STA     1*COLS+1,U
+                STA     2*COLS+1,U
+                STA     3*COLS+1,U
+                STA     4*COLS+1,U
+                STA     5*COLS+1,U
+                STA     6*COLS+1,U
+                STA     7*COLS+1,U
+                STA     8*COLS+1,U
+                STA     9*COLS+1,U
+                STA     10*COLS+1,U
+                STA     11*COLS+1,U
+                STA     12*COLS+1,U
+                STA     13*COLS+1,U
+                STA     14*COLS+1,U
+                STA     15*COLS+1,U
+                STA     16*COLS+1,U
+                STA     17*COLS+1,U
+                STA     18*COLS+1,U
+                STA     19*COLS+1,U
+                STA     20*COLS+1,U
+                STA     21*COLS+1,U
+                STA     22*COLS+1,U
+                STA     23*COLS+1,U
+                ENDC
                 PULS    D,X,Y,U,PC

@@ -17,12 +17,13 @@
                       (    demo/logo.asm):00017         ;   The library draws contiguous graphics, so a separated-graphics screen
                       (    demo/logo.asm):00018         ;   shows as solid blocks.
                       (    demo/logo.asm):00019         ;
-                      (    demo/logo.asm):00020         ;   Loading: tgl.bin at $1000 (TGL_BASE below), logo.bin at $2800.
-                      (    demo/logo.asm):00021         ;   Run from START ($2800). Works with either machine's library build.
-                      (    demo/logo.asm):00022         ; ===========================================================================
-                      (    demo/logo.asm):00023         
-     1000             (    demo/logo.asm):00024         TGL_BASE        EQU     $1000
-                      (    demo/logo.asm):00025                         INCLUDE "tgl_api.inc"
+                      (    demo/logo.asm):00020         ;   Loading: tgls.bin (or tgl.bin) at $1000 (TGL_BASE below), logo.bin at
+                      (    demo/logo.asm):00021         ;   $2800.
+                      (    demo/logo.asm):00022         ;   Run from START ($2800). Works with either machine's library build.
+                      (    demo/logo.asm):00023         ; ===========================================================================
+                      (    demo/logo.asm):00024         
+     1000             (    demo/logo.asm):00025         TGL_BASE        EQU     $1000
+                      (    demo/logo.asm):00026                         INCLUDE "tgl_api.inc"
                       (      tgl_api.inc):00001         ; ---------------------------------------------------------------------------
                       (      tgl_api.inc):00002         ; Acorn System 3 Teletext Graphics Library - caller interface
                       (      tgl_api.inc):00003         ;
@@ -83,249 +84,253 @@
      000F             (      tgl_api.inc):00058         TGL_PAT_SOLID   EQU     %1111
      0003             (      tgl_api.inc):00059         TGL_PAT_HLINES  EQU     %0011           ; horizontal stripes
      0005             (      tgl_api.inc):00060         TGL_PAT_VLINES  EQU     %0101           ; vertical stripes
-                      (    demo/logo.asm):00026         
-     3800             (    demo/logo.asm):00027         BUFFER          EQU     $3800           ; off-screen buffer (960 bytes)
-     0200             (    demo/logo.asm):00028         STACK_TOP       EQU     $0200           ; stack $0100-$01FF
-                      (    demo/logo.asm):00029         
-     0002             (    demo/logo.asm):00030         FLIP_TICKS      EQU     2               ; flip speed: 50Hz ticks per frame
-                      (    demo/logo.asm):00031                                                 ;  (2 = about 0.7 s, 3 = about 1 s)
-     0064             (    demo/logo.asm):00032         PAUSE           EQU     100             ; pause between flips, in 50Hz ticks
-                      (    demo/logo.asm):00033         
-     0080             (    demo/logo.asm):00034         WAITN           EQU     $80             ; pause counter
-     0081             (    demo/logo.asm):00035         ROW             EQU     $81             ; row being copied
-                      (    demo/logo.asm):00036         
-                      (    demo/logo.asm):00037                         ORG     $2800
-                      (    demo/logo.asm):00038         
-2800 10CE0200         (    demo/logo.asm):00039         START           LDS     #STACK_TOP
-2804 4F               (    demo/logo.asm):00040                         CLRA                    ; DP = $00 for the library
-2805 1F8B             (    demo/logo.asm):00041                         TFR     A,DP
-     00               (    demo/logo.asm):00042                         SETDP   $00
-2807 1CEF             (    demo/logo.asm):00043                         ANDCC   #$EF            ; IRQs on (keyboard)
-2809 BD1000           (    demo/logo.asm):00044                         JSR     TGL_INIT
-280C 8E3800           (    demo/logo.asm):00045                         LDX     #BUFFER
-280F BD1003           (    demo/logo.asm):00046                         JSR     TGL_SETBUF
-2812 BD1006           (    demo/logo.asm):00047                         JSR     TGL_CLS
-2815 4F               (    demo/logo.asm):00048                         CLRA                    ; status row title
-2816 8E2868           (    demo/logo.asm):00049                         LDX     #TITLE
-2819 BD1030           (    demo/logo.asm):00050                         JSR     TGL_TEXT
-                      (    demo/logo.asm):00051         
-                      (    demo/logo.asm):00052         ; ---------------------------------------------------------------------------
-                      (    demo/logo.asm):00053         ; Copy the picture into the buffer: for each row, its 39 cells into
-                      (    demo/logo.asm):00054         ; columns 1-39, then its colour with TGL_COLOUR (which writes column 0 and
-                      (    demo/logo.asm):00055         ; remembers it, so TGL_CLS would keep it)
-                      (    demo/logo.asm):00056         ; ---------------------------------------------------------------------------
-281C 108E2885         (    demo/logo.asm):00057                         LDY     #LOGO           ; Y -> the picture's cells
-2820 CE3801           (    demo/logo.asm):00058                         LDU     #BUFFER+1       ; U -> column 1 of buffer row 0
-2823 0F81             (    demo/logo.asm):00059                         CLR     <ROW
-2825 C627             (    demo/logo.asm):00060         COPYROW         LDB     #39             ; 39 cells
-2827 A6A0             (    demo/logo.asm):00061         COPYCELL        LDA     ,Y+
-2829 A7C0             (    demo/logo.asm):00062                         STA     ,U+
-282B 5A               (    demo/logo.asm):00063                         DECB
-282C 26F9             (    demo/logo.asm):00064                         BNE     COPYCELL
-282E 3341             (    demo/logo.asm):00065                         LEAU    1,U             ; skip column 0 of the next row
-2830 8E2C2D           (    demo/logo.asm):00066                         LDX     #LOGO_COL       ; this row's colour (1-7)
-2833 D681             (    demo/logo.asm):00067                         LDB     <ROW
-2835 3A               (    demo/logo.asm):00068                         ABX
-2836 E684             (    demo/logo.asm):00069                         LDB     ,X
-2838 4F               (    demo/logo.asm):00070                         CLRA
-2839 1F01             (    demo/logo.asm):00071                         TFR     D,X             ; X = colour
-283B 9681             (    demo/logo.asm):00072                         LDA     <ROW            ; A = B = this row
-283D D681             (    demo/logo.asm):00073                         LDB     <ROW
-283F BD1039           (    demo/logo.asm):00074                         JSR     TGL_COLOUR
-2842 0C81             (    demo/logo.asm):00075                         INC     <ROW
-2844 9681             (    demo/logo.asm):00076                         LDA     <ROW
-2846 8118             (    demo/logo.asm):00077                         CMPA    #24
-2848 25DB             (    demo/logo.asm):00078                         BLO     COPYROW
-284A BD1012           (    demo/logo.asm):00079                         JSR     TGL_BLIT
-                      (    demo/logo.asm):00080         
-                      (    demo/logo.asm):00081         ; ---------------------------------------------------------------------------
-                      (    demo/logo.asm):00082         ; Pause, flip, repeat (any key exits)
-                      (    demo/logo.asm):00083         ; ---------------------------------------------------------------------------
-284D 8664             (    demo/logo.asm):00084         LOOP            LDA     #PAUSE          ; pause, checking for a key
-284F 9780             (    demo/logo.asm):00085                         STA     <WAITN
-2851 BD101E           (    demo/logo.asm):00086         WAIT            JSR     TGL_INKEY
-2854 1026E7C9         (    demo/logo.asm):00087                         LBNE    TGL_EXIT
-2858 8601             (    demo/logo.asm):00088                         LDA     #1              ; one 50Hz tick
-285A BD103C           (    demo/logo.asm):00089                         JSR     TGL_PACE
-285D 0A80             (    demo/logo.asm):00090                         DEC     <WAITN
-285F 26F0             (    demo/logo.asm):00091                         BNE     WAIT
-2861 8602             (    demo/logo.asm):00092                         LDA     #FLIP_TICKS     ; turn the picture over
-2863 BD1045           (    demo/logo.asm):00093                         JSR     TGL_FLIPH
-2866 20E5             (    demo/logo.asm):00094                         BRA     LOOP
-                      (    demo/logo.asm):00095         
-                      (    demo/logo.asm):00096         ; Status row title. $86 cyan, $83 yellow text codes.
-2868 86               (    demo/logo.asm):00097         TITLE           FCB     $86
-2869 53504C4153482053 (    demo/logo.asm):00098                         FCC     "SPLASH SCREEN"
+                      (    demo/logo.asm):00027         
+     3800             (    demo/logo.asm):00028         BUFFER          EQU     $3800           ; off-screen buffer (960 bytes)
+     0200             (    demo/logo.asm):00029         STACK_TOP       EQU     $0200           ; stack $0100-$01FF
+                      (    demo/logo.asm):00030         
+     0002             (    demo/logo.asm):00031         FLIP_TICKS      EQU     2               ; flip speed: 50Hz ticks per frame
+                      (    demo/logo.asm):00032                                                 ;  (2 = about 0.7 s, 3 = about 1 s)
+     0064             (    demo/logo.asm):00033         PAUSE           EQU     100             ; pause between flips, in 50Hz ticks
+                      (    demo/logo.asm):00034         
+     0080             (    demo/logo.asm):00035         WAITN           EQU     $80             ; pause counter
+     0081             (    demo/logo.asm):00036         ROW             EQU     $81             ; row being copied
+                      (    demo/logo.asm):00037         
+                      (    demo/logo.asm):00038                         ORG     $2800
+                      (    demo/logo.asm):00039         
+2800 10CE0200         (    demo/logo.asm):00040         START           LDS     #STACK_TOP
+2804 4F               (    demo/logo.asm):00041                         CLRA                    ; DP = $00 for the library
+2805 1F8B             (    demo/logo.asm):00042                         TFR     A,DP
+     00               (    demo/logo.asm):00043                         SETDP   $00
+2807 1CEF             (    demo/logo.asm):00044                         ANDCC   #$EF            ; IRQs on (keyboard)
+2809 BD1000           (    demo/logo.asm):00045                         JSR     TGL_INIT
+280C 8E3800           (    demo/logo.asm):00046                         LDX     #BUFFER
+280F BD1003           (    demo/logo.asm):00047                         JSR     TGL_SETBUF
+2812 BD1006           (    demo/logo.asm):00048                         JSR     TGL_CLS
+2815 4F               (    demo/logo.asm):00049                         CLRA                    ; status row title
+2816 8E286A           (    demo/logo.asm):00050                         LDX     #TITLE
+2819 BD1030           (    demo/logo.asm):00051                         JSR     TGL_TEXT
+                      (    demo/logo.asm):00052         
+                      (    demo/logo.asm):00053         ; ---------------------------------------------------------------------------
+                      (    demo/logo.asm):00054         ; Copy the picture into the buffer: for each row, its cells into columns
+                      (    demo/logo.asm):00055         ; LOGO_COL1-39, then its colour with TGL_COLOUR (which writes column 0 and
+                      (    demo/logo.asm):00056         ; remembers it, so TGL_CLS would keep it)
+                      (    demo/logo.asm):00057         ; ---------------------------------------------------------------------------
+281C 108E2887         (    demo/logo.asm):00058                         LDY     #LOGO           ; Y -> the picture's cells
+2820 CE3802           (    demo/logo.asm):00059                         LDU     #BUFFER+LOGO_COL1 ; U -> first picture column, row 0
+2823 0F81             (    demo/logo.asm):00060                         CLR     <ROW
+2825 C626             (    demo/logo.asm):00061         COPYROW         LDB     #LOGO_CELLS     ; this row's cells
+2827 A6A0             (    demo/logo.asm):00062         COPYCELL        LDA     ,Y+
+2829 A7C0             (    demo/logo.asm):00063                         STA     ,U+
+282B 5A               (    demo/logo.asm):00064                         DECB
+282C 26F9             (    demo/logo.asm):00065                         BNE     COPYCELL
+282E 33C90002         (    demo/logo.asm):00066                         LEAU    LOGO_COL1,U     ; skip the next row's control columns
+2832 8E2C17           (    demo/logo.asm):00067                         LDX     #LOGO_COL       ; this row's colour (1-7)
+2835 D681             (    demo/logo.asm):00068                         LDB     <ROW
+2837 3A               (    demo/logo.asm):00069                         ABX
+2838 E684             (    demo/logo.asm):00070                         LDB     ,X
+283A 4F               (    demo/logo.asm):00071                         CLRA
+283B 1F01             (    demo/logo.asm):00072                         TFR     D,X             ; X = colour
+283D 9681             (    demo/logo.asm):00073                         LDA     <ROW            ; A = B = this row
+283F D681             (    demo/logo.asm):00074                         LDB     <ROW
+2841 BD1039           (    demo/logo.asm):00075                         JSR     TGL_COLOUR
+2844 0C81             (    demo/logo.asm):00076                         INC     <ROW
+2846 9681             (    demo/logo.asm):00077                         LDA     <ROW
+2848 8118             (    demo/logo.asm):00078                         CMPA    #24
+284A 25D9             (    demo/logo.asm):00079                         BLO     COPYROW
+284C BD1012           (    demo/logo.asm):00080                         JSR     TGL_BLIT
+                      (    demo/logo.asm):00081         
+                      (    demo/logo.asm):00082         ; ---------------------------------------------------------------------------
+                      (    demo/logo.asm):00083         ; Pause, flip, repeat (any key exits)
+                      (    demo/logo.asm):00084         ; ---------------------------------------------------------------------------
+284F 8664             (    demo/logo.asm):00085         LOOP            LDA     #PAUSE          ; pause, checking for a key
+2851 9780             (    demo/logo.asm):00086                         STA     <WAITN
+2853 BD101E           (    demo/logo.asm):00087         WAIT            JSR     TGL_INKEY
+2856 1026E7C7         (    demo/logo.asm):00088                         LBNE    TGL_EXIT
+285A 8601             (    demo/logo.asm):00089                         LDA     #1              ; one 50Hz tick
+285C BD103C           (    demo/logo.asm):00090                         JSR     TGL_PACE
+285F 0A80             (    demo/logo.asm):00091                         DEC     <WAITN
+2861 26F0             (    demo/logo.asm):00092                         BNE     WAIT
+2863 8602             (    demo/logo.asm):00093                         LDA     #FLIP_TICKS     ; turn the picture over
+2865 BD1045           (    demo/logo.asm):00094                         JSR     TGL_FLIPH
+2868 20E5             (    demo/logo.asm):00095                         BRA     LOOP
+                      (    demo/logo.asm):00096         
+                      (    demo/logo.asm):00097         ; Status row title. $86 cyan, $83 yellow text codes.
+286A 86               (    demo/logo.asm):00098         TITLE           FCB     $86
+286B 53504C4153482053 (    demo/logo.asm):00099                         FCC     "SPLASH SCREEN"
      435245454E
-2876 83               (    demo/logo.asm):00099                         FCB     $83
-2877 414E59204B455920 (    demo/logo.asm):00100                         FCC     "ANY KEY EXITS"
+2878 83               (    demo/logo.asm):00100                         FCB     $83
+2879 414E59204B455920 (    demo/logo.asm):00101                         FCC     "ANY KEY EXITS"
      4558495453
-2884 00               (    demo/logo.asm):00101                         FCB     0
-                      (    demo/logo.asm):00102         
-                      (    demo/logo.asm):00103         ; The picture (generated by tools/screen2tgl.py)
-                      (    demo/logo.asm):00104                         INCLUDE "logo_screen.asm"
-                      (  logo_screen.asm):00001         ; LOGO - generated by tools/screen2tgl.py from screen.txt
-                      (  logo_screen.asm):00002         ;   24 rows x 39 cells (columns 1-39, the library's buffer layout),
+2886 00               (    demo/logo.asm):00102                         FCB     0
+                      (    demo/logo.asm):00103         
+                      (    demo/logo.asm):00104         ; The picture (generated by tools/screen2tgl.py)
+                      (    demo/logo.asm):00105                         INCLUDE "logo_screen.asm"
+                      (  logo_screen.asm):00001         ; LOGO - generated by tools/screen2tgl.py from download.txt (the editor's screen file)
+                      (  logo_screen.asm):00002         ;   24 rows x 38 cells (columns 2-39, the library's buffer layout),
                       (  logo_screen.asm):00003         ;   then each row's graphics colour (LOGO_COL, 1-7)
-2885                  (  logo_screen.asm):00004         LOGO
-2885 202020207C34607C (  logo_screen.asm):00005                         FCB     $20,$20,$20,$20,$7C,$34,$60,$7C,$7C,$30,$20,$78,$7C,$74,$20,$7C,$7C,$7C,$30,$68     ; row 0
-     7C3020787C74207C
-     7C7C3068
-2899 74206834787C7C30 (  logo_screen.asm):00006                         FCB     $74,$20,$68,$34,$78,$7C,$7C,$30,$20,$7E,$7F,$34,$20,$7C,$7C,$7C,$7C,$7C,$7C
+     0002             (  logo_screen.asm):00004         LOGO_COL1        EQU     2               ; first picture column
+     0026             (  logo_screen.asm):00005         LOGO_CELLS       EQU     38              ; cells per row
+2887                  (  logo_screen.asm):00006         LOGO
+2887 2020207C34607C7C (  logo_screen.asm):00007                         FCB     $20,$20,$20,$7C,$34,$60,$7C,$7C,$30,$20,$78,$7C,$74,$20,$7C,$7C,$7C,$30,$68     ; row 0
+     3020787C74207C7C
+     7C3068
+289A 74206834787C7C30 (  logo_screen.asm):00008                         FCB     $74,$20,$68,$34,$78,$7C,$7C,$30,$20,$7E,$7F,$34,$20,$7C,$7C,$7C,$7C,$7C,$7C
      207E7F34207C7C7C
      7C7C7C
-28AC 2020207A7F357F27 (  logo_screen.asm):00007                         FCB     $20,$20,$20,$7A,$7F,$35,$7F,$27,$2B,$7F,$6A,$3F,$23,$6F,$35,$7F,$23,$6B,$35,$6A     ; row 1
-     2B7F6A3F236F357F
-     236B356A
-28C0 7F346A357F312B25 (  logo_screen.asm):00008                         FCB     $7F,$34,$6A,$35,$7F,$31,$2B,$25,$6A,$7F,$7F,$7F,$20,$7F,$23,$23,$23,$7F,$23
+28AD 20207A7F357F272B (  logo_screen.asm):00009                         FCB     $20,$20,$7A,$7F,$35,$7F,$27,$2B,$7F,$6A,$3F,$23,$6F,$35,$7F,$23,$6B,$35,$6A     ; row 1
+     7F6A3F236F357F23
+     6B356A
+28C0 7F346A357F312B25 (  logo_screen.asm):00010                         FCB     $7F,$34,$6A,$35,$7F,$31,$2B,$25,$6A,$7F,$7F,$7F,$20,$7F,$23,$23,$23,$7F,$23
      6A7F7F7F207F2323
      237F23
-28D3 2020683F6B357F20 (  logo_screen.asm):00009                         FCB     $20,$20,$68,$3F,$6B,$35,$7F,$20,$20,$20,$6A,$35,$20,$6A,$35,$7F,$7C,$7E,$25,$6A     ; row 2
-     20206A35206A357F
-     7C7E256A
-28E7 3F7F7A352B7F7D30 (  logo_screen.asm):00010                         FCB     $3F,$7F,$7A,$35,$2B,$7F,$7D,$30,$7F,$7F,$7F,$7F,$35,$7F,$7F,$7F,$20,$7F,$20
+28D3 20683F6B357F2020 (  logo_screen.asm):00011                         FCB     $20,$68,$3F,$6B,$35,$7F,$20,$20,$20,$6A,$35,$20,$6A,$35,$7F,$7C,$7E,$25,$6A     ; row 2
+     206A35206A357F7C
+     7E256A
+28E6 3F7F7A352B7F7D30 (  logo_screen.asm):00012                         FCB     $3F,$7F,$7A,$35,$2B,$7F,$7D,$30,$7F,$7F,$7F,$7F,$35,$7F,$7F,$7F,$20,$7F,$20
      7F7F7F7F357F7F7F
      207F20
-28FA 20607F7D7E357F30 (  logo_screen.asm):00011                         FCB     $20,$60,$7F,$7D,$7E,$35,$7F,$30,$60,$7C,$6A,$75,$20,$7A,$35,$7F,$2B,$7D,$20,$6A     ; row 3
-     607C6A75207A357F
-     2B7D206A
-290E 356B7F3570206B7F (  logo_screen.asm):00012                         FCB     $35,$6B,$7F,$35,$70,$20,$6B,$7F,$73,$73,$73,$73,$31,$7F,$20,$20,$20,$7F,$20
+28F9 607F7D7E357F3060 (  logo_screen.asm):00013                         FCB     $60,$7F,$7D,$7E,$35,$7F,$30,$60,$7C,$6A,$75,$20,$7A,$35,$7F,$2B,$7D,$20,$6A     ; row 3
+     7C6A75207A357F2B
+     7D206A
+290C 356B7F3570206B7F (  logo_screen.asm):00014                         FCB     $35,$6B,$7F,$35,$70,$20,$6B,$7F,$73,$73,$73,$73,$31,$7F,$20,$20,$20,$7F,$20
      73737373317F2020
      207F20
-2921 207E37206A352B7F (  logo_screen.asm):00013                         FCB     $20,$7E,$37,$20,$6A,$35,$2B,$7F,$7F,$27,$22,$6F,$7F,$3F,$21,$7F,$20,$6B,$75,$6A     ; row 4
-     7F27226F7F3F217F
-     206B756A
-2935 35206F356F7F7F25 (  logo_screen.asm):00014                         FCB     $35,$20,$6F,$35,$6F,$7F,$7F,$25,$6F,$7F,$7F,$7F,$25,$7F,$20,$20,$20,$7F,$20
+291F 7E37206A352B7F7F (  logo_screen.asm):00015                         FCB     $7E,$37,$20,$6A,$35,$2B,$7F,$7F,$27,$22,$6F,$7F,$3F,$21,$7F,$20,$6B,$75,$6A     ; row 4
+     27226F7F3F217F20
+     6B756A
+2932 35206F356F7F7F25 (  logo_screen.asm):00016                         FCB     $35,$20,$6F,$35,$6F,$7F,$7F,$25,$6F,$7F,$7F,$7F,$25,$7F,$20,$20,$20,$7F,$20
      6F7F7F7F257F2020
      207F20
-2948 2020202020202020 (  logo_screen.asm):00015                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20     ; row 5
+2945 2020202020202020 (  logo_screen.asm):00017                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20     ; row 5
      2020202020202020
-     20202020
-295C 2020202020202020 (  logo_screen.asm):00016                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$22,$23,$20,$20,$20,$20,$20,$20,$20,$20
+     202020
+2958 2020202020202020 (  logo_screen.asm):00018                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$22,$23,$20,$20,$20,$20,$20,$20,$20,$20
      2022232020202020
      202020
-296F 202020207C34607C (  logo_screen.asm):00017                         FCB     $20,$20,$20,$20,$7C,$34,$60,$7C,$7C,$30,$20,$78,$7C,$74,$20,$7C,$7C,$7C,$30,$68     ; row 6
-     7C3020787C74207C
-     7C7C3068
-2983 74206834787C7C30 (  logo_screen.asm):00018                         FCB     $74,$20,$68,$34,$78,$7C,$7C,$30,$20,$7E,$7F,$34,$20,$7C,$7C,$7C,$7C,$7C,$7C
+296B 2020207C34607C7C (  logo_screen.asm):00019                         FCB     $20,$20,$20,$7C,$34,$60,$7C,$7C,$30,$20,$78,$7C,$74,$20,$7C,$7C,$7C,$30,$68     ; row 6
+     3020787C74207C7C
+     7C3068
+297E 74206834787C7C30 (  logo_screen.asm):00020                         FCB     $74,$20,$68,$34,$78,$7C,$7C,$30,$20,$7E,$7F,$34,$20,$7C,$7C,$7C,$7C,$7C,$7C
      207E7F34207C7C7C
      7C7C7C
-2996 2020207A7F357F27 (  logo_screen.asm):00019                         FCB     $20,$20,$20,$7A,$7F,$35,$7F,$27,$2B,$7F,$6A,$3F,$23,$6F,$35,$7F,$23,$6B,$35,$6A     ; row 7
-     2B7F6A3F236F357F
-     236B356A
-29AA 7F346A357F312B25 (  logo_screen.asm):00020                         FCB     $7F,$34,$6A,$35,$7F,$31,$2B,$25,$6A,$7F,$7F,$7F,$20,$7F,$23,$23,$23,$7F,$23
+2991 20207A7F357F272B (  logo_screen.asm):00021                         FCB     $20,$20,$7A,$7F,$35,$7F,$27,$2B,$7F,$6A,$3F,$23,$6F,$35,$7F,$23,$6B,$35,$6A     ; row 7
+     7F6A3F236F357F23
+     6B356A
+29A4 7F346A357F312B25 (  logo_screen.asm):00022                         FCB     $7F,$34,$6A,$35,$7F,$31,$2B,$25,$6A,$7F,$7F,$7F,$20,$7F,$23,$23,$23,$7F,$23
      6A7F7F7F207F2323
      237F23
-29BD 2020683F6B357F20 (  logo_screen.asm):00021                         FCB     $20,$20,$68,$3F,$6B,$35,$7F,$20,$20,$20,$6A,$35,$20,$6A,$35,$7F,$7C,$7E,$25,$6A     ; row 8
-     20206A35206A357F
-     7C7E256A
-29D1 3F7F7A352B7F7D30 (  logo_screen.asm):00022                         FCB     $3F,$7F,$7A,$35,$2B,$7F,$7D,$30,$7F,$7F,$7F,$7F,$35,$7F,$7F,$7F,$20,$7F,$20
+29B7 20683F6B357F2020 (  logo_screen.asm):00023                         FCB     $20,$68,$3F,$6B,$35,$7F,$20,$20,$20,$6A,$35,$20,$6A,$35,$7F,$7C,$7E,$25,$6A     ; row 8
+     206A35206A357F7C
+     7E256A
+29CA 3F7F7A352B7F7D30 (  logo_screen.asm):00024                         FCB     $3F,$7F,$7A,$35,$2B,$7F,$7D,$30,$7F,$7F,$7F,$7F,$35,$7F,$7F,$7F,$20,$7F,$20
      7F7F7F7F357F7F7F
      207F20
-29E4 20607F7D7E357F30 (  logo_screen.asm):00023                         FCB     $20,$60,$7F,$7D,$7E,$35,$7F,$30,$60,$7C,$6A,$75,$20,$7A,$35,$7F,$2B,$7D,$20,$6A     ; row 9
-     607C6A75207A357F
-     2B7D206A
-29F8 356B7F3570206B7F (  logo_screen.asm):00024                         FCB     $35,$6B,$7F,$35,$70,$20,$6B,$7F,$73,$73,$73,$73,$31,$7F,$20,$20,$20,$7F,$20
+29DD 607F7D7E357F3060 (  logo_screen.asm):00025                         FCB     $60,$7F,$7D,$7E,$35,$7F,$30,$60,$7C,$6A,$75,$20,$7A,$35,$7F,$2B,$7D,$20,$6A     ; row 9
+     7C6A75207A357F2B
+     7D206A
+29F0 356B7F3570206B7F (  logo_screen.asm):00026                         FCB     $35,$6B,$7F,$35,$70,$20,$6B,$7F,$73,$73,$73,$73,$31,$7F,$20,$20,$20,$7F,$20
      73737373317F2020
      207F20
-2A0B 207E37206A352B7F (  logo_screen.asm):00025                         FCB     $20,$7E,$37,$20,$6A,$35,$2B,$7F,$7F,$27,$22,$6F,$7F,$3F,$21,$7F,$20,$6B,$75,$6A     ; row 10
-     7F27226F7F3F217F
-     206B756A
-2A1F 35206F356F7F7F25 (  logo_screen.asm):00026                         FCB     $35,$20,$6F,$35,$6F,$7F,$7F,$25,$6F,$7F,$7F,$7F,$25,$7F,$20,$20,$20,$7F,$20
+2A03 7E37206A352B7F7F (  logo_screen.asm):00027                         FCB     $7E,$37,$20,$6A,$35,$2B,$7F,$7F,$27,$22,$6F,$7F,$3F,$21,$7F,$20,$6B,$75,$6A     ; row 10
+     27226F7F3F217F20
+     6B756A
+2A16 35206F356F7F7F25 (  logo_screen.asm):00028                         FCB     $35,$20,$6F,$35,$6F,$7F,$7F,$25,$6F,$7F,$7F,$7F,$25,$7F,$20,$20,$20,$7F,$20
      6F7F7F7F257F2020
      207F20
-2A32 2020202020202020 (  logo_screen.asm):00027                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20     ; row 11
+2A29 2020202020202020 (  logo_screen.asm):00029                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20     ; row 11
      2020202020202020
-     20202020
-2A46 2020202020202020 (  logo_screen.asm):00028                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$22,$23,$20,$20,$20,$20,$20,$20,$20,$20
+     202020
+2A3C 2020202020202020 (  logo_screen.asm):00030                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$22,$23,$20,$20,$20,$20,$20,$20,$20,$20
      2022232020202020
      202020
-2A59 202020207C34607C (  logo_screen.asm):00029                         FCB     $20,$20,$20,$20,$7C,$34,$60,$7C,$7C,$30,$20,$78,$7C,$74,$20,$7C,$7C,$7C,$30,$68     ; row 12
-     7C3020787C74207C
-     7C7C3068
-2A6D 74206834787C7C30 (  logo_screen.asm):00030                         FCB     $74,$20,$68,$34,$78,$7C,$7C,$30,$20,$7E,$7F,$34,$20,$7C,$7C,$7C,$7C,$7C,$7C
+2A4F 2020207C34607C7C (  logo_screen.asm):00031                         FCB     $20,$20,$20,$7C,$34,$60,$7C,$7C,$30,$20,$78,$7C,$74,$20,$7C,$7C,$7C,$30,$68     ; row 12
+     3020787C74207C7C
+     7C3068
+2A62 74206834787C7C30 (  logo_screen.asm):00032                         FCB     $74,$20,$68,$34,$78,$7C,$7C,$30,$20,$7E,$7F,$34,$20,$7C,$7C,$7C,$7C,$7C,$7C
      207E7F34207C7C7C
      7C7C7C
-2A80 2020207A7F357F27 (  logo_screen.asm):00031                         FCB     $20,$20,$20,$7A,$7F,$35,$7F,$27,$2B,$7F,$6A,$3F,$23,$6F,$35,$7F,$23,$6B,$35,$6A     ; row 13
-     2B7F6A3F236F357F
-     236B356A
-2A94 7F346A357F312B25 (  logo_screen.asm):00032                         FCB     $7F,$34,$6A,$35,$7F,$31,$2B,$25,$6A,$7F,$7F,$7F,$20,$7F,$23,$23,$23,$7F,$23
+2A75 20207A7F357F272B (  logo_screen.asm):00033                         FCB     $20,$20,$7A,$7F,$35,$7F,$27,$2B,$7F,$6A,$3F,$23,$6F,$35,$7F,$23,$6B,$35,$6A     ; row 13
+     7F6A3F236F357F23
+     6B356A
+2A88 7F346A357F312B25 (  logo_screen.asm):00034                         FCB     $7F,$34,$6A,$35,$7F,$31,$2B,$25,$6A,$7F,$7F,$7F,$20,$7F,$23,$23,$23,$7F,$23
      6A7F7F7F207F2323
      237F23
-2AA7 2020683F6B357F20 (  logo_screen.asm):00033                         FCB     $20,$20,$68,$3F,$6B,$35,$7F,$20,$20,$20,$6A,$35,$20,$6A,$35,$7F,$7C,$7E,$25,$6A     ; row 14
-     20206A35206A357F
-     7C7E256A
-2ABB 3F7F7A352B7F7D30 (  logo_screen.asm):00034                         FCB     $3F,$7F,$7A,$35,$2B,$7F,$7D,$30,$7F,$7F,$7F,$7F,$35,$7F,$7F,$7F,$20,$7F,$20
+2A9B 20683F6B357F2020 (  logo_screen.asm):00035                         FCB     $20,$68,$3F,$6B,$35,$7F,$20,$20,$20,$6A,$35,$20,$6A,$35,$7F,$7C,$7E,$25,$6A     ; row 14
+     206A35206A357F7C
+     7E256A
+2AAE 3F7F7A352B7F7D30 (  logo_screen.asm):00036                         FCB     $3F,$7F,$7A,$35,$2B,$7F,$7D,$30,$7F,$7F,$7F,$7F,$35,$7F,$7F,$7F,$20,$7F,$20
      7F7F7F7F357F7F7F
      207F20
-2ACE 20607F7D7E357F30 (  logo_screen.asm):00035                         FCB     $20,$60,$7F,$7D,$7E,$35,$7F,$30,$60,$7C,$6A,$75,$20,$7A,$35,$7F,$2B,$7D,$20,$6A     ; row 15
-     607C6A75207A357F
-     2B7D206A
-2AE2 356B7F3570206B7F (  logo_screen.asm):00036                         FCB     $35,$6B,$7F,$35,$70,$20,$6B,$7F,$73,$73,$73,$73,$31,$7F,$20,$20,$20,$7F,$20
+2AC1 607F7D7E357F3060 (  logo_screen.asm):00037                         FCB     $60,$7F,$7D,$7E,$35,$7F,$30,$60,$7C,$6A,$75,$20,$7A,$35,$7F,$2B,$7D,$20,$6A     ; row 15
+     7C6A75207A357F2B
+     7D206A
+2AD4 356B7F3570206B7F (  logo_screen.asm):00038                         FCB     $35,$6B,$7F,$35,$70,$20,$6B,$7F,$73,$73,$73,$73,$31,$7F,$20,$20,$20,$7F,$20
      73737373317F2020
      207F20
-2AF5 207E37206A352B7F (  logo_screen.asm):00037                         FCB     $20,$7E,$37,$20,$6A,$35,$2B,$7F,$7F,$27,$22,$6F,$7F,$3F,$21,$7F,$20,$6B,$75,$6A     ; row 16
-     7F27226F7F3F217F
-     206B756A
-2B09 35206F356F7F7F25 (  logo_screen.asm):00038                         FCB     $35,$20,$6F,$35,$6F,$7F,$7F,$25,$6F,$7F,$7F,$7F,$25,$7F,$20,$20,$20,$7F,$20
+2AE7 7E37206A352B7F7F (  logo_screen.asm):00039                         FCB     $7E,$37,$20,$6A,$35,$2B,$7F,$7F,$27,$22,$6F,$7F,$3F,$21,$7F,$20,$6B,$75,$6A     ; row 16
+     27226F7F3F217F20
+     6B756A
+2AFA 35206F356F7F7F25 (  logo_screen.asm):00040                         FCB     $35,$20,$6F,$35,$6F,$7F,$7F,$25,$6F,$7F,$7F,$7F,$25,$7F,$20,$20,$20,$7F,$20
      6F7F7F7F257F2020
      207F20
-2B1C 2020202020202020 (  logo_screen.asm):00039                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20     ; row 17
+2B0D 2020202020202020 (  logo_screen.asm):00041                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20     ; row 17
      2020202020202020
-     20202020
-2B30 2020202020202020 (  logo_screen.asm):00040                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$22,$23,$20,$20,$20,$20,$20,$20,$20,$20
+     202020
+2B20 2020202020202020 (  logo_screen.asm):00042                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$22,$23,$20,$20,$20,$20,$20,$20,$20,$20
      2022232020202020
      202020
-2B43 202020207C34607C (  logo_screen.asm):00041                         FCB     $20,$20,$20,$20,$7C,$34,$60,$7C,$7C,$30,$20,$78,$7C,$74,$20,$7C,$7C,$7C,$30,$68     ; row 18
-     7C3020787C74207C
-     7C7C3068
-2B57 74206834787C7C30 (  logo_screen.asm):00042                         FCB     $74,$20,$68,$34,$78,$7C,$7C,$30,$20,$7E,$7F,$34,$20,$7C,$7C,$7C,$7C,$7C,$7C
+2B33 2020207C34607C7C (  logo_screen.asm):00043                         FCB     $20,$20,$20,$7C,$34,$60,$7C,$7C,$30,$20,$78,$7C,$74,$20,$7C,$7C,$7C,$30,$68     ; row 18
+     3020787C74207C7C
+     7C3068
+2B46 74206834787C7C30 (  logo_screen.asm):00044                         FCB     $74,$20,$68,$34,$78,$7C,$7C,$30,$20,$7E,$7F,$34,$20,$7C,$7C,$7C,$7C,$7C,$7C
      207E7F34207C7C7C
      7C7C7C
-2B6A 2020207A7F357F27 (  logo_screen.asm):00043                         FCB     $20,$20,$20,$7A,$7F,$35,$7F,$27,$2B,$7F,$6A,$3F,$23,$6F,$35,$7F,$23,$6B,$35,$6A     ; row 19
-     2B7F6A3F236F357F
-     236B356A
-2B7E 7F346A357F312B25 (  logo_screen.asm):00044                         FCB     $7F,$34,$6A,$35,$7F,$31,$2B,$25,$6A,$7F,$7F,$7F,$20,$7F,$23,$23,$23,$7F,$23
+2B59 20207A7F357F272B (  logo_screen.asm):00045                         FCB     $20,$20,$7A,$7F,$35,$7F,$27,$2B,$7F,$6A,$3F,$23,$6F,$35,$7F,$23,$6B,$35,$6A     ; row 19
+     7F6A3F236F357F23
+     6B356A
+2B6C 7F346A357F312B25 (  logo_screen.asm):00046                         FCB     $7F,$34,$6A,$35,$7F,$31,$2B,$25,$6A,$7F,$7F,$7F,$20,$7F,$23,$23,$23,$7F,$23
      6A7F7F7F207F2323
      237F23
-2B91 2020683F6B357F20 (  logo_screen.asm):00045                         FCB     $20,$20,$68,$3F,$6B,$35,$7F,$20,$20,$20,$6A,$35,$20,$6A,$35,$7F,$7C,$7E,$25,$6A     ; row 20
-     20206A35206A357F
-     7C7E256A
-2BA5 3F7F7A352B7F7D30 (  logo_screen.asm):00046                         FCB     $3F,$7F,$7A,$35,$2B,$7F,$7D,$30,$7F,$7F,$7F,$7F,$35,$7F,$7F,$7F,$20,$7F,$20
+2B7F 20683F6B357F2020 (  logo_screen.asm):00047                         FCB     $20,$68,$3F,$6B,$35,$7F,$20,$20,$20,$6A,$35,$20,$6A,$35,$7F,$7C,$7E,$25,$6A     ; row 20
+     206A35206A357F7C
+     7E256A
+2B92 3F7F7A352B7F7D30 (  logo_screen.asm):00048                         FCB     $3F,$7F,$7A,$35,$2B,$7F,$7D,$30,$7F,$7F,$7F,$7F,$35,$7F,$7F,$7F,$20,$7F,$20
      7F7F7F7F357F7F7F
      207F20
-2BB8 20607F7D7E357F30 (  logo_screen.asm):00047                         FCB     $20,$60,$7F,$7D,$7E,$35,$7F,$30,$60,$7C,$6A,$75,$20,$7A,$35,$7F,$2B,$7D,$20,$6A     ; row 21
-     607C6A75207A357F
-     2B7D206A
-2BCC 356B7F3570206B7F (  logo_screen.asm):00048                         FCB     $35,$6B,$7F,$35,$70,$20,$6B,$7F,$73,$73,$73,$73,$31,$7F,$20,$20,$20,$7F,$20
+2BA5 607F7D7E357F3060 (  logo_screen.asm):00049                         FCB     $60,$7F,$7D,$7E,$35,$7F,$30,$60,$7C,$6A,$75,$20,$7A,$35,$7F,$2B,$7D,$20,$6A     ; row 21
+     7C6A75207A357F2B
+     7D206A
+2BB8 356B7F3570206B7F (  logo_screen.asm):00050                         FCB     $35,$6B,$7F,$35,$70,$20,$6B,$7F,$73,$73,$73,$73,$31,$7F,$20,$20,$20,$7F,$20
      73737373317F2020
      207F20
-2BDF 207E37206A352B7F (  logo_screen.asm):00049                         FCB     $20,$7E,$37,$20,$6A,$35,$2B,$7F,$7F,$27,$22,$6F,$7F,$3F,$21,$7F,$20,$6B,$75,$6A     ; row 22
-     7F27226F7F3F217F
-     206B756A
-2BF3 35206F356F7F7F25 (  logo_screen.asm):00050                         FCB     $35,$20,$6F,$35,$6F,$7F,$7F,$25,$6F,$7F,$7F,$7F,$25,$7F,$20,$20,$20,$7F,$20
+2BCB 7E37206A352B7F7F (  logo_screen.asm):00051                         FCB     $7E,$37,$20,$6A,$35,$2B,$7F,$7F,$27,$22,$6F,$7F,$3F,$21,$7F,$20,$6B,$75,$6A     ; row 22
+     27226F7F3F217F20
+     6B756A
+2BDE 35206F356F7F7F25 (  logo_screen.asm):00052                         FCB     $35,$20,$6F,$35,$6F,$7F,$7F,$25,$6F,$7F,$7F,$7F,$25,$7F,$20,$20,$20,$7F,$20
      6F7F7F7F257F2020
      207F20
-2C06 2020202020202020 (  logo_screen.asm):00051                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20     ; row 23
+2BF1 2020202020202020 (  logo_screen.asm):00053                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20     ; row 23
      2020202020202020
-     20202020
-2C1A 2020202020202020 (  logo_screen.asm):00052                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$22,$23,$20,$20,$20,$20,$20,$20,$20,$20
+     202020
+2C04 2020202020202020 (  logo_screen.asm):00054                         FCB     $20,$20,$20,$20,$20,$20,$20,$20,$20,$22,$23,$20,$20,$20,$20,$20,$20,$20,$20
      2022232020202020
      202020
-2C2D                  (  logo_screen.asm):00053         LOGO_COL
-2C2D 0101010101010202 (  logo_screen.asm):00054                         FCB     1,1,1,1,1,1,2,2     ; rows 0-7
-2C35 0202020203030303 (  logo_screen.asm):00055                         FCB     2,2,2,2,3,3,3,3     ; rows 8-15
-2C3D 0303040404040404 (  logo_screen.asm):00056                         FCB     3,3,4,4,4,4,4,4     ; rows 16-23
-                      (  logo_screen.asm):00057         ; colours used: red, green, yellow, blue
+2C17                  (  logo_screen.asm):00055         LOGO_COL
+2C17 0101010101010202 (  logo_screen.asm):00056                         FCB     1,1,1,1,1,1,2,2     ; rows 0-7
+2C1F 0202020203030303 (  logo_screen.asm):00057                         FCB     2,2,2,2,3,3,3,3     ; rows 8-15
+2C27 0303040404040404 (  logo_screen.asm):00058                         FCB     3,3,4,4,4,4,4,4     ; rows 16-23
+                      (  logo_screen.asm):00059         ; colours used: red, green, yellow, blue
 
 Symbol Table:
 [ G] BUFFER                           3800
 [ G] COPYCELL                         2827
 [ G] COPYROW                          2825
 [ G] FLIP_TICKS                       0002
-[ G] LOGO                             2885
-[ G] LOGO_COL                         2C2D
-[ G] LOOP                             284D
+[ G] LOGO                             2887
+[ G] LOGO_CELLS                       0026
+[ G] LOGO_COL                         2C17
+[ G] LOGO_COL1                        0002
+[ G] LOOP                             284F
 [ G] PAUSE                            0064
 [ G] ROW                              0081
 [ G] STACK_TOP                        0200
@@ -376,6 +381,6 @@ Symbol Table:
 [ G] TGL_TNUM                         1036
 [ G] TGL_WHITE                        0007
 [ G] TGL_YELLOW                       0003
-[ G] TITLE                            2868
-[ G] WAIT                             2851
+[ G] TITLE                            286A
+[ G] WAIT                             2853
 [ G] WAITN                            0080
